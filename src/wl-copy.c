@@ -1,12 +1,13 @@
 #include <wayland-client.h>
 #include <stdio.h>
-#include <string.h>
+#include <string.h> // strcmp
+#include <stdlib.h> // exit
+#include <unistd.h> // execl, STDOUT_FILENO
 
 struct wl_data_device_manager *data_device_manager;
 struct wl_seat *seat;
 
 int global_serial;
-int should_exit;
 
 void registry_global_handler
 (
@@ -62,11 +63,12 @@ void data_source_send_handler
     const char *mime_type,
     int fd
 ) {
-    FILE *f = fdopen(fd, "w");
-    fprintf(f, "Hello copied losers");
-    fclose(f);
-    printf("Copied\n");
-    should_exit = 1;
+    // delegate to a (hopefully) highly optimized implementation of copying
+    dup2(fd, STDOUT_FILENO);
+    execl("/bin/cat", "cat", NULL);
+    // failed to execl
+    perror("exec /bin/cat");
+    exit(1);
 }
 
 void data_source_cancelled_handler
@@ -75,7 +77,7 @@ void data_source_cancelled_handler
     struct wl_data_source *data_source
 ) {
     fprintf(stderr, "Cancelled\n");
-    should_exit = 1;
+    exit(1);
 }
 
 const struct wl_data_source_listener data_source_listener = {
@@ -128,16 +130,17 @@ int main(int argc, const char *argv[]) {
     struct wl_callback *callback = wl_display_sync(display);
     wl_callback_add_listener(callback, &callback_listener, NULL);
 
-    while (!should_exit && global_serial == 0) {
+    while (global_serial == 0) {
         wl_display_dispatch(display);
     }
 
     struct wl_data_device *data_device = wl_data_device_manager_get_data_device(data_device_manager, seat);
     wl_data_device_set_selection(data_device, data_source, global_serial);
 
-    while (!should_exit) {
+    while (1) {
         wl_display_dispatch(display);
     }
 
-    return 0;
+    // never reached
+    return 1;
 }
