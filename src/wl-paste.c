@@ -19,6 +19,7 @@
 #include "boilerplate.h"
 
 struct wl_surface *tiny_invisible_surface;
+char *mime_type;
 
 void data_device_data_offer
 (
@@ -40,7 +41,13 @@ void data_device_selection
 
     int pipefd[2];
     pipe(pipefd);
-    wl_data_offer_receive(data_offer, "text/plain", pipefd[1]);
+
+    if (mime_type != NULL) {
+        wl_data_offer_receive(data_offer, mime_type, pipefd[1]);
+        free(mime_type);
+    } else {
+        wl_data_offer_receive(data_offer, "text/plain", pipefd[1]);
+    }
 
     if (tiny_invisible_surface != NULL) {
         wl_surface_destroy(tiny_invisible_surface);
@@ -70,6 +77,8 @@ const struct wl_data_device_listener data_device_listener = {
 };
 
 int main(int argc, const char *argv[]) {
+
+    mime_type = infer_mime_type_of_file(STDOUT_FILENO);
 
     init_wayland_globals();
 
