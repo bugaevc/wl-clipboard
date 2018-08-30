@@ -21,6 +21,7 @@
 #include <string.h> // strcmp
 #include <stdlib.h> // exit
 #include <unistd.h> // execl, STDOUT_FILENO
+#include <sys/wait.h>
 
 struct wl_data_device_manager *data_device_manager;
 struct wl_seat *seat;
@@ -82,11 +83,15 @@ void data_source_send_handler
     int fd
 ) {
     // delegate to a (hopefully) highly optimized implementation of copying
-    dup2(fd, STDOUT_FILENO);
-    execl("/bin/cat", "cat", NULL);
-    // failed to execl
-    perror("exec /bin/cat");
-    exit(1);
+    if (fork() == 0) {
+        dup2(fd, STDOUT_FILENO);
+        execl("/bin/cat", "cat", NULL);
+        // failed to execl
+        perror("exec /bin/cat");
+        exit(1);
+    }
+    wait(NULL);
+    exit(0);
 }
 
 void data_source_cancelled_handler
