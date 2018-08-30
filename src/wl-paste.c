@@ -1,4 +1,4 @@
-/* wl-paste
+/* wl-clipboard
  *
  * Copyright © 2018 Sergey Bugaev <bugaevc@gmail.com>
  *
