@@ -19,10 +19,14 @@
 #include <wayland-client.h>
 #include <stdio.h>
 #include <string.h> // strcmp
+#include <fcntl.h> // open
+#include <sys/stat.h> // open
+#include <sys/types.h> // open
 #include <stdlib.h> // exit
 #include <unistd.h> // execl, STDOUT_FILENO
 #include <sys/wait.h>
 #include <sys/syscall.h> // syscall, SYS_memfd_create
+#include <linux/limits.h> // PATH_MAX
 
 struct wl_display *display;
 struct wl_data_device_manager *data_device_manager;
@@ -38,3 +42,6 @@ void init_wayland_globals(void);
 struct wl_surface *popup_tiny_invisible_surface(void);
 
 int get_serial();
+
+// free when done
+char *infer_mime_type_of_file(int fd);

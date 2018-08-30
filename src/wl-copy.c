@@ -74,9 +74,13 @@ const struct wl_data_source_listener data_source_listener = {
 
 int main(int argc, const char *argv[]) {
 
+    char *mime_type = NULL;
     if (argc > 1) {
         // copy our command-line args
         data_to_copy = argv + 1;
+    } else {
+        // copy stdin
+        mime_type = infer_mime_type_of_file(STDIN_FILENO);
     }
 
     init_wayland_globals();
@@ -84,11 +88,16 @@ int main(int argc, const char *argv[]) {
     struct wl_data_source *data_source = wl_data_device_manager_create_data_source(data_device_manager);
     wl_data_source_add_listener(data_source, &data_source_listener, NULL);
 
-    wl_data_source_offer(data_source, "text/plain");
-    wl_data_source_offer(data_source, "text/plain;charset=utf-8");
-    wl_data_source_offer(data_source, "TEXT");
-    wl_data_source_offer(data_source, "STRING");
-    wl_data_source_offer(data_source, "UTF8_STRING");
+    if (mime_type != NULL) {
+        wl_data_source_offer(data_source, mime_type);
+        free(mime_type);
+    } else {
+        wl_data_source_offer(data_source, "text/plain");
+        wl_data_source_offer(data_source, "text/plain;charset=utf-8");
+        wl_data_source_offer(data_source, "TEXT");
+        wl_data_source_offer(data_source, "STRING");
+        wl_data_source_offer(data_source, "UTF8_STRING");
+    }
 
     wl_data_device_set_selection(data_device, data_source, get_serial());
 

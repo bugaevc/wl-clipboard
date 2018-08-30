@@ -189,3 +189,51 @@ int get_serial() {
 
     return global_serial;
 }
+
+char *infer_mime_type_of_file(int fd) {
+    char fdpath[64];
+    snprintf(fdpath, sizeof(fdpath), "/proc/self/fd/%d", fd);
+
+    char *file_path = malloc(PATH_MAX + 1);
+    ssize_t link_length = readlink(fdpath, file_path, PATH_MAX + 1);
+    file_path[link_length] = 0;
+
+    // filter pipes out
+    if (file_path[0] != '/') {
+        return NULL;
+    }
+
+    int pipefd[2];
+    pipe(pipefd);
+    if (fork() == 0) {
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        int devnull = open("/dev/null", O_RDONLY);
+        dup2(devnull, STDIN_FILENO);
+        close(devnull);
+        execlp("xdg-mime", "xdg-mime", "query", "filetype", file_path, NULL);
+        exit(1);
+    }
+
+    close(pipefd[1]);
+    free(file_path);
+    int wstatus;
+    wait(&wstatus);
+    if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == 0) {
+        char *res = malloc(PATH_MAX + 1);
+        size_t len = read(pipefd[0], res, PATH_MAX + 1);
+        len--; // trim the newline
+        close(pipefd[0]);
+        res[len] = 0;
+
+        if (strncmp(res, "inode/", strlen("inode/")) == 0) {
+            free(res);
+            return NULL;
+        }
+
+        return res;
+    }
+    close(pipefd[0]);
+    return NULL;
+}
