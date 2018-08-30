@@ -18,6 +18,8 @@
 
 #include "boilerplate.h"
 
+const char **data_to_copy = NULL;
+
 void data_source_target_handler
 (
     void *data,
@@ -32,15 +34,26 @@ void data_source_send_handler
     const char *mime_type,
     int fd
 ) {
-    // delegate to a (hopefully) highly optimized implementation of copying
-    if (fork() == 0) {
-        dup2(fd, STDOUT_FILENO);
-        execl("/bin/cat", "cat", NULL);
-        // failed to execl
-        perror("exec /bin/cat");
-        exit(1);
+    if (data_to_copy != NULL) {
+        // copy the specified data, separated by spaces
+        for (int is_first = 1; *data_to_copy != NULL; data_to_copy++, is_first = 0) {
+            if (!is_first) {
+                write(fd, " ", 1);
+            }
+            write(fd, *data_to_copy, strlen(*data_to_copy));
+        }
+    } else {
+        // copy stdin; for that, we delegate to a (hopefully)
+        // highly optimized implementation of copying
+        if (fork() == 0) {
+            dup2(fd, STDOUT_FILENO);
+            execl("/bin/cat", "cat", NULL);
+            // failed to execl
+            perror("exec /bin/cat");
+            exit(1);
+        }
+        wait(NULL);
     }
-    wait(NULL);
     exit(0);
 }
 
@@ -60,6 +73,11 @@ const struct wl_data_source_listener data_source_listener = {
 };
 
 int main(int argc, const char *argv[]) {
+
+    if (argc > 1) {
+        // copy our command-line args
+        data_to_copy = argv + 1;
+    }
 
     init_wayland_globals();
 
