@@ -19,16 +19,17 @@
 #include <wayland-client.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h> // STDOUT_FILENO
+#include <stdlib.h> // exit
+#include <unistd.h> // STDIN_FILENO, STDOUT_FILENO
 #include <syscall.h> // syscall, SYS_memfd_create
+#include <sys/wait.h>
 
+struct wl_display *display;
 struct wl_data_device_manager *data_device_manager;
 struct wl_seat *seat;
 struct wl_compositor *compositor;
 struct wl_shm *shm;
 struct wl_shell *shell;
-
-int should_exit;
 
 void registry_global_handler
 (
@@ -104,11 +105,23 @@ void data_device_selection
     struct wl_data_device *data_device,
     struct wl_data_offer *data_offer
 ) {
-    if (!should_exit) {
-        // do not accept twice
-        wl_data_offer_receive(data_offer, "text/plain", STDOUT_FILENO);
-        should_exit = 1;
+    int pipefd[2];
+    pipe(pipefd);
+    wl_data_offer_receive(data_offer, "text/plain", pipefd[1]);
+    wl_display_roundtrip(display);
+    if (fork() == 0) {
+        dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        execl("/bin/cat", "cat", NULL);
+        // failed to execl
+        perror("exec /bin/cat");
+        exit(1);
     }
+    close(pipefd[0]);
+    close(pipefd[1]);
+    wait(NULL);
+    exit(0);
 }
 
 const struct wl_data_device_listener data_device_listener = {
@@ -148,7 +161,7 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 
 int main(int argc, const char *argv[]) {
 
-    struct wl_display *display = wl_display_connect(NULL);
+    display = wl_display_connect(NULL);
     if (display == NULL) {
         fprintf(stderr, "Failed to connect to a Wayland server\n");
         return 1;
@@ -203,15 +216,10 @@ int main(int argc, const char *argv[]) {
     wl_surface_attach(surface, buffer, 0, 0);
     wl_surface_commit(surface);
 
-
-    while (!should_exit) {
+    while (1) {
         wl_display_dispatch(display);
     }
-    // one last time
-    wl_display_roundtrip(display);
 
-    // exit now; the process that send us data may continue writing it to
-    // our stdout after this process exits
-
-    return 0;
+    // never reached
+    return 1;
 }
