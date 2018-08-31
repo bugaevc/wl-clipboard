@@ -41,6 +41,10 @@ named `wayland-devel` or `libwayland-dev`). wl-clipboard tries to use `xdg-mime`
 to infer content mime type, but will fall back to plain text if `xdg-mime` is
 unavailable.
 
+If `wayland-scanner` and `wayland-protocols` (version 1.12 or later) are present
+at build time, wl-clipboard will be built with additional xdg-shell support;
+this may be helpful if your Wayland compositor does not support `wl_shell`.
+
 # License
 
 wl-clipboard is free sofrware, available under the GNU General Public License
