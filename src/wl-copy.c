@@ -62,8 +62,7 @@ void data_source_cancelled_handler
     void *data,
     struct wl_data_source *data_source
 ) {
-    fprintf(stderr, "Cancelled\n");
-    exit(1);
+    bail("Cancelled");
 }
 
 const struct wl_data_source_listener data_source_listener = {

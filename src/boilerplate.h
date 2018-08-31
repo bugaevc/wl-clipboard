@@ -28,6 +28,8 @@
 #include <sys/syscall.h> // syscall, SYS_memfd_create
 #include <linux/limits.h> // PATH_MAX
 
+#define bail(message) do { fprintf(stderr, message "\n"); exit(1); } while (0)
+
 struct wl_display *display;
 struct wl_data_device_manager *data_device_manager;
 struct wl_seat *seat;

@@ -35,8 +35,7 @@ void data_device_selection
     struct wl_data_offer *data_offer
 ) {
     if (data_offer == NULL) {
-        fprintf(stderr, "No selection\n");
-        exit(1);
+        bail("No selection");
     }
 
     int pipefd[2];

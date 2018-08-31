@@ -112,8 +112,7 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 void init_wayland_globals() {
         display = wl_display_connect(NULL);
     if (display == NULL) {
-        fprintf(stderr, "Failed to connect to a Wayland server\n");
-        exit(1);
+        bail("Failed to connect to a Wayland server");
     }
 
     struct wl_registry *registry = wl_display_get_registry(display);
@@ -129,8 +128,7 @@ void init_wayland_globals() {
         shm == NULL ||
         shell == NULL
     ) {
-        fprintf(stderr, "Missing a required global object\n");
-        exit(1);
+        bail("Missing a required global object");
     }
 
     data_device = wl_data_device_manager_get_data_device(data_device_manager, seat);
