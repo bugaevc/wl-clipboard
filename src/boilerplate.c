@@ -130,7 +130,7 @@ void xdg_toplevel_configure_handler
     struct wl_array *states
 ) {}
 
- void xdg_toplevel_close_handler
+void xdg_toplevel_close_handler
 (
     void *data,
     struct xdg_toplevel *xdg_toplevel
