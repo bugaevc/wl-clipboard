@@ -62,6 +62,16 @@ void registry_global_handler
             1
         );
     }
+#ifdef HAVE_XDG_SHELL
+    else if (strcmp(interface, "xdg_wm_base") == 0) {
+        xdg_wm_base = wl_registry_bind(
+            registry,
+            name,
+            &xdg_wm_base_interface,
+            1
+        );
+    }
+#endif
 }
 
 void registry_global_remove_handler
@@ -109,6 +119,56 @@ const struct wl_shell_surface_listener shell_surface_listener = {
     .popup_done = shell_surface_popup_done
 };
 
+#ifdef HAVE_XDG_SHELL
+
+void xdg_toplevel_configure_handler
+(
+    void *data,
+    struct xdg_toplevel *xdg_toplevel,
+    int32_t width,
+    int32_t height,
+    struct wl_array *states
+) {}
+
+ void xdg_toplevel_close_handler
+(
+    void *data,
+    struct xdg_toplevel *xdg_toplevel
+) {}
+
+const struct xdg_toplevel_listener xdg_toplevel_listener = {
+    .configure = xdg_toplevel_configure_handler,
+    .close = xdg_toplevel_close_handler
+};
+
+void xdg_surface_configure_handler
+(
+    void *data,
+    struct xdg_surface *xdg_surface,
+    uint32_t serial
+) {
+    xdg_surface_ack_configure(xdg_surface, serial);
+}
+
+const struct xdg_surface_listener xdg_surface_listener = {
+    .configure = xdg_surface_configure_handler
+};
+
+void xdg_wm_base_ping_handler
+(
+    void *data,
+    struct xdg_wm_base *xdg_wm_base,
+    uint32_t serial
+) {
+    xdg_wm_base_pong(xdg_wm_base, serial);
+}
+
+const struct xdg_wm_base_listener xdg_wm_base_listener = {
+    .ping = xdg_wm_base_ping_handler
+};
+
+#endif
+
 void init_wayland_globals() {
         display = wl_display_connect(NULL);
     if (display == NULL) {
@@ -126,7 +186,11 @@ void init_wayland_globals() {
         seat == NULL ||
         compositor == NULL ||
         shm == NULL ||
-        shell == NULL
+        (shell == NULL
+#ifdef HAVE_XDG_SHELL
+         && xdg_wm_base == NULL
+#endif
+        )
     ) {
         bail("Missing a required global object");
     }
@@ -136,9 +200,30 @@ void init_wayland_globals() {
 
 struct wl_surface *popup_tiny_invisible_surface() {
     struct wl_surface *surface = wl_compositor_create_surface(compositor);
-    struct wl_shell_surface *shell_surface = wl_shell_get_shell_surface(shell, surface);
-    wl_shell_surface_set_toplevel(shell_surface);
-    wl_shell_surface_set_title(shell_surface, "wl-paste");
+
+    if (shell != NULL) {
+        // use wl_shell
+        struct wl_shell_surface *shell_surface = wl_shell_get_shell_surface(shell, surface);
+        wl_shell_surface_set_toplevel(shell_surface);
+        wl_shell_surface_set_title(shell_surface, "wl-clipboard");
+    } else {
+#ifdef HAVE_XDG_SHELL
+        // use xdg-shell
+
+        xdg_wm_base_add_listener(xdg_wm_base, &xdg_wm_base_listener, NULL);
+        struct xdg_surface *xdg_surface = xdg_wm_base_get_xdg_surface(xdg_wm_base, surface);
+        xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
+        struct xdg_toplevel *xdg_toplevel = xdg_surface_get_toplevel(xdg_surface);
+        xdg_toplevel_add_listener(xdg_toplevel, &xdg_toplevel_listener, NULL);
+        xdg_toplevel_set_title(xdg_toplevel, "wl-clipboard");
+        // signal that the surface is ready to be configured
+        wl_surface_commit(surface);
+        // wait for the surface to be configured
+        wl_display_roundtrip(display);
+#else
+        bail("Unreachable: HAVE_XDG_SHELL undefined and no wl_shell");
+#endif
+    }
 
     int width = 1;
     int height = 1;

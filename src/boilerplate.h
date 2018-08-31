@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "config.h"
+
 #include <wayland-client.h>
 #include <stdio.h>
 #include <string.h> // strcmp
@@ -28,6 +30,10 @@
 #include <sys/syscall.h> // syscall, SYS_memfd_create
 #include <linux/limits.h> // PATH_MAX
 
+#ifdef HAVE_XDG_SHELL
+#    include "xdg-shell-client.h"
+#endif
+
 #define bail(message) do { fprintf(stderr, message "\n"); exit(1); } while (0)
 
 struct wl_display *display;
@@ -36,6 +42,10 @@ struct wl_seat *seat;
 struct wl_compositor *compositor;
 struct wl_shm *shm;
 struct wl_shell *shell;
+
+#ifdef HAVE_XDG_SHELL
+struct xdg_wm_base *xdg_wm_base;
+#endif
 
 struct wl_data_device *data_device;
 
