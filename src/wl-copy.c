@@ -71,6 +71,14 @@ const struct wl_data_source_listener data_source_listener = {
     .cancelled = data_source_cancelled_handler
 };
 
+void offer_plain_text(struct wl_data_source *data_source) {
+    wl_data_source_offer(data_source, "text/plain");
+    wl_data_source_offer(data_source, "text/plain;charset=utf-8");
+    wl_data_source_offer(data_source, "TEXT");
+    wl_data_source_offer(data_source, "STRING");
+    wl_data_source_offer(data_source, "UTF8_STRING");
+}
+
 int main(int argc, const char *argv[]) {
 
     char *mime_type = NULL;
@@ -88,14 +96,14 @@ int main(int argc, const char *argv[]) {
     wl_data_source_add_listener(data_source, &data_source_listener, NULL);
 
     if (mime_type != NULL) {
-        wl_data_source_offer(data_source, mime_type);
+        if (strcmp(mime_type, "text/plain") == 0) {
+            offer_plain_text(data_source);
+        } else {
+            wl_data_source_offer(data_source, mime_type);
+        }
         free(mime_type);
     } else {
-        wl_data_source_offer(data_source, "text/plain");
-        wl_data_source_offer(data_source, "text/plain;charset=utf-8");
-        wl_data_source_offer(data_source, "TEXT");
-        wl_data_source_offer(data_source, "STRING");
-        wl_data_source_offer(data_source, "UTF8_STRING");
+        offer_plain_text(data_source);
     }
 
     wl_data_device_set_selection(data_device, data_source, get_serial());
