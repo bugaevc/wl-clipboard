@@ -16,7 +16,7 @@ else
     protocols_path = wayland_protocols.get_pkgconfig_variable('pkgdatadir')
     xdg_shell_xml = join_paths(protocols_path, 'stable', 'xdg-shell', 'xdg-shell.xml')
 
-    xdg_shell_cient_h = custom_target('xdg-shell client header',
+    xdg_shell_client_h = custom_target('xdg-shell client header',
         input: xdg_shell_xml,
         output: 'xdg-shell-client.h',
         command: [wayland_scanner, 'client-header', '@INPUT@', '@OUTPUT@']
@@ -28,7 +28,7 @@ else
         command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@']
     )
 
-    xdg_shell = static_library('xdg-shell', xdg_shell_c, xdg_shell_cient_h)
+    xdg_shell = static_library('xdg-shell', xdg_shell_c, xdg_shell_client_h)
 endif
 
 boilerplate = static_library('wl-clipboard-boilerplate', 'boilerplate.c', dependencies: wayland, link_with: xdg_shell)
