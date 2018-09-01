@@ -58,7 +58,7 @@ void init_wayland_globals(void);
 void popup_tiny_invisible_surface(void);
 void destroy_popup_surface(void);
 
-int get_serial();
+int get_serial(void);
 
 // free when done
 char *infer_mime_type_of_file(int fd);
