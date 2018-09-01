@@ -18,7 +18,6 @@
 
 #include "boilerplate.h"
 
-struct wl_surface *tiny_invisible_surface;
 char *mime_type;
 
 void data_device_data_offer
@@ -48,10 +47,7 @@ void data_device_selection
         wl_data_offer_receive(data_offer, "text/plain", pipefd[1]);
     }
 
-    if (tiny_invisible_surface != NULL) {
-        wl_surface_destroy(tiny_invisible_surface);
-        tiny_invisible_surface = NULL;
-    }
+    destroy_popup_surface();
 
     wl_display_roundtrip(display);
 
@@ -86,7 +82,7 @@ int main(int argc, const char *argv[]) {
     // HACK:
     // pop up a tiny invisible surface to get the keyboard focus,
     // otherwise we won't be notified of the selection
-    tiny_invisible_surface = popup_tiny_invisible_surface();
+    popup_tiny_invisible_surface();
 
     while (1) {
         wl_display_dispatch(display);

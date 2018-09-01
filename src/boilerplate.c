@@ -198,12 +198,12 @@ void init_wayland_globals() {
     data_device = wl_data_device_manager_get_data_device(data_device_manager, seat);
 }
 
-struct wl_surface *popup_tiny_invisible_surface() {
-    struct wl_surface *surface = wl_compositor_create_surface(compositor);
+void popup_tiny_invisible_surface() {
+    surface = wl_compositor_create_surface(compositor);
 
     if (shell != NULL) {
         // use wl_shell
-        struct wl_shell_surface *shell_surface = wl_shell_get_shell_surface(shell, surface);
+        shell_surface = wl_shell_get_shell_surface(shell, surface);
         wl_shell_surface_set_toplevel(shell_surface);
         wl_shell_surface_set_title(shell_surface, "wl-clipboard");
     } else {
@@ -211,9 +211,9 @@ struct wl_surface *popup_tiny_invisible_surface() {
         // use xdg-shell
 
         xdg_wm_base_add_listener(xdg_wm_base, &xdg_wm_base_listener, NULL);
-        struct xdg_surface *xdg_surface = xdg_wm_base_get_xdg_surface(xdg_wm_base, surface);
+        xdg_surface = xdg_wm_base_get_xdg_surface(xdg_wm_base, surface);
         xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
-        struct xdg_toplevel *xdg_toplevel = xdg_surface_get_toplevel(xdg_surface);
+        xdg_toplevel = xdg_surface_get_toplevel(xdg_surface);
         xdg_toplevel_add_listener(xdg_toplevel, &xdg_toplevel_listener, NULL);
         xdg_toplevel_set_title(xdg_toplevel, "wl-clipboard");
         // signal that the surface is ready to be configured
@@ -244,7 +244,27 @@ struct wl_surface *popup_tiny_invisible_surface() {
 
     wl_surface_attach(surface, buffer, 0, 0);
     wl_surface_commit(surface);
-    return surface;
+}
+
+void destroy_popup_surface() {
+    if (shell_surface != NULL) {
+        wl_shell_surface_destroy(shell_surface);
+        shell_surface = NULL;
+    }
+#ifdef HAVE_XDG_SHELL
+    if (xdg_toplevel != NULL) {
+        xdg_toplevel_destroy(xdg_toplevel);
+        xdg_toplevel = NULL;
+    }
+    if (xdg_surface != NULL) {
+        xdg_surface_destroy(xdg_surface);
+        xdg_surface = NULL;
+    }
+#endif
+    if (surface != NULL) {
+        wl_surface_destroy(surface);
+        surface = NULL;
+    }
 }
 
 static int global_serial;
