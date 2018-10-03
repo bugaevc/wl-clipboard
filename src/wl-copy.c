@@ -19,6 +19,7 @@
 #include "boilerplate.h"
 
 const char **data_to_copy = NULL;
+char *temp_file_to_copy = NULL;
 
 void data_source_target_handler
 (
@@ -43,13 +44,13 @@ void data_source_send_handler
             write(fd, *data_to_copy, strlen(*data_to_copy));
         }
     } else {
-        // copy stdin; for that, we delegate to a (hopefully)
-        // highly optimized implementation of copying
+        // copy from the temp file; for that, we delegate to a
+        // (hopefully) highly optimized implementation of copying
         if (fork() == 0) {
             dup2(fd, STDOUT_FILENO);
-            execl("/bin/cat", "cat", NULL);
+            execlp("cat", "cat", temp_file_to_copy, NULL);
             // failed to execl
-            perror("exec /bin/cat");
+            perror("exec cat");
             exit(1);
         }
         wait(NULL);
@@ -88,6 +89,7 @@ int main(int argc, const char *argv[]) {
     } else {
         // copy stdin
         mime_type = infer_mime_type_of_file(STDIN_FILENO);
+        temp_file_to_copy = dump_into_a_temp_file(STDIN_FILENO);
     }
 
     init_wayland_globals();
