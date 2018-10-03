@@ -39,12 +39,14 @@ void data_source_send_handler
     fcntl(fd, F_SETFL, 0);
     if (data_to_copy != NULL) {
         // copy the specified data, separated by spaces
+        FILE *f = fdopen(fd, "w");
         const char **dataptr = data_to_copy;
         for (int is_first = 1; *dataptr != NULL; dataptr++, is_first = 0) {
             if (!is_first) {
-                write(fd, " ", 1);
+                fwrite(" ", 1, 1, f);
             }
-            write(fd, dataptr, strlen(*dataptr));
+            fwrite(*dataptr, 1, strlen(*dataptr), f);
+            fclose(f);
         }
     } else {
         // copy from the temp file; for that, we delegate to a
@@ -56,9 +58,9 @@ void data_source_send_handler
             perror("exec cat");
             exit(1);
         }
+        close(fd);
         wait(NULL);
     }
-    close(fd);
 }
 
 void data_source_cancelled_handler
@@ -130,6 +132,5 @@ int main(int argc, const char *argv[]) {
         wl_display_dispatch(display);
     }
 
-    // never reached
-    return 1;
+    bail("Unreachable");
 }
