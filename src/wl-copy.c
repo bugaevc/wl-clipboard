@@ -56,7 +56,7 @@ void data_source_send_handler
         }
         wait(NULL);
     }
-    exit(0);
+    close(fd);
 }
 
 void data_source_cancelled_handler
@@ -64,7 +64,14 @@ void data_source_cancelled_handler
     void *data,
     struct wl_data_source *data_source
 ) {
-    bail("Cancelled");
+    // we're done!
+    if (temp_file_to_copy != NULL) {
+        execlp("rm", "rm", "-r", dirname(temp_file_to_copy), NULL);
+        perror("exec rm");
+        exit(1);
+    } else {
+        exit(0);
+    }
 }
 
 const struct wl_data_source_listener data_source_listener = {
@@ -94,6 +101,12 @@ int main(int argc, const char *argv[]) {
     }
 
     init_wayland_globals();
+
+    if (fork() != 0) {
+        // exit in the parent, but leave the
+        // child running in the background
+        exit(0);
+    }
 
     struct wl_data_source *data_source = wl_data_device_manager_create_data_source(data_device_manager);
     wl_data_source_add_listener(data_source, &data_source_listener, NULL);
