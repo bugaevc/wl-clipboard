@@ -20,6 +20,7 @@
 
 #include <wayland-client.h>
 #include <stdio.h>
+#include <getopt.h>
 #include <string.h> // strcmp
 #include <fcntl.h> // open
 #include <sys/stat.h> // open

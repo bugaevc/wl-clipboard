@@ -23,6 +23,22 @@ $ wl-paste > clipboard.txt
 $ for word in $(wl-paste); do grep $word source.c; done
 ```
 
+# Options
+
+For `wl-copy`:
+
+* `-o`, `--paste-once` Only serve one paste request and then exit. Unless a clipboard manager specifically designed to prevent this is in use, this has the effect of clearing the clipboard after the first paste, which is useful for copying sensitive data such as passwords. Note that this may break pasting into some clients, in particular pasting into XWayland windows is known to break when this option is used.
+* `-f`, `--foreground` By default, `wl-copy` forks and serves data requests in the background; this option overrides that behavior, causing `wl-copy` to run in the foreground.
+* `-c`, `--clear` Instead of copying anything, clear the clipboard so that nothing is copied.
+
+For `wl-paste`:
+
+* `-n`, `-no-newline` Do not append a newline character after the pasted clipboard content.
+
+For both:
+
+* `-t mime/type`, `--mime-type mime/type` Override the inferred MIME type for the content.
+
 # Building
 
 wl-clipboard is a simple Meson project, so building it is just:

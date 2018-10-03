@@ -19,6 +19,7 @@
 #include "boilerplate.h"
 
 char *mime_type = NULL;
+int no_newline = 0;
 
 void data_device_data_offer
 (
@@ -63,6 +64,9 @@ void data_device_selection
     close(pipefd[0]);
     close(pipefd[1]);
     wait(NULL);
+    if (!no_newline) {
+        write(STDOUT_FILENO, "\n", 1);
+    }
     exit(0);
 }
 
@@ -71,7 +75,33 @@ const struct wl_data_device_listener data_device_listener = {
     .selection = data_device_selection
 };
 
-int main(int argc, const char *argv[]) {
+int main(int argc, char * const argv[]) {
+
+    static struct option long_options[] = {
+        {"no-newline", no_argument, 0, 'n'},
+        {"mime-type", required_argument, 0, 't'}
+    };
+    while (1) {
+        int option_index;
+        int c = getopt_long(argc, argv, "nt:", long_options, &option_index);
+        if (c == -1) {
+            break;
+        }
+        if (c == 0) {
+            c = long_options[option_index].val;
+        }
+        switch (c) {
+        case 'n':
+            no_newline = 1;
+            break;
+        case 't':
+            mime_type = strdup(optarg);
+            break;
+        default:
+            // getopt has already printed an error message
+            exit(1);
+        }
+    }
 
     char *path = path_for_fd(STDOUT_FILENO);
     if (path != NULL) {
