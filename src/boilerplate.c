@@ -299,18 +299,7 @@ char *path_for_fd(int fd) {
     return realpath(fdpath, NULL);
 }
 
-char *infer_mime_type_of_file(int fd) {
-    char *file_path = path_for_fd(fd);
-
-    // filter pipes out
-    if (file_path == NULL) {
-        return NULL;
-    }
-    if (file_path[0] != '/') {
-        free(file_path);
-        return NULL;
-    }
-
+char *infer_mime_type_of_file(const char *path) {
     int pipefd[2];
     pipe(pipefd);
     if (fork() == 0) {
@@ -320,12 +309,11 @@ char *infer_mime_type_of_file(int fd) {
         int devnull = open("/dev/null", O_RDONLY);
         dup2(devnull, STDIN_FILENO);
         close(devnull);
-        execlp("xdg-mime", "xdg-mime", "query", "filetype", file_path, NULL);
+        execlp("xdg-mime", "xdg-mime", "query", "filetype", path, NULL);
         exit(1);
     }
 
     close(pipefd[1]);
-    free(file_path);
     int wstatus;
     wait(&wstatus);
     if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == 0) {

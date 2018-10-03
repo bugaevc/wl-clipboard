@@ -18,7 +18,7 @@
 
 #include "boilerplate.h"
 
-char *mime_type;
+char *mime_type = NULL;
 
 void data_device_data_offer
 (
@@ -73,7 +73,11 @@ const struct wl_data_device_listener data_device_listener = {
 
 int main(int argc, const char *argv[]) {
 
-    mime_type = infer_mime_type_of_file(STDOUT_FILENO);
+    char *path = path_for_fd(STDOUT_FILENO);
+    if (path != NULL) {
+        mime_type = infer_mime_type_of_file(path);
+    }
+    free(path);
 
     init_wayland_globals();
 

@@ -100,8 +100,8 @@ int main(int argc, const char *argv[]) {
         data_to_copy = argv + 1;
     } else {
         // copy stdin
-        mime_type = infer_mime_type_of_file(STDIN_FILENO);
         temp_file_to_copy = dump_into_a_temp_file(STDIN_FILENO);
+        mime_type = infer_mime_type_of_file(temp_file_to_copy);
     }
 
     init_wayland_globals();
