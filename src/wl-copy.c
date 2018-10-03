@@ -46,8 +46,8 @@ void data_source_send_handler
                 fwrite(" ", 1, 1, f);
             }
             fwrite(*dataptr, 1, strlen(*dataptr), f);
-            fclose(f);
         }
+        fclose(f);
     } else {
         // copy from the temp file; for that, we delegate to a
         // (hopefully) highly optimized implementation of copying
