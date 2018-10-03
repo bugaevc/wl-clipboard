@@ -345,3 +345,45 @@ char *infer_mime_type_of_file(int fd) {
     close(pipefd[0]);
     return NULL;
 }
+
+char *dump_into_a_temp_file(int fd) {
+    char dirpath[] = "/tmp/wl-copy-buffer-XXXXXX";
+    if (mkdtemp(dirpath) != dirpath) {
+        perror("mkdtemp");
+        bail("");
+    }
+    char *original_path = path_for_fd(fd);
+
+    char *res_path = malloc(PATH_MAX + 1);
+    memcpy(res_path, dirpath, sizeof(dirpath));
+    strcat(res_path, "/");
+
+    if (original_path != NULL) {
+        char *name = basename(original_path);
+        strcat(res_path, name);
+    } else {
+        strcat(res_path, "stdin");
+    }
+
+    if (fork() == 0) {
+        char *src;
+        if (original_path != NULL) {
+            src = original_path;
+        } else {
+            src = "/dev/stdin";
+        }
+        execlp("cp", "cp", src, res_path, NULL);
+        perror("exec cp");
+        exit(1);
+    }
+
+    int wstatus;
+    wait(&wstatus);
+    if (original_path != NULL) {
+        free(original_path);
+    }
+    if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == 0) {
+        return res_path;
+    }
+    bail("Failed to copy the file");
+}

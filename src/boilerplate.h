@@ -26,6 +26,7 @@
 #include <sys/types.h> // open
 #include <stdlib.h> // exit
 #include <unistd.h> // execl, STDOUT_FILENO
+#include <libgen.h> // basename
 #include <sys/wait.h>
 #include <sys/syscall.h> // syscall, SYS_memfd_create
 #include <linux/limits.h> // PATH_MAX
@@ -63,3 +64,6 @@ int get_serial(void);
 // free() return values when done
 char *path_for_fd(int fd);
 char *infer_mime_type_of_file(int fd);
+
+// returns the name of a new file
+char *dump_into_a_temp_file(int fd);
