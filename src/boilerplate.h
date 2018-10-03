@@ -60,5 +60,6 @@ void destroy_popup_surface(void);
 
 int get_serial(void);
 
-// free when done
+// free() return values when done
+char *path_for_fd(int fd);
 char *infer_mime_type_of_file(int fd);

@@ -293,16 +293,21 @@ int get_serial() {
     return global_serial;
 }
 
-char *infer_mime_type_of_file(int fd) {
+char *path_for_fd(int fd) {
     char fdpath[64];
     snprintf(fdpath, sizeof(fdpath), "/proc/self/fd/%d", fd);
+    return realpath(fdpath, NULL);
+}
 
-    char *file_path = malloc(PATH_MAX + 1);
-    ssize_t link_length = readlink(fdpath, file_path, PATH_MAX + 1);
-    file_path[link_length] = 0;
+char *infer_mime_type_of_file(int fd) {
+    char *file_path = path_for_fd(fd);
 
     // filter pipes out
+    if (file_path == NULL) {
+        return NULL;
+    }
     if (file_path[0] != '/') {
+        free(file_path);
         return NULL;
     }
 
