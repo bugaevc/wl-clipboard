@@ -35,6 +35,8 @@ void data_source_send_handler
     const char *mime_type,
     int fd
 ) {
+    // unset O_NONBLOCK
+    fcntl(fd, F_SETFL, 0);
     if (data_to_copy != NULL) {
         // copy the specified data, separated by spaces
         const char **dataptr = data_to_copy;
