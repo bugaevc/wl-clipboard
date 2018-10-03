@@ -1,0 +1,43 @@
+.TH WL-CLIPBOARD 1 2018-10-03 wl-clipboard
+.SH NAME
+wl-clipboard \- Wayland copy and paste command line utiltites
+.SH SYNOPSIS
+.B wl-copy
+[\fItext\fR...]
+.PP
+.B wl-paste
+.SH DESCRIPTION
+\fBwl-copy\fR copies the given \fItext\fR to the Wayland clipboard.
+If no \fItext\fR is given, \fBwl-copy\fR copies data from its standard input.
+.PP
+\fBwl-paste\fR pastes data from the Wayland clipboard to its standard output.
+.SH OPTIONS
+\fBwl-copy\fR and \fBwl-paste\fR accept no options.
+.SH ENVIRONMENT
+.TP 20
+WAYLAND_DISPLAY
+Specifies what Wayland server \fBwl-copy\fR and \fBwl-paste\fR should connect to.
+This is the same environment variable that you pass to other Wayland clients,
+such as graphical aplications, that connect to this Wayland server. It is normally
+set up automatically by the graphical session and the Wayland compositor. See
+.BR wl_display_connect (3)
+for more details.
+.TP
+WAYLAND_DEBUG
+When set to \fB1\fR, causes the \fBwayland-client\fR(7) library to log every
+interaction \fBwl-copy\fR and \fBwl-paste\fR make with the Wayland compositor to
+stderr.
+.SH EXAMPLES
+$
+.BI wl-copy " Hello world!"
+.PP
+$
+.IB "ls ~/Downloads" " | wl-copy"
+.PP
+$
+.BI "wl-copy < " ~/Pictures/photo.png
+.PP
+$
+.BI "wl-paste > " clipboard.txt
+.SH SEE ALSO
+.BR xclip (1)
