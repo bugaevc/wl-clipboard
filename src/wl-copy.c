@@ -37,11 +37,12 @@ void data_source_send_handler
 ) {
     if (data_to_copy != NULL) {
         // copy the specified data, separated by spaces
-        for (int is_first = 1; *data_to_copy != NULL; data_to_copy++, is_first = 0) {
+        const char **dataptr = data_to_copy;
+        for (int is_first = 1; *dataptr != NULL; dataptr++, is_first = 0) {
             if (!is_first) {
                 write(fd, " ", 1);
             }
-            write(fd, *data_to_copy, strlen(*data_to_copy));
+            write(fd, dataptr, strlen(*dataptr));
         }
     } else {
         // copy from the temp file; for that, we delegate to a
