@@ -170,7 +170,7 @@ const struct xdg_wm_base_listener xdg_wm_base_listener = {
 #endif
 
 void init_wayland_globals() {
-        display = wl_display_connect(NULL);
+    display = wl_display_connect(NULL);
     if (display == NULL) {
         bail("Failed to connect to a Wayland server");
     }
