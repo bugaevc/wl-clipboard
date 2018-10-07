@@ -22,20 +22,7 @@ char * const *data_to_copy = NULL;
 char *temp_file_to_copy = NULL;
 int paste_once = 0;
 
-void data_source_target_handler
-(
-    void *data,
-    struct wl_data_source *data_source,
-    const char *mime_type
-) {}
-
-void data_source_send_handler
-(
-    void *data,
-    struct wl_data_source *data_source,
-    const char *mime_type,
-    int fd
-) {
+void do_send(const char *mime_type, int fd) {
     // unset O_NONBLOCK
     fcntl(fd, F_SETFL, 0);
     if (data_to_copy != NULL) {
@@ -68,11 +55,7 @@ void data_source_send_handler
     }
 }
 
-void data_source_cancelled_handler
-(
-    void *data,
-    struct wl_data_source *data_source
-) {
+void do_cancel() {
     // we're done!
     if (temp_file_to_copy != NULL) {
         execlp("rm", "rm", "-r", dirname(temp_file_to_copy), NULL);
@@ -81,6 +64,31 @@ void data_source_cancelled_handler
     } else {
         exit(0);
     }
+}
+
+void data_source_target_handler
+(
+    void *data,
+    struct wl_data_source *data_source,
+    const char *mime_type
+) {}
+
+void data_source_send_handler
+(
+    void *data,
+    struct wl_data_source *data_source,
+    const char *mime_type,
+    int fd
+) {
+    do_send(mime_type, fd);
+}
+
+void data_source_cancelled_handler
+(
+    void *data,
+    struct wl_data_source *data_source
+) {
+    do_cancel();
 }
 
 const struct wl_data_source_listener data_source_listener = {

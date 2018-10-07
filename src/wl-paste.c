@@ -21,6 +21,29 @@
 char *mime_type = NULL;
 int no_newline = 0;
 
+void do_paste(int pipefd[2]) {
+    destroy_popup_surface();
+
+    wl_display_roundtrip(display);
+
+    if (fork() == 0) {
+        dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        execl("/bin/cat", "cat", NULL);
+        // failed to execl
+        perror("exec /bin/cat");
+        exit(1);
+    }
+    close(pipefd[0]);
+    close(pipefd[1]);
+    wait(NULL);
+    if (!no_newline) {
+        write(STDOUT_FILENO, "\n", 1);
+    }
+    exit(0);
+}
+
 void data_device_data_offer
 (
     void *data,
@@ -48,26 +71,7 @@ void data_device_selection
         wl_data_offer_receive(data_offer, "text/plain", pipefd[1]);
     }
 
-    destroy_popup_surface();
-
-    wl_display_roundtrip(display);
-
-    if (fork() == 0) {
-        dup2(pipefd[0], STDIN_FILENO);
-        close(pipefd[0]);
-        close(pipefd[1]);
-        execl("/bin/cat", "cat", NULL);
-        // failed to execl
-        perror("exec /bin/cat");
-        exit(1);
-    }
-    close(pipefd[0]);
-    close(pipefd[1]);
-    wait(NULL);
-    if (!no_newline) {
-        write(STDOUT_FILENO, "\n", 1);
-    }
-    exit(0);
+    do_paste(pipefd);
 }
 
 const struct wl_data_device_listener data_device_listener = {
