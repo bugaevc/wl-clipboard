@@ -38,7 +38,7 @@ void registry_global_handler
             registry,
             name,
             &wl_seat_interface,
-            5
+            1
         );
     } else if (strcmp(interface, "wl_compositor") == 0) {
         compositor = wl_registry_bind(
@@ -81,13 +81,91 @@ void registry_global_remove_handler
     uint32_t name
 ) {}
 
-
-
 const struct wl_registry_listener registry_listener = {
     .global = registry_global_handler,
     .global_remove = registry_global_remove_handler
 };
 
+void keyboard_keymap_handler
+(
+    void *data,
+    struct wl_keyboard *keyboard,
+    uint32_t format,
+    int fd,
+    uint32_t size
+) {
+    close(fd);
+}
+
+void keyboard_enter_handler
+(
+    void *data,
+    struct wl_keyboard *keyboard,
+    uint32_t serial,
+    struct wl_surface *surface,
+    struct wl_array *keys
+) {
+    if (action_on_popup_surface_getting_focus != NULL) {
+        action_on_popup_surface_getting_focus(serial);
+    }
+}
+
+void keyboard_leave_handler
+(
+    void *data,
+    struct wl_keyboard *keyboard,
+    uint32_t serial,
+    struct wl_surface *surface
+) {}
+
+void keyboard_key_handler
+(
+    void *data,
+    struct wl_keyboard *keyboard,
+    uint32_t serial,
+    uint32_t time,
+    uint32_t key,
+    uint32_t state
+) {}
+
+void keyboard_modifiers_handler
+(
+    void *data,
+    struct wl_keyboard *keyboard,
+    uint32_t serial,
+    uint32_t mods_depressed,
+    uint32_t mods_latched,
+    uint32_t mods_locked,
+    uint32_t group
+) {}
+
+const struct wl_keyboard_listener keayboard_listener = {
+    .keymap = keyboard_keymap_handler,
+    .enter = keyboard_enter_handler,
+    .leave = keyboard_leave_handler,
+    .key = keyboard_key_handler,
+    .modifiers = keyboard_modifiers_handler,
+};
+
+void seat_capabilities_handler
+(
+    void *data,
+    struct wl_seat *seat,
+    uint32_t capabilities
+) {
+    if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) {
+        struct wl_keyboard *keyboard = wl_seat_get_keyboard(seat);
+        wl_keyboard_add_listener (keyboard, &keayboard_listener, NULL);
+    } else {
+        if (action_on_no_keyboard != NULL) {
+            action_on_no_keyboard();
+        }
+    }
+}
+
+const struct wl_seat_listener seat_listener = {
+    .capabilities = seat_capabilities_handler
+};
 
 void shell_surface_ping
 (
@@ -194,6 +272,8 @@ void init_wayland_globals() {
     ) {
         bail("Missing a required global object");
     }
+
+    wl_seat_add_listener (seat, &seat_listener, NULL);
 
     data_device = wl_data_device_manager_get_data_device(data_device_manager, seat);
 }
