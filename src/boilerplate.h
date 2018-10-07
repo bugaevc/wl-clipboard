@@ -36,6 +36,10 @@
 #    include "xdg-shell-client.h"
 #endif
 
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+#    include "gtk-primary-selection.h"
+#endif
+
 #define bail(message) do { fprintf(stderr, message "\n"); exit(1); } while (0)
 
 struct wl_display *display;
@@ -54,6 +58,11 @@ struct xdg_toplevel *xdg_toplevel;
 #endif
 
 struct wl_data_device *data_device;
+
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+struct gtk_primary_selection_device_manager *primary_selection_device_manager;
+struct gtk_primary_selection_device *primary_selection_device;
+#endif
 
 void init_wayland_globals(void);
 

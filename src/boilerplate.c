@@ -72,6 +72,16 @@ void registry_global_handler
         );
     }
 #endif
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+    else if (strcmp(interface, "gtk_primary_selection_device_manager") == 0) {
+        primary_selection_device_manager = wl_registry_bind(
+            registry,
+            name,
+            &gtk_primary_selection_device_manager_interface,
+            1
+        );
+    }
+#endif
 }
 
 void registry_global_remove_handler
@@ -276,6 +286,14 @@ void init_wayland_globals() {
     wl_seat_add_listener (seat, &seat_listener, NULL);
 
     data_device = wl_data_device_manager_get_data_device(data_device_manager, seat);
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+    if (primary_selection_device_manager != NULL) {
+        primary_selection_device = gtk_primary_selection_device_manager_get_device(
+            primary_selection_device_manager,
+            seat
+        );
+    }
+#endif
 }
 
 void popup_tiny_invisible_surface() {

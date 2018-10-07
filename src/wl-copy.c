@@ -97,6 +97,51 @@ const struct wl_data_source_listener data_source_listener = {
     .cancelled = data_source_cancelled_handler
 };
 
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+
+void primary_selection_source_send_handler
+(
+    void *data,
+    struct gtk_primary_selection_source *primary_selection_source,
+    const char *mime_type,
+    int fd
+) {
+    do_send(mime_type, fd);
+}
+
+void primary_selection_source_cancelled_handler
+(
+    void *data,
+    struct gtk_primary_selection_source *primary_selection_source
+) {
+    do_cancel();
+}
+
+const struct gtk_primary_selection_source_listener primary_selection_source_listener = {
+    .send = primary_selection_source_send_handler,
+    .cancelled = primary_selection_source_cancelled_handler
+};
+
+struct gtk_primary_selection_source *primary_selection_source;
+
+void do_set_primary_selection(uint32_t serial) {
+
+    gtk_primary_selection_device_set_selection(
+        primary_selection_device,
+        primary_selection_source,
+        serial
+    );
+
+    wl_display_roundtrip(display);
+    destroy_popup_surface();
+}
+
+void complain_about_missing_keyboard() {
+    bail("Setting primary selection is not supported without a keyboard");
+}
+
+#endif
+
 void offer_plain_text(struct wl_data_source *data_source) {
     wl_data_source_offer(data_source, "text/plain");
     wl_data_source_offer(data_source, "text/plain;charset=utf-8");
@@ -105,13 +150,25 @@ void offer_plain_text(struct wl_data_source *data_source) {
     wl_data_source_offer(data_source, "UTF8_STRING");
 }
 
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+void offer_plain_text_primary(struct gtk_primary_selection_source *primary_selection_source) {
+    gtk_primary_selection_source_offer(primary_selection_source, "text/plain");
+    gtk_primary_selection_source_offer(primary_selection_source, "text/plain;charset=utf-8");
+    gtk_primary_selection_source_offer(primary_selection_source, "TEXT");
+    gtk_primary_selection_source_offer(primary_selection_source, "STRING");
+    gtk_primary_selection_source_offer(primary_selection_source, "UTF8_STRING");
+}
+#endif
+
 int main(int argc, char * const argv[]) {
 
     int stay_in_foreground = 0;
     int clear = 0;
     char *mime_type = NULL;
+    int primary = 0;
 
     static struct option long_options[] = {
+        {"primary", no_argument, 0, 'p'},
         {"paste-once", no_argument, 0, 'o'},
         {"foreground", no_argument, 0, 'f'},
         {"clear", no_argument, 0, 'c'},
@@ -127,6 +184,9 @@ int main(int argc, char * const argv[]) {
             c = long_options[option_index].val;
         }
         switch (c) {
+        case 'p':
+            primary = 1;
+            break;
         case 'o':
             paste_once = 1;
             break;
@@ -145,6 +205,18 @@ int main(int argc, char * const argv[]) {
         }
     }
 
+    init_wayland_globals();
+
+    if (primary) {
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+        if (primary_selection_device_manager == NULL) {
+            bail("Primary selection is not supported on this compositor");
+        }
+#else
+        bail("wl-clipboard was built without primary selection support");
+#endif
+    }
+
     if (!clear) {
         if (optind < argc) {
             // copy our command-line args
@@ -158,8 +230,6 @@ int main(int argc, char * const argv[]) {
         }
     }
 
-    init_wayland_globals();
-
     if (!stay_in_foreground && !clear) {
         if (fork() != 0) {
             // exit in the parent, but leave the
@@ -168,21 +238,47 @@ int main(int argc, char * const argv[]) {
         }
     }
 
-    struct wl_data_source *data_source = wl_data_device_manager_create_data_source(data_device_manager);
-    wl_data_source_add_listener(data_source, &data_source_listener, NULL);
+    if (!primary) {
+        struct wl_data_source *data_source = wl_data_device_manager_create_data_source(data_device_manager);
+        wl_data_source_add_listener(data_source, &data_source_listener, NULL);
 
-    if (mime_type != NULL) {
-        if (strcmp(mime_type, "text/plain") == 0) {
-            offer_plain_text(data_source);
+        if (mime_type != NULL) {
+            if (strcmp(mime_type, "text/plain") == 0) {
+                offer_plain_text(data_source);
+            } else {
+                wl_data_source_offer(data_source, mime_type);
+            }
+            free(mime_type);
         } else {
-            wl_data_source_offer(data_source, mime_type);
+            offer_plain_text(data_source);
         }
-        free(mime_type);
-    } else {
-        offer_plain_text(data_source);
-    }
 
-    wl_data_device_set_selection(data_device, data_source, get_serial());
+        wl_data_device_set_selection(data_device, data_source, get_serial());
+    } else {
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+
+        primary_selection_source =
+            gtk_primary_selection_device_manager_create_source(primary_selection_device_manager);
+        gtk_primary_selection_source_add_listener(
+            primary_selection_source,
+            &primary_selection_source_listener,
+            NULL
+        );
+
+        if (mime_type != NULL) {
+            if (strcmp(mime_type, "text/plain") == 0) {
+                offer_plain_text_primary(primary_selection_source);
+            } else {
+                gtk_primary_selection_source_offer(primary_selection_source, mime_type);
+            }
+            free(mime_type);
+        }
+
+        action_on_popup_surface_getting_focus = do_set_primary_selection;
+        action_on_no_keyboard = complain_about_missing_keyboard;
+        popup_tiny_invisible_surface();
+#endif
+    }
 
     if (clear) {
         wl_display_roundtrip(display);

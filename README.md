@@ -37,6 +37,7 @@ For `wl-paste`:
 
 For both:
 
+* `-p`, `--primary` Use the "primary" clipboard instead of the regular clipboard. This uses the private GTK+ primary selection protocol. See [the GNOME Wiki page on primary selection under Wayland](https://wiki.gnome.org/Initiatives/Wayland/PrimarySelection) for more details.
 * `-t mime/type`, `--mime-type mime/type` Override the inferred MIME type for the content.
 
 # Building
@@ -57,9 +58,12 @@ named `wayland-devel` or `libwayland-dev`). wl-clipboard tries to use `xdg-mime`
 to infer content mime type, but will fall back to plain text if `xdg-mime` is
 unavailable.
 
-If `wayland-scanner` and `wayland-protocols` (version 1.12 or later) are present
-at build time, wl-clipboard will be built with additional xdg-shell support;
-this may be helpful if your Wayland compositor does not support `wl_shell`.
+If `wayland-scanner` is present at build time, wl-clipboard will be built with
+primary selecttion support using the bundled
+[gtk-primary-selection protocol](src/protocol/gtk-primary-selection.xml).
+Additionally, if `wayland-protocols` (version 1.12 or later) is present at build
+time, wl-clipboard will be built with xdg-shell support; this may be helpful if
+your Wayland compositor does not support `wl_shell`.
 
 # License
 

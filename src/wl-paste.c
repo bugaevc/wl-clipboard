@@ -79,9 +79,59 @@ const struct wl_data_device_listener data_device_listener = {
     .selection = data_device_selection
 };
 
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+
+void primary_selection_device_data_offer
+(
+    void *data,
+    struct gtk_primary_selection_device *primary_selection_device,
+    struct gtk_primary_selection_offer *primary_selection_offer
+) {}
+
+void primary_selection_device_selection
+(
+    void *data,
+    struct gtk_primary_selection_device *primary_selection_device,
+    struct gtk_primary_selection_offer *primary_selection_offer
+) {
+    if (primary_selection_offer == NULL) {
+        bail("No selection");
+    }
+
+    int pipefd[2];
+    pipe(pipefd);
+
+    if (mime_type != NULL) {
+        gtk_primary_selection_offer_receive(
+            primary_selection_offer,
+            mime_type,
+            pipefd[1]
+        );
+        free(mime_type);
+    } else {
+        gtk_primary_selection_offer_receive(
+            primary_selection_offer,
+            "text/plain",
+            pipefd[1]
+        );
+    }
+
+    do_paste(pipefd);
+}
+
+const struct gtk_primary_selection_device_listener primary_selection_device_listener = {
+    .data_offer = primary_selection_device_data_offer,
+    .selection = primary_selection_device_selection
+};
+
+#endif
+
 int main(int argc, char * const argv[]) {
 
+    int primary = 0;
+
     static struct option long_options[] = {
+        {"primary", no_argument, 0, 'p'},
         {"no-newline", no_argument, 0, 'n'},
         {"mime-type", required_argument, 0, 't'}
     };
@@ -95,6 +145,9 @@ int main(int argc, char * const argv[]) {
             c = long_options[option_index].val;
         }
         switch (c) {
+        case 'p':
+            primary = 1;
+            break;
         case 'n':
             no_newline = 1;
             break;
@@ -115,7 +168,22 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
-    wl_data_device_add_listener(data_device, &data_device_listener, NULL);
+    if (!primary) {
+        wl_data_device_add_listener(data_device, &data_device_listener, NULL);
+    } else {
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+        if (primary_selection_device_manager == NULL) {
+            bail("Primary selection is not supported on this compositor");
+        }
+        gtk_primary_selection_device_add_listener(
+            primary_selection_device,
+            &primary_selection_device_listener,
+            NULL
+        );
+#else
+        bail("wl-clipboard was built without primary selection support");
+#endif
+    }
 
     // HACK:
     // pop up a tiny invisible surface to get the keyboard focus,
