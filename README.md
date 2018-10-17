@@ -21,6 +21,9 @@ $ wl-paste > clipboard.txt
 
 # grep each pasted word in file source.c
 $ for word in $(wl-paste); do grep $word source.c; done
+
+# copy the previous command
+$ wl-copy "!!"
 ```
 
 # Options
