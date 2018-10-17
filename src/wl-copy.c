@@ -247,6 +247,10 @@ int main(int argc, char * const argv[]) {
                 offer_plain_text(data_source);
             } else {
                 wl_data_source_offer(data_source, mime_type);
+                if (strncmp(mime_type, "text/", 5) == 0) {
+                    // offer plain text as well
+                    offer_plain_text(data_source);
+                }
             }
             free(mime_type);
         } else {
@@ -270,6 +274,10 @@ int main(int argc, char * const argv[]) {
                 offer_plain_text_primary(primary_selection_source);
             } else {
                 gtk_primary_selection_source_offer(primary_selection_source, mime_type);
+                if (strncmp(mime_type, "text/", 5) == 0) {
+                    // offer plain text as well
+                    offer_plain_text_primary(primary_selection_source);
+                }
             }
             free(mime_type);
         } else {
