@@ -166,6 +166,11 @@ int main(int argc, char * const argv[]) {
     }
     free(path);
 
+    if (mime_type != NULL && strncmp(mime_type, "text/", 5) != 0) {
+        // never append a newline character to binary content
+        no_newline = 1;
+    }
+
     init_wayland_globals();
 
     if (!primary) {

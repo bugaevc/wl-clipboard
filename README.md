@@ -36,7 +36,7 @@ For `wl-copy`:
 
 For `wl-paste`:
 
-* `-n`, `-no-newline` Do not append a newline character after the pasted clipboard content.
+* `-n`, `-no-newline` Do not append a newline character after the pasted clipboard content. This option is automatically enabled for non-text content types.
 
 For both:
 
