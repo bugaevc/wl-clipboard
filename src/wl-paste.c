@@ -137,7 +137,7 @@ int main(int argc, char * const argv[]) {
     };
     while (1) {
         int option_index;
-        int c = getopt_long(argc, argv, "nt:", long_options, &option_index);
+        int c = getopt_long(argc, argv, "pnt:", long_options, &option_index);
         if (c == -1) {
             break;
         }

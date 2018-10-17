@@ -176,7 +176,7 @@ int main(int argc, char * const argv[]) {
     };
     while (1) {
         int option_index;
-        int c = getopt_long(argc, argv, "ofct:", long_options, &option_index);
+        int c = getopt_long(argc, argv, "pofct:", long_options, &option_index);
         if (c == -1) {
             break;
         }
