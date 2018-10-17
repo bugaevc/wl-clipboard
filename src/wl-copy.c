@@ -272,6 +272,8 @@ int main(int argc, char * const argv[]) {
                 gtk_primary_selection_source_offer(primary_selection_source, mime_type);
             }
             free(mime_type);
+        } else {
+            offer_plain_text_primary(primary_selection_source);
         }
 
         action_on_popup_surface_getting_focus = do_set_primary_selection;
