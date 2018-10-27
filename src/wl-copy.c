@@ -172,7 +172,7 @@ int main(int argc, char * const argv[]) {
         {"paste-once", no_argument, 0, 'o'},
         {"foreground", no_argument, 0, 'f'},
         {"clear", no_argument, 0, 'c'},
-        {"mime-type", required_argument, 0, 't'}
+        {"type", required_argument, 0, 't'}
     };
     while (1) {
         int option_index;

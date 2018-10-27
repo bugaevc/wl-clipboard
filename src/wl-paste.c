@@ -133,7 +133,7 @@ int main(int argc, char * const argv[]) {
     static struct option long_options[] = {
         {"primary", no_argument, 0, 'p'},
         {"no-newline", no_argument, 0, 'n'},
-        {"mime-type", required_argument, 0, 't'}
+        {"type", required_argument, 0, 't'}
     };
     while (1) {
         int option_index;

@@ -7,13 +7,13 @@ wl-clipboard \- Wayland copy and paste command line utiltites
 [\fB--paste-once\fR]
 [\fB--foreground\fR]
 [\fB--clear\fR]
-[\fB--mime-type \fImime/type\fR]
+[\fB--type \fImime/type\fR]
 [\fItext\fR...]
 .PP
 .B wl-paste
 [\fB--primary\fR]
 [\fB--no-newline\fR]
-[\fB--mime-type \fImime/type\fR]
+[\fB--type \fImime/type\fR]
 .SH DESCRIPTION
 \fBwl-copy\fR copies the given \fItext\fR to the Wayland clipboard.
 If no \fItext\fR is given, \fBwl-copy\fR copies data from its standard input.
@@ -47,7 +47,7 @@ Instead of copying anything, clear the clipboard so that nothing is copied.
 Do not append a newline character after the pasted clipboard content. This option
 is automatically enabled for non-text content types.
 .TP
-\fB-t\fI mime/type\fR, \fB--mime-type\fI mime/type
+\fB-t\fI mime/type\fR, \fB--type\fI mime/type
 Override the inferred MIME type for the content.
 .SH ENVIRONMENT
 .TP

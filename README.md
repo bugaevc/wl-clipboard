@@ -41,7 +41,7 @@ For `wl-paste`:
 For both:
 
 * `-p`, `--primary` Use the "primary" clipboard instead of the regular clipboard. This uses the private GTK+ primary selection protocol. See [the GNOME Wiki page on primary selection under Wayland](https://wiki.gnome.org/Initiatives/Wayland/PrimarySelection) for more details.
-* `-t mime/type`, `--mime-type mime/type` Override the inferred MIME type for the content.
+* `-t mime/type`, `--type mime/type` Override the inferred MIME type for the content.
 
 # Building
 
