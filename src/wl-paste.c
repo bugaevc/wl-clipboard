@@ -20,6 +20,7 @@
 
 char *mime_type = NULL;
 int no_newline = 0;
+int list_types = 0;
 
 void do_paste(int pipefd[2]) {
     destroy_popup_surface();
@@ -44,12 +45,31 @@ void do_paste(int pipefd[2]) {
     exit(0);
 }
 
+void data_offer_offer
+(
+    void *data,
+    struct wl_data_offer *data_offer,
+    const char *offered_mime_type
+) {
+    if (list_types) {
+        printf("%s\n", offered_mime_type);
+    }
+}
+
+const struct wl_data_offer_listener data_offer_listener = {
+    .offer = data_offer_offer
+};
+
 void data_device_data_offer
 (
     void *data,
     struct wl_data_device *data_device,
     struct wl_data_offer *data_offer
-) {}
+) {
+    if (list_types) {
+        wl_data_offer_add_listener(data_offer, &data_offer_listener, NULL);
+    }
+}
 
 void data_device_selection
 (
@@ -59,6 +79,10 @@ void data_device_selection
 ) {
     if (data_offer == NULL) {
         bail("No selection");
+    }
+
+    if (list_types) {
+        exit(0);
     }
 
     int pipefd[2];
@@ -81,12 +105,35 @@ const struct wl_data_device_listener data_device_listener = {
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
 
+void primary_selection_offer_offer
+(
+    void *data,
+    struct gtk_primary_selection_offer *primary_selection_offer,
+    const char *offered_mime_type
+) {
+    if (list_types) {
+        printf("%s\n", offered_mime_type);
+    }
+}
+
+const struct gtk_primary_selection_offer_listener primary_selection_offer_listener = {
+    .offer = primary_selection_offer_offer
+};
+
 void primary_selection_device_data_offer
 (
     void *data,
     struct gtk_primary_selection_device *primary_selection_device,
     struct gtk_primary_selection_offer *primary_selection_offer
-) {}
+) {
+    if (list_types) {
+        gtk_primary_selection_offer_add_listener(
+            primary_selection_offer,
+            &primary_selection_offer_listener,
+            NULL
+        );
+    }
+}
 
 void primary_selection_device_selection
 (
@@ -96,6 +143,10 @@ void primary_selection_device_selection
 ) {
     if (primary_selection_offer == NULL) {
         bail("No selection");
+    }
+
+    if (list_types) {
+        exit(0);
     }
 
     int pipefd[2];
@@ -133,11 +184,12 @@ int main(int argc, char * const argv[]) {
     static struct option long_options[] = {
         {"primary", no_argument, 0, 'p'},
         {"no-newline", no_argument, 0, 'n'},
+        {"list-types", no_argument, 0, 'l'},
         {"type", required_argument, 0, 't'}
     };
     while (1) {
         int option_index;
-        int c = getopt_long(argc, argv, "pnt:", long_options, &option_index);
+        int c = getopt_long(argc, argv, "pnlt:", long_options, &option_index);
         if (c == -1) {
             break;
         }
@@ -150,6 +202,9 @@ int main(int argc, char * const argv[]) {
             break;
         case 'n':
             no_newline = 1;
+            break;
+        case 'l':
+            list_types = 1;
             break;
         case 't':
             mime_type = strdup(optarg);

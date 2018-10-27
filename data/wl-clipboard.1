@@ -13,6 +13,7 @@ wl-clipboard \- Wayland copy and paste command line utiltites
 .B wl-paste
 [\fB--primary\fR]
 [\fB--no-newline\fR]
+[\fB--list-types\fR]
 [\fB--type \fImime/type\fR]
 .SH DESCRIPTION
 \fBwl-copy\fR copies the given \fItext\fR to the Wayland clipboard.
@@ -49,6 +50,9 @@ is automatically enabled for non-text content types.
 .TP
 \fB-t\fI mime/type\fR, \fB--type\fI mime/type
 Override the inferred MIME type for the content.
+.TP
+\fB-l\fR, \fB--list-types
+Instead of pasting the selection, output the list of MIME types it is offered in.
 .SH ENVIRONMENT
 .TP
 WAYLAND_DISPLAY
