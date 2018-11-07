@@ -74,6 +74,8 @@ void (*action_on_no_keyboard)(void);
 
 int get_serial(void);
 
+int mime_type_is_text(const char *mime_type);
+
 // free() return values when done
 char *path_for_fd(int fd);
 char *infer_mime_type_from_contents(const char *file_path);

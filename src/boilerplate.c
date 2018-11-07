@@ -391,6 +391,13 @@ int get_serial() {
     return global_serial;
 }
 
+int mime_type_is_text(const char *mime_type) {
+    return strncmp(mime_type, "text/", 5) == 0
+        || strcmp(mime_type, "TEXT") == 0
+        || strcmp(mime_type, "STRING") == 0
+        || strcmp(mime_type, "UTF8_STRING") == 0;
+}
+
 char *path_for_fd(int fd) {
     char fdpath[64];
     snprintf(fdpath, sizeof(fdpath), "/proc/self/fd/%d", fd);
