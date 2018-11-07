@@ -439,12 +439,23 @@ char *infer_mime_type_from_contents(const char *file_path) {
     return NULL;
 }
 
+const char *get_file_extension(const char *file_path) {
+    const char *name = strrchr(file_path, '/');
+    if (name == NULL) {
+        name = file_path;
+    }
+    const char *ext = strrchr(name, '.');
+    if (ext == NULL) {
+        return NULL;
+    }
+    return ext + 1;
+}
+
 char *infer_mime_type_from_name(const char *file_path) {
-    const char *actual_ext = strrchr(file_path, '.');
+    const char *actual_ext = get_file_extension(file_path);
     if (actual_ext == NULL) {
         return NULL;
     }
-    actual_ext++;
 
     FILE *f = fopen("/etc/mime.types", "r");
     if (f == NULL) {
