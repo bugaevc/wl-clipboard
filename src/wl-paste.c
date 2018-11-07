@@ -66,9 +66,7 @@ void data_device_data_offer
     struct wl_data_device *data_device,
     struct wl_data_offer *data_offer
 ) {
-    if (list_types) {
-        wl_data_offer_add_listener(data_offer, &data_offer_listener, NULL);
-    }
+    wl_data_offer_add_listener(data_offer, &data_offer_listener, NULL);
 }
 
 void data_device_selection
@@ -126,13 +124,11 @@ void primary_selection_device_data_offer
     struct gtk_primary_selection_device *primary_selection_device,
     struct gtk_primary_selection_offer *primary_selection_offer
 ) {
-    if (list_types) {
-        gtk_primary_selection_offer_add_listener(
-            primary_selection_offer,
-            &primary_selection_offer_listener,
-            NULL
-        );
-    }
+    gtk_primary_selection_offer_add_listener(
+        primary_selection_offer,
+        &primary_selection_offer_listener,
+        NULL
+    );
 }
 
 void primary_selection_device_selection
