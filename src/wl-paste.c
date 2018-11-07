@@ -217,7 +217,7 @@ int main(int argc, char * const argv[]) {
     }
     free(path);
 
-    if (mime_type != NULL && strncmp(mime_type, "text/", 5) != 0) {
+    if (mime_type != NULL && !mime_type_is_text(mime_type)) {
         // never append a newline character to binary content
         no_newline = 1;
     }
