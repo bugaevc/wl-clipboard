@@ -217,7 +217,7 @@ int main(int argc, char * const argv[]) {
 
     char *path = path_for_fd(STDOUT_FILENO);
     if (path != NULL && mime_type == NULL) {
-        mime_type = infer_mime_type_of_file(path);
+        mime_type = infer_mime_type_from_contents(path);
     }
     free(path);
 

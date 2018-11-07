@@ -76,7 +76,7 @@ int get_serial(void);
 
 // free() return values when done
 char *path_for_fd(int fd);
-char *infer_mime_type_of_file(const char *path);
+char *infer_mime_type_from_contents(const char *file_path);
 
 // returns the name of a new file
 char *dump_into_a_temp_file(int fd);

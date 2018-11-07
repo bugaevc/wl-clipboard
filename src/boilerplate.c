@@ -397,7 +397,7 @@ char *path_for_fd(int fd) {
     return realpath(fdpath, NULL);
 }
 
-char *infer_mime_type_of_file(const char *path) {
+char *infer_mime_type_from_contents(const char *file_path) {
     int pipefd[2];
     pipe(pipefd);
     if (fork() == 0) {
@@ -407,7 +407,7 @@ char *infer_mime_type_of_file(const char *path) {
         int devnull = open("/dev/null", O_RDONLY);
         dup2(devnull, STDIN_FILENO);
         close(devnull);
-        execlp("xdg-mime", "xdg-mime", "query", "filetype", path, NULL);
+        execlp("xdg-mime", "xdg-mime", "query", "filetype", file_path, NULL);
         exit(1);
     }
 
