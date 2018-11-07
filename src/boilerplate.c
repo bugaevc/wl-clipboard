@@ -432,6 +432,44 @@ char *infer_mime_type_from_contents(const char *file_path) {
     return NULL;
 }
 
+char *infer_mime_type_from_name(const char *file_path) {
+    const char *actual_ext = strrchr(file_path, '.');
+    if (actual_ext == NULL) {
+        return NULL;
+    }
+    actual_ext++;
+
+    FILE *f = fopen("/etc/mime.types", "r");
+    if (f == NULL) {
+        return NULL;
+    }
+
+    for (char line[200]; fgets(line, sizeof(line), f) != NULL;) {
+        // skip comments and blank lines
+        if (line[0] == '#' || line[0] == '\n') {
+            continue;
+        }
+
+        // each line consists of a mime type and a list of extensions
+        char mime_type[200];
+        int consumed;
+        if (sscanf(line, "%s%n", mime_type, &consumed) != 1) {
+            // malformed line?
+            continue;
+        }
+        char *lineptr = line + consumed;
+        for (char ext[200]; sscanf(lineptr, "%s%n", ext, &consumed) == 1;) {
+            if (strcmp(ext, actual_ext) == 0) {
+                fclose(f);
+                return strdup(mime_type);
+            }
+            lineptr += consumed;
+        }
+    }
+    fclose(f);
+    return NULL;
+}
+
 char *dump_into_a_temp_file(int fd) {
     char dirpath[] = "/tmp/wl-copy-buffer-XXXXXX";
     if (mkdtemp(dirpath) != dirpath) {
