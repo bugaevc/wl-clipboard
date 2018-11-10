@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <getopt.h>
 #include <string.h> // strcmp
+#include <ctype.h> // isupper
 #include <fcntl.h> // open
 #include <sys/stat.h> // open
 #include <sys/types.h> // open

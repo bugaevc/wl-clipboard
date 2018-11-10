@@ -25,6 +25,15 @@ struct {
     int list_types;
 } options;
 
+struct {
+    int explicit_available;
+    int inferred_available;
+    int plain_text_available;
+    char *having_explicit_as_prefix;
+    char *any_text;
+    char *any;
+} available_types;
+
 void do_paste(int pipefd[2]) {
     destroy_popup_surface();
 
@@ -51,18 +60,102 @@ void do_paste(int pipefd[2]) {
 void do_process_offer(const char *offered_type) {
     if (options.list_types) {
         printf("%s\n", offered_type);
+    } else {
+        if (
+            options.explicit_type != NULL &&
+            strcmp(offered_type, options.explicit_type) == 0
+        ) {
+            available_types.explicit_available = 1;
+        }
+        if (
+            options.inferred_type != NULL &&
+            strcmp(offered_type, options.inferred_type) == 0
+        ) {
+            available_types.inferred_available = 1;
+        }
+        if (
+            strcmp(offered_type, text_plain) == 0) {
+            available_types.plain_text_available = 1;
+        }
+        if (
+            available_types.any_text == NULL &&
+            mime_type_is_text(offered_type)
+        ) {
+            available_types.any_text = strdup(offered_type);
+        }
+        if (available_types.any == NULL) {
+            available_types.any = strdup(offered_type);
+        }
+        if (
+            options.explicit_type != NULL &&
+            available_types.having_explicit_as_prefix == NULL &&
+            str_has_prefix(offered_type, options.explicit_type)
+        ) {
+            available_types.having_explicit_as_prefix = strdup(offered_type);
+        }
     }
 }
 
+#define try_explicit \
+if (available_types.explicit_available) \
+    return options.explicit_type
+
+#define try_inferred \
+if (available_types.inferred_available) \
+    return options.inferred_type
+
+#define try_text_plain \
+if (available_types.plain_text_available) \
+    return text_plain
+
+#define try_prefixed \
+if (available_types.having_explicit_as_prefix != NULL) \
+    return available_types.having_explicit_as_prefix
+
+#define try_any_text \
+if (available_types.any_text != NULL) \
+    return available_types.any_text
+
+#define try_any \
+if (available_types.any != NULL) \
+    return available_types.any
+
 const char *mime_type_to_request_inner() {
     if (options.explicit_type != NULL) {
-        return options.explicit_type;
+        if (strcmp(options.explicit_type, "text") == 0) {
+            try_text_plain;
+            try_any_text;
+        } else if (strchr(options.explicit_type, '/') != NULL) {
+            try_explicit;
+        } else if (isupper(options.explicit_type[0])) {
+            try_explicit;
+        } else {
+            try_explicit;
+            try_prefixed;
+        }
+    } else {
+        // no mime type requested explicitly, try to guess
+        if (options.inferred_type == NULL) {
+            try_text_plain;
+            try_any_text;
+            try_any;
+        } else if (mime_type_is_text(options.inferred_type)) {
+            try_inferred;
+            try_text_plain;
+            try_any_text;
+        } else {
+            try_inferred;
+        }
     }
-    if (options.inferred_type != NULL) {
-        return options.inferred_type;
-    }
-    return text_plain;
+    bail("No suitable type of content copied");
 }
+
+#undef try_explicit
+#undef try_inferred
+#undef try_text_plain
+#undef try_prefixed
+#undef try_any_text
+#undef try_any
 
 const char *mime_type_to_request() {
     const char *res = mime_type_to_request_inner();
@@ -74,6 +167,9 @@ const char *mime_type_to_request() {
 }
 
 void free_types() {
+    free(available_types.having_explicit_as_prefix);
+    free(available_types.any_text);
+    free(available_types.any);
     free(options.explicit_type);
     free(options.inferred_type);
 }
