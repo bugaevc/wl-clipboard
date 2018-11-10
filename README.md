@@ -88,5 +88,5 @@ Optional dependencies for running:
 
 # License
 
-wl-clipboard is free sofrware, available under the GNU General Public License
+wl-clipboard is free software, available under the GNU General Public License
 version 3 or later.
