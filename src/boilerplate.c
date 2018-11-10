@@ -396,10 +396,15 @@ int get_serial() {
 }
 
 int mime_type_is_text(const char *mime_type) {
-    return strncmp(mime_type, "text/", 5) == 0
+    return str_has_prefix(mime_type, "text/")
         || strcmp(mime_type, "TEXT") == 0
         || strcmp(mime_type, "STRING") == 0
         || strcmp(mime_type, "UTF8_STRING") == 0;
+}
+
+int str_has_prefix(const char *string, const char *prefix) {
+    size_t prefix_length = strlen(prefix);
+    return strncmp(string, prefix, prefix_length) == 0;
 }
 
 char *path_for_fd(int fd) {
@@ -432,7 +437,7 @@ char *infer_mime_type_from_contents(const char *file_path) {
         close(pipefd[0]);
         res[len] = 0;
 
-        if (strncmp(res, "inode/", strlen("inode/")) == 0) {
+        if (str_has_prefix(res, "inode/")) {
             free(res);
             return NULL;
         }
