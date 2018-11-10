@@ -356,10 +356,8 @@ int main(int argc, char * const argv[]) {
     // otherwise we won't be notified of the selection
     popup_tiny_invisible_surface();
 
-    while (1) {
-        wl_display_dispatch(display);
-    }
+    while (wl_display_dispatch(display) >= 0);
 
-    // never reached
+    perror("wl_display_dispatch");
     return 1;
 }

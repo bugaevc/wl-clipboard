@@ -299,9 +299,8 @@ int main(int argc, char * const argv[]) {
         exit(0);
     }
 
-    while (1) {
-        wl_display_dispatch(display);
-    }
+    while (wl_display_dispatch(display) >= 0);
 
-    bail("Unreachable");
+    perror("wl_display_dispatch");
+    return 1;
 }
