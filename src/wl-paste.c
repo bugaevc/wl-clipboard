@@ -18,9 +18,11 @@
 
 #include "boilerplate.h"
 
-char *mime_type = NULL;
-int no_newline = 0;
-int list_types = 0;
+struct {
+    char *mime_type;
+    int no_newline;
+    int list_types;
+} options;
 
 void do_paste(int pipefd[2]) {
     destroy_popup_surface();
@@ -39,7 +41,7 @@ void do_paste(int pipefd[2]) {
     close(pipefd[0]);
     close(pipefd[1]);
     wait(NULL);
-    if (!no_newline) {
+    if (!options.no_newline) {
         write(STDOUT_FILENO, "\n", 1);
     }
     exit(0);
@@ -51,7 +53,7 @@ void data_offer_offer
     struct wl_data_offer *data_offer,
     const char *offered_mime_type
 ) {
-    if (list_types) {
+    if (options.list_types) {
         printf("%s\n", offered_mime_type);
     }
 }
@@ -79,16 +81,16 @@ void data_device_selection
         bail("No selection");
     }
 
-    if (list_types) {
+    if (options.list_types) {
         exit(0);
     }
 
     int pipefd[2];
     pipe(pipefd);
 
-    if (mime_type != NULL) {
-        wl_data_offer_receive(data_offer, mime_type, pipefd[1]);
-        free(mime_type);
+    if (options.mime_type != NULL) {
+        wl_data_offer_receive(data_offer, options.mime_type, pipefd[1]);
+        free(options.mime_type);
     } else {
         wl_data_offer_receive(data_offer, text_plain, pipefd[1]);
     }
@@ -109,7 +111,7 @@ void primary_selection_offer_offer
     struct gtk_primary_selection_offer *primary_selection_offer,
     const char *offered_mime_type
 ) {
-    if (list_types) {
+    if (options.list_types) {
         printf("%s\n", offered_mime_type);
     }
 }
@@ -142,20 +144,20 @@ void primary_selection_device_selection
         bail("No selection");
     }
 
-    if (list_types) {
+    if (options.list_types) {
         exit(0);
     }
 
     int pipefd[2];
     pipe(pipefd);
 
-    if (mime_type != NULL) {
+    if (options.mime_type != NULL) {
         gtk_primary_selection_offer_receive(
             primary_selection_offer,
-            mime_type,
+            options.mime_type,
             pipefd[1]
         );
-        free(mime_type);
+        free(options.mime_type);
     } else {
         gtk_primary_selection_offer_receive(
             primary_selection_offer,
@@ -199,13 +201,13 @@ int main(int argc, char * const argv[]) {
             primary = 1;
             break;
         case 'n':
-            no_newline = 1;
+            options.no_newline = 1;
             break;
         case 'l':
-            list_types = 1;
+            options.list_types = 1;
             break;
         case 't':
-            mime_type = strdup(optarg);
+            options.mime_type = strdup(optarg);
             break;
         default:
             // getopt has already printed an error message
@@ -214,14 +216,14 @@ int main(int argc, char * const argv[]) {
     }
 
     char *path = path_for_fd(STDOUT_FILENO);
-    if (path != NULL && mime_type == NULL) {
-        mime_type = infer_mime_type_from_name(path);
+    if (path != NULL && options.mime_type == NULL) {
+        options.mime_type = infer_mime_type_from_name(path);
     }
     free(path);
 
-    if (mime_type != NULL && !mime_type_is_text(mime_type)) {
+    if (options.mime_type != NULL && !mime_type_is_text(options.mime_type)) {
         // never append a newline character to binary content
-        no_newline = 1;
+        options.no_newline = 1;
     }
 
     init_wayland_globals();
