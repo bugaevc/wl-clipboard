@@ -20,11 +20,20 @@ wl-clipboard \- Wayland copy and paste command line utiltites
 If no \fItext\fR is given, \fBwl-copy\fR copies data from its standard input.
 .PP
 \fBwl-paste\fR pastes data from the Wayland clipboard to its standard output.
+.PP
+Although \fBwl-copy\fR and \fBwl-paste\fR are particularly optimized for plain
+text and other textual content formats, they fully support content of arbitrary
+MIME types. \fBwl-copy\fR automatically infers the type of the copied content by
+running \fBxdg-mime\fR(1) on it. \fBwl-paste\fR tries its best to pick a type to
+paste based on the list of offered MIME types and the extension of the file it's
+pasting into. If you're not satisfied with the type they pick or don't want to
+rely on this implicit type inference, you can explicitly specify the type to use
+with the \fB--type\fR option.
 .SH OPTIONS
 .TP
 \fB-p\fR, \fB--primary
-Use the "primary" clipboard instead of the regular clipboard. This uses the private
-GTK+ primary selection protocol. See
+Use the "primary" clipboard instead of the regular clipboard. This uses the
+private GTK+ primary selection protocol. See
 .UR https://wiki.gnome.org/Initiatives/Wayland/PrimarySelection
 the GNOME Wiki page on primary selection under Wayland
 .UE
@@ -34,8 +43,9 @@ for more details.
 Only serve one paste request and then exit. Unless a clipboard manager
 specifically designed to prevent this is in use, this has the effect of clearing
 the clipboard after the first paste, which is useful for copying sensitive data
-such as passwords. Note that this may break pasting into some clients, in particular
-pasting into XWayland windows is known to break when this option is used.
+such as passwords. Note that this may break pasting into some clients, in
+particular pasting into XWayland windows is known to break when this option is
+used.
 .TP
 \fB-f\fR, \fB--foreground
 By default, \fBwl-copy\fR forks and serves data requests in the background; this
@@ -45,21 +55,28 @@ option overrides that behavior, causing \fBwl-copy\fR to run in the foreground.
 Instead of copying anything, clear the clipboard so that nothing is copied.
 .TP
 \fB-n\fR, \fB--no-newline
-Do not append a newline character after the pasted clipboard content. This option
-is automatically enabled for non-text content types.
+Do not append a newline character after the pasted clipboard content. This
+option is automatically enabled for non-text content types.
 .TP
 \fB-t\fI mime/type\fR, \fB--type\fI mime/type
-Override the inferred MIME type for the content.
+Override the automatically selected MIME type. For \fBwl-copy\fR this option
+controls which type \fBwl-copy\fR will offer the content as. For \fBwl-paste\fR
+it controls which of the offered types \fBwl-paste\fR will request the content
+in. In addition to specific MIME types such as \fIimage/png\fR, \fBwl-paste\fR
+also accepts generic type names such as \fItext\fR and \fIimage\fR which make it
+automatically pick some offered MIME type that matches the given generic name.
 .TP
 \fB-l\fR, \fB--list-types
-Instead of pasting the selection, output the list of MIME types it is offered in.
+Instead of pasting the selection, output the list of MIME types it is offered
+in.
 .SH ENVIRONMENT
 .TP
 WAYLAND_DISPLAY
-Specifies what Wayland server \fBwl-copy\fR and \fBwl-paste\fR should connect to.
-This is the same environment variable that you pass to other Wayland clients,
-such as graphical aplications, that connect to this Wayland server. It is normally
-set up automatically by the graphical session and the Wayland compositor. See
+Specifies what Wayland server \fBwl-copy\fR and \fBwl-paste\fR should connect
+to. This is the same environment variable that you pass to other Wayland
+clients, such as graphical aplications, that connect to this Wayland server. It
+is normally set up automatically by the graphical session and the Wayland
+compositor. See
 .BR wl_display_connect (3)
 for more details.
 .TP
@@ -82,5 +99,8 @@ $
 .PP
 $
 .BI "wl-paste -n > " clipboard.txt
+.PP
+$
+.B wl-paste --list-types | wl-copy
 .SH SEE ALSO
 .BR xclip (1)
