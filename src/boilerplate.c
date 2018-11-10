@@ -285,13 +285,17 @@ void init_wayland_globals() {
 
     wl_seat_add_listener (seat, &seat_listener, NULL);
 
-    data_device = wl_data_device_manager_get_data_device(data_device_manager, seat);
+    data_device = wl_data_device_manager_get_data_device(
+        data_device_manager,
+        seat
+    );
 #ifdef HAVE_GTK_PRIMARY_SELECTION
     if (primary_selection_device_manager != NULL) {
-        primary_selection_device = gtk_primary_selection_device_manager_get_device(
-            primary_selection_device_manager,
-            seat
-        );
+        primary_selection_device =
+            gtk_primary_selection_device_manager_get_device(
+                primary_selection_device_manager,
+                seat
+            );
     }
 #endif
 }

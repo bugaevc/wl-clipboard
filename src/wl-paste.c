@@ -114,7 +114,8 @@ void primary_selection_offer_offer
     }
 }
 
-const struct gtk_primary_selection_offer_listener primary_selection_offer_listener = {
+const struct gtk_primary_selection_offer_listener
+primary_selection_offer_listener = {
     .offer = primary_selection_offer_offer
 };
 
@@ -166,7 +167,8 @@ void primary_selection_device_selection
     do_paste(pipefd);
 }
 
-const struct gtk_primary_selection_device_listener primary_selection_device_listener = {
+const struct gtk_primary_selection_device_listener
+primary_selection_device_listener = {
     .data_offer = primary_selection_device_data_offer,
     .selection = primary_selection_device_selection
 };

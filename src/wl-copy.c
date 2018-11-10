@@ -117,7 +117,8 @@ void primary_selection_source_cancelled_handler
     do_cancel();
 }
 
-const struct gtk_primary_selection_source_listener primary_selection_source_listener = {
+const struct gtk_primary_selection_source_listener
+primary_selection_source_listener = {
     .send = primary_selection_source_send_handler,
     .cancelled = primary_selection_source_cancelled_handler
 };
@@ -149,7 +150,9 @@ void offer_plain_text(struct wl_data_source *data_source) {
 }
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
-void offer_plain_text_primary(struct gtk_primary_selection_source *primary_selection_source) {
+void offer_plain_text_primary(
+    struct gtk_primary_selection_source *primary_selection_source
+) {
     gtk_primary_selection_source_offer(primary_selection_source, "text/plain");
     gtk_primary_selection_source_offer(primary_selection_source, "TEXT");
     gtk_primary_selection_source_offer(primary_selection_source, "STRING");
@@ -235,7 +238,8 @@ int main(int argc, char * const argv[]) {
     }
 
     if (!primary) {
-        struct wl_data_source *data_source = wl_data_device_manager_create_data_source(data_device_manager);
+        struct wl_data_source *data_source =
+            wl_data_device_manager_create_data_source(data_device_manager);
         wl_data_source_add_listener(data_source, &data_source_listener, NULL);
 
         if (mime_type != NULL) {
@@ -256,9 +260,10 @@ int main(int argc, char * const argv[]) {
         wl_data_device_set_selection(data_device, data_source, get_serial());
     } else {
 #ifdef HAVE_GTK_PRIMARY_SELECTION
-
         primary_selection_source =
-            gtk_primary_selection_device_manager_create_source(primary_selection_device_manager);
+            gtk_primary_selection_device_manager_create_source(
+                primary_selection_device_manager
+            );
         gtk_primary_selection_source_add_listener(
             primary_selection_source,
             &primary_selection_source_listener,
@@ -269,7 +274,10 @@ int main(int argc, char * const argv[]) {
             if (strcmp(mime_type, "text/plain") == 0) {
                 offer_plain_text_primary(primary_selection_source);
             } else {
-                gtk_primary_selection_source_offer(primary_selection_source, mime_type);
+                gtk_primary_selection_source_offer(
+                    primary_selection_source,
+                    mime_type
+                );
                 if (mime_type_is_text(mime_type)) {
                     // offer plain text as well
                     offer_plain_text_primary(primary_selection_source);
