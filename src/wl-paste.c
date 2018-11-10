@@ -19,7 +19,8 @@
 #include "boilerplate.h"
 
 struct {
-    char *mime_type;
+    char *explicit_type;
+    char *inferred_type;
     int no_newline;
     int list_types;
 } options;
@@ -54,8 +55,11 @@ void do_process_offer(const char *offered_type) {
 }
 
 const char *mime_type_to_request_inner() {
-    if (options.mime_type != NULL) {
-        return options.mime_type;
+    if (options.explicit_type != NULL) {
+        return options.explicit_type;
+    }
+    if (options.inferred_type != NULL) {
+        return options.inferred_type;
     }
     return text_plain;
 }
@@ -69,8 +73,9 @@ const char *mime_type_to_request() {
     return res;
 }
 
-void free_type() {
-    free(options.mime_type);
+void free_types() {
+    free(options.explicit_type);
+    free(options.inferred_type);
 }
 
 void data_offer_offer
@@ -113,7 +118,7 @@ void data_device_selection
     pipe(pipefd);
 
     wl_data_offer_receive(data_offer, mime_type_to_request(), pipefd[1]);
-    free_type();
+    free_types();
 
     do_paste(pipefd);
 }
@@ -174,7 +179,7 @@ void primary_selection_device_selection
         mime_type_to_request(),
         pipefd[1]
     );
-    free_type();
+    free_types();
 
     do_paste(pipefd);
 }
@@ -217,7 +222,7 @@ int main(int argc, char * const argv[]) {
             options.list_types = 1;
             break;
         case 't':
-            options.mime_type = strdup(optarg);
+            options.explicit_type = strdup(optarg);
             break;
         default:
             // getopt has already printed an error message
@@ -226,8 +231,8 @@ int main(int argc, char * const argv[]) {
     }
 
     char *path = path_for_fd(STDOUT_FILENO);
-    if (path != NULL && options.mime_type == NULL) {
-        options.mime_type = infer_mime_type_from_name(path);
+    if (path != NULL && options.explicit_type == NULL) {
+        options.inferred_type = infer_mime_type_from_name(path);
     }
     free(path);
 
