@@ -53,6 +53,17 @@ void do_process_offer(const char *offered_type) {
     }
 }
 
+const char *mime_type_to_request() {
+    if (options.mime_type != NULL) {
+        return options.mime_type;
+    }
+    return text_plain;
+}
+
+void free_type() {
+    free(options.mime_type);
+}
+
 void data_offer_offer
 (
     void *data,
@@ -92,12 +103,8 @@ void data_device_selection
     int pipefd[2];
     pipe(pipefd);
 
-    if (options.mime_type != NULL) {
-        wl_data_offer_receive(data_offer, options.mime_type, pipefd[1]);
-        free(options.mime_type);
-    } else {
-        wl_data_offer_receive(data_offer, text_plain, pipefd[1]);
-    }
+    wl_data_offer_receive(data_offer, mime_type_to_request(), pipefd[1]);
+    free_type();
 
     do_paste(pipefd);
 }
@@ -153,20 +160,12 @@ void primary_selection_device_selection
     int pipefd[2];
     pipe(pipefd);
 
-    if (options.mime_type != NULL) {
-        gtk_primary_selection_offer_receive(
-            primary_selection_offer,
-            options.mime_type,
-            pipefd[1]
-        );
-        free(options.mime_type);
-    } else {
-        gtk_primary_selection_offer_receive(
-            primary_selection_offer,
-            text_plain,
-            pipefd[1]
-        );
-    }
+    gtk_primary_selection_offer_receive(
+        primary_selection_offer,
+        mime_type_to_request(),
+        pipefd[1]
+    );
+    free_type();
 
     do_paste(pipefd);
 }
