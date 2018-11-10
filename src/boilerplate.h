@@ -78,7 +78,9 @@ int get_serial(void);
 
 int mime_type_is_text(const char *mime_type);
 
-// free() return values when done
+// functions below this line return owned strings,
+// free() their return values when done with them
+
 char *path_for_fd(int fd);
 char *infer_mime_type_from_contents(const char *file_path);
 char *infer_mime_type_from_name(const char *file_path);
