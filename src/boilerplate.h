@@ -42,6 +42,8 @@
 
 #define bail(message) do { fprintf(stderr, message "\n"); exit(1); } while (0)
 
+#define text_plain "text/plain"
+
 struct wl_display *display;
 struct wl_data_device_manager *data_device_manager;
 struct wl_seat *seat;

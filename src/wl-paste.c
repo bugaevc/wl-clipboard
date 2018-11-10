@@ -90,7 +90,7 @@ void data_device_selection
         wl_data_offer_receive(data_offer, mime_type, pipefd[1]);
         free(mime_type);
     } else {
-        wl_data_offer_receive(data_offer, "text/plain", pipefd[1]);
+        wl_data_offer_receive(data_offer, text_plain, pipefd[1]);
     }
 
     do_paste(pipefd);
@@ -159,7 +159,7 @@ void primary_selection_device_selection
     } else {
         gtk_primary_selection_offer_receive(
             primary_selection_offer,
-            "text/plain",
+            text_plain,
             pipefd[1]
         );
     }

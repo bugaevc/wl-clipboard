@@ -144,7 +144,7 @@ void complain_about_missing_keyboard() {
 #endif
 
 void offer_plain_text(struct wl_data_source *data_source) {
-    wl_data_source_offer(data_source, "text/plain");
+    wl_data_source_offer(data_source, text_plain);
     wl_data_source_offer(data_source, "TEXT");
     wl_data_source_offer(data_source, "STRING");
 }
@@ -153,7 +153,7 @@ void offer_plain_text(struct wl_data_source *data_source) {
 void offer_plain_text_primary(
     struct gtk_primary_selection_source *primary_selection_source
 ) {
-    gtk_primary_selection_source_offer(primary_selection_source, "text/plain");
+    gtk_primary_selection_source_offer(primary_selection_source, text_plain);
     gtk_primary_selection_source_offer(primary_selection_source, "TEXT");
     gtk_primary_selection_source_offer(primary_selection_source, "STRING");
 }
@@ -243,7 +243,7 @@ int main(int argc, char * const argv[]) {
         wl_data_source_add_listener(data_source, &data_source_listener, NULL);
 
         if (mime_type != NULL) {
-            if (strcmp(mime_type, "text/plain") == 0) {
+            if (strcmp(mime_type, text_plain) == 0) {
                 offer_plain_text(data_source);
             } else {
                 wl_data_source_offer(data_source, mime_type);
@@ -271,7 +271,7 @@ int main(int argc, char * const argv[]) {
         );
 
         if (mime_type != NULL) {
-            if (strcmp(mime_type, "text/plain") == 0) {
+            if (strcmp(mime_type, text_plain) == 0) {
                 offer_plain_text_primary(primary_selection_source);
             } else {
                 gtk_primary_selection_source_offer(
