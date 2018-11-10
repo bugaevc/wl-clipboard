@@ -53,11 +53,20 @@ void do_process_offer(const char *offered_type) {
     }
 }
 
-const char *mime_type_to_request() {
+const char *mime_type_to_request_inner() {
     if (options.mime_type != NULL) {
         return options.mime_type;
     }
     return text_plain;
+}
+
+const char *mime_type_to_request() {
+    const char *res = mime_type_to_request_inner();
+    // never append a newline character to binary content
+    if (!mime_type_is_text(res)) {
+        options.no_newline = 1;
+    }
+    return res;
 }
 
 void free_type() {
@@ -221,11 +230,6 @@ int main(int argc, char * const argv[]) {
         options.mime_type = infer_mime_type_from_name(path);
     }
     free(path);
-
-    if (options.mime_type != NULL && !mime_type_is_text(options.mime_type)) {
-        // never append a newline character to binary content
-        options.no_newline = 1;
-    }
 
     init_wayland_globals();
 
