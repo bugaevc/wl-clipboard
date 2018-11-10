@@ -47,15 +47,19 @@ void do_paste(int pipefd[2]) {
     exit(0);
 }
 
+void do_process_offer(const char *offered_type) {
+    if (options.list_types) {
+        printf("%s\n", offered_type);
+    }
+}
+
 void data_offer_offer
 (
     void *data,
     struct wl_data_offer *data_offer,
     const char *offered_mime_type
 ) {
-    if (options.list_types) {
-        printf("%s\n", offered_mime_type);
-    }
+    do_process_offer(offered_mime_type);
 }
 
 const struct wl_data_offer_listener data_offer_listener = {
@@ -111,9 +115,7 @@ void primary_selection_offer_offer
     struct gtk_primary_selection_offer *primary_selection_offer,
     const char *offered_mime_type
 ) {
-    if (options.list_types) {
-        printf("%s\n", offered_mime_type);
-    }
+    do_process_offer(offered_mime_type);
 }
 
 const struct gtk_primary_selection_offer_listener
