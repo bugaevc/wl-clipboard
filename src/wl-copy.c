@@ -145,8 +145,10 @@ void complain_about_missing_keyboard() {
 
 const char *plain_text_formats[] = {
     text_plain,
+    text_plain_utf8,
     "TEXT",
     "STRING",
+    "UTF8_STRING",
     NULL
 };
 

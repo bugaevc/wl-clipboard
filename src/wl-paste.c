@@ -28,6 +28,7 @@ struct {
 struct {
     int explicit_available;
     int inferred_available;
+    int plain_text_utf8_available;
     int plain_text_available;
     char *having_explicit_as_prefix;
     char *any_text;
@@ -74,6 +75,10 @@ void do_process_offer(const char *offered_type) {
             available_types.inferred_available = 1;
         }
         if (
+            strcmp(offered_type, text_plain_utf8) == 0) {
+            available_types.plain_text_utf8_available = 1;
+        }
+        if (
             strcmp(offered_type, text_plain) == 0) {
             available_types.plain_text_available = 1;
         }
@@ -104,6 +109,10 @@ if (available_types.explicit_available) \
 if (available_types.inferred_available) \
     return options.inferred_type
 
+#define try_text_plain_utf8 \
+if (available_types.plain_text_utf8_available) \
+    return text_plain_utf8
+
 #define try_text_plain \
 if (available_types.plain_text_available) \
     return text_plain
@@ -123,6 +132,7 @@ if (available_types.any != NULL) \
 const char *mime_type_to_request_inner() {
     if (options.explicit_type != NULL) {
         if (strcmp(options.explicit_type, "text") == 0) {
+            try_text_plain_utf8;
             try_text_plain;
             try_any_text;
         } else if (strchr(options.explicit_type, '/') != NULL) {
@@ -136,11 +146,13 @@ const char *mime_type_to_request_inner() {
     } else {
         // no mime type requested explicitly, try to guess
         if (options.inferred_type == NULL) {
+            try_text_plain_utf8;
             try_text_plain;
             try_any_text;
             try_any;
         } else if (mime_type_is_text(options.inferred_type)) {
             try_inferred;
+            try_text_plain_utf8;
             try_text_plain;
             try_any_text;
         } else {
@@ -152,6 +164,7 @@ const char *mime_type_to_request_inner() {
 
 #undef try_explicit
 #undef try_inferred
+#undef try_text_plain_utf8
 #undef try_text_plain
 #undef try_prefixed
 #undef try_any_text

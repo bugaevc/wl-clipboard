@@ -44,6 +44,7 @@
 #define bail(message) do { fprintf(stderr, message "\n"); exit(1); } while (0)
 
 #define text_plain "text/plain"
+#define text_plain_utf8 "text/plain;charset=utf-8"
 
 struct wl_display *display;
 struct wl_data_device_manager *data_device_manager;
