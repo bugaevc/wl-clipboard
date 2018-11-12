@@ -143,19 +143,26 @@ void complain_about_missing_keyboard() {
 
 #endif
 
+const char *plain_text_formats[] = {
+    text_plain,
+    "TEXT",
+    "STRING",
+    NULL
+};
+
 void offer_plain_text(struct wl_data_source *data_source) {
-    wl_data_source_offer(data_source, text_plain);
-    wl_data_source_offer(data_source, "TEXT");
-    wl_data_source_offer(data_source, "STRING");
+    for (const char **format = plain_text_formats; *format != NULL; format++) {
+        wl_data_source_offer(data_source, *format);
+    }
 }
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
 void offer_plain_text_primary(
     struct gtk_primary_selection_source *primary_selection_source
 ) {
-    gtk_primary_selection_source_offer(primary_selection_source, text_plain);
-    gtk_primary_selection_source_offer(primary_selection_source, "TEXT");
-    gtk_primary_selection_source_offer(primary_selection_source, "STRING");
+    for (const char **format = plain_text_formats; *format != NULL; format++) {
+        gtk_primary_selection_source_offer(primary_selection_source, *format);
+    }
 }
 #endif
 
