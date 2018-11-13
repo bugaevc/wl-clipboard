@@ -42,7 +42,6 @@ void do_send(const char *mime_type, int fd) {
         if (fork() == 0) {
             dup2(fd, STDOUT_FILENO);
             execlp("cat", "cat", temp_file_to_copy, NULL);
-            // failed to execl
             perror("exec cat");
             exit(1);
         }

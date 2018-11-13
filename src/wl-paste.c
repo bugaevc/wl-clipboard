@@ -44,9 +44,8 @@ void do_paste(int pipefd[2]) {
         dup2(pipefd[0], STDIN_FILENO);
         close(pipefd[0]);
         close(pipefd[1]);
-        execl("/bin/cat", "cat", NULL);
-        // failed to execl
-        perror("exec /bin/cat");
+        execlp("cat", "cat", NULL);
+        perror("exec cat");
         exit(1);
     }
     close(pipefd[0]);
