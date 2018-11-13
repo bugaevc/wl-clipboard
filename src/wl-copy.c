@@ -28,6 +28,10 @@ void do_send(const char *mime_type, int fd) {
     if (data_to_copy != NULL) {
         // copy the specified data, separated by spaces
         FILE *f = fdopen(fd, "w");
+        if (f == NULL) {
+            perror("fdopen");
+            exit(1);
+        }
         char * const *dataptr = data_to_copy;
         for (int is_first = 1; *dataptr != NULL; dataptr++, is_first = 0) {
             if (!is_first) {
