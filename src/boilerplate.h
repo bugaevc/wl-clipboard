@@ -20,14 +20,14 @@
 
 #include <wayland-client.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <getopt.h>
-#include <string.h> // strcmp
+#include <string.h>
 #include <ctype.h> // isupper
 #include <fcntl.h> // open
 #include <sys/stat.h> // open
 #include <sys/types.h> // open
 #include <stdlib.h> // exit
-#include <unistd.h> // execl, STDOUT_FILENO
 #include <libgen.h> // basename
 #include <sys/wait.h>
 #include <sys/syscall.h> // syscall, SYS_memfd_create
