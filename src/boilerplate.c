@@ -517,14 +517,15 @@ char *dump_stdin_into_a_temp_file() {
     }
 
     if (fork() == 0) {
-        char *src;
-        if (original_path != NULL) {
-            src = original_path;
-        } else {
-            src = "/dev/stdin";
+        FILE *res = fopen(res_path, "w");
+        if (res == NULL) {
+            perror("fopen");
+            exit(1);
         }
-        execlp("cp", "cp", src, res_path, NULL);
-        perror("exec cp");
+        dup2(fileno(res), STDOUT_FILENO);
+        fclose(res);
+        execlp("cat", "cat", NULL);
+        perror("exec cat");
         exit(1);
     }
 
