@@ -231,7 +231,7 @@ int main(int argc, char * const argv[]) {
             data_to_copy = &argv[optind];
         } else {
             // copy stdin
-            temp_file_to_copy = dump_into_a_temp_file(STDIN_FILENO);
+            temp_file_to_copy = dump_stdin_into_a_temp_file();
             if (mime_type == NULL) {
                 mime_type = infer_mime_type_from_contents(temp_file_to_copy);
             }

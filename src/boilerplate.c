@@ -497,13 +497,13 @@ char *infer_mime_type_from_name(const char *file_path) {
     return NULL;
 }
 
-char *dump_into_a_temp_file(int fd) {
+char *dump_stdin_into_a_temp_file() {
     char dirpath[] = "/tmp/wl-copy-buffer-XXXXXX";
     if (mkdtemp(dirpath) != dirpath) {
         perror("mkdtemp");
         exit(1);
     }
-    char *original_path = path_for_fd(fd);
+    char *original_path = path_for_fd(STDIN_FILENO);
 
     char *res_path = malloc(PATH_MAX + 1);
     memcpy(res_path, dirpath, sizeof(dirpath));
