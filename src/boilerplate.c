@@ -501,7 +501,7 @@ char *dump_into_a_temp_file(int fd) {
     char dirpath[] = "/tmp/wl-copy-buffer-XXXXXX";
     if (mkdtemp(dirpath) != dirpath) {
         perror("mkdtemp");
-        bail("");
+        exit(1);
     }
     char *original_path = path_for_fd(fd);
 
