@@ -48,7 +48,7 @@ For `wl-copy`:
 
 For `wl-paste`:
 
-* `-n`, `-no-newline` Do not append a newline character after the pasted clipboard content. This option is automatically enabled for non-text content types.
+* `-n`, `--no-newline` Do not append a newline character after the pasted clipboard content. This option is automatically enabled for non-text content types.
 * `-l`, `--list-types` Instead of pasting the selection, output the list of MIME types it is offered in.
 
 For both:
