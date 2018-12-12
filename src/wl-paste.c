@@ -35,28 +35,6 @@ struct {
     char *any;
 } available_types;
 
-void do_paste(int pipefd[2]) {
-    destroy_popup_surface();
-
-    wl_display_roundtrip(display);
-
-    if (fork() == 0) {
-        dup2(pipefd[0], STDIN_FILENO);
-        close(pipefd[0]);
-        close(pipefd[1]);
-        execlp("cat", "cat", NULL);
-        perror("exec cat");
-        exit(1);
-    }
-    close(pipefd[0]);
-    close(pipefd[1]);
-    wait(NULL);
-    if (!options.no_newline) {
-        write(STDOUT_FILENO, "\n", 1);
-    }
-    exit(0);
-}
-
 void do_process_offer(const char *offered_type) {
     if (options.list_types) {
         printf("%s\n", offered_type);
@@ -128,7 +106,7 @@ if (available_types.any_text != NULL) \
 if (available_types.any != NULL) \
     return available_types.any
 
-const char *mime_type_to_request_inner() {
+const char *mime_type_to_request() {
     if (options.explicit_type != NULL) {
         if (strcmp(options.explicit_type, "text") == 0) {
             try_text_plain_utf8;
@@ -169,21 +147,58 @@ const char *mime_type_to_request_inner() {
 #undef try_any_text
 #undef try_any
 
-const char *mime_type_to_request() {
-    const char *res = mime_type_to_request_inner();
-    // never append a newline character to binary content
-    if (!mime_type_is_text(res)) {
-        options.no_newline = 1;
-    }
-    return res;
-}
-
 void free_types() {
     free(available_types.having_explicit_as_prefix);
     free(available_types.any_text);
     free(available_types.any);
     free(options.explicit_type);
     free(options.inferred_type);
+}
+
+void do_paste
+(
+    void *offer,
+    void (*receive_f)(void *offer, const char *mime_type, int fd)
+) {
+    if (offer == NULL) {
+        bail("No selection");
+    }
+
+    if (options.list_types) {
+        exit(0);
+    }
+
+    const char *mime_type = mime_type_to_request();
+    // never append a newline character to binary content
+    if (!mime_type_is_text(mime_type)) {
+        options.no_newline = 1;
+    }
+
+    int pipefd[2];
+    pipe(pipefd);
+
+    receive_f(offer, mime_type, pipefd[1]);
+
+    free_types();
+    destroy_popup_surface();
+
+    wl_display_roundtrip(display);
+
+    if (fork() == 0) {
+        dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        execlp("cat", "cat", NULL);
+        perror("exec cat");
+        exit(1);
+    }
+    close(pipefd[0]);
+    close(pipefd[1]);
+    wait(NULL);
+    if (!options.no_newline) {
+        write(STDOUT_FILENO, "\n", 1);
+    }
+    exit(0);
 }
 
 void data_offer_offer
@@ -214,21 +229,10 @@ void data_device_selection
     struct wl_data_device *data_device,
     struct wl_data_offer *data_offer
 ) {
-    if (data_offer == NULL) {
-        bail("No selection");
-    }
-
-    if (options.list_types) {
-        exit(0);
-    }
-
-    int pipefd[2];
-    pipe(pipefd);
-
-    wl_data_offer_receive(data_offer, mime_type_to_request(), pipefd[1]);
-    free_types();
-
-    do_paste(pipefd);
+    do_paste(
+        data_offer,
+        (void (*)(void *, const char *, int)) wl_data_offer_receive
+    );
 }
 
 const struct wl_data_device_listener data_device_listener = {
@@ -271,25 +275,11 @@ void primary_selection_device_selection
     struct gtk_primary_selection_device *primary_selection_device,
     struct gtk_primary_selection_offer *primary_selection_offer
 ) {
-    if (primary_selection_offer == NULL) {
-        bail("No selection");
-    }
-
-    if (options.list_types) {
-        exit(0);
-    }
-
-    int pipefd[2];
-    pipe(pipefd);
-
-    gtk_primary_selection_offer_receive(
+    do_paste(
         primary_selection_offer,
-        mime_type_to_request(),
-        pipefd[1]
+        (void (*)(void *, const char *, int))
+              gtk_primary_selection_offer_receive
     );
-    free_types();
-
-    do_paste(pipefd);
 }
 
 const struct gtk_primary_selection_device_listener
