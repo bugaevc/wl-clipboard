@@ -5,8 +5,10 @@ wayland_protocols = dependency('wayland-protocols', version: '>= 1.12', required
 
 if wayland_scanner.found()
     have_xdg_shell = wayland_protocols.found()
+    # these are bundled
     have_wlr_layer_shell = have_xdg_shell  # depends on xdg_popup
     have_gtk_primary_selection = true
+    have_wlr_data_control = true
 
     if wayland.version().version_compare('>= 1.15')
         scanner_code_command = 'private-code'
@@ -17,6 +19,7 @@ else
     have_xdg_shell = false
     have_wlr_layer_shell = false
     have_gtk_primary_selection = false
+    have_wlr_data_control = false
 endif
 
 conf_data = configuration_data()
@@ -24,6 +27,7 @@ conf_data.set('PROJECT_VERSION', '"@0@"'.format(meson.project_version()))
 conf_data.set('HAVE_XDG_SHELL', have_xdg_shell)
 conf_data.set('HAVE_WLR_LAYER_SHELL', have_wlr_layer_shell)
 conf_data.set('HAVE_GTK_PRIMARY_SELECTION', have_gtk_primary_selection)
+conf_data.set('HAVE_WLR_DATA_CONTROL', have_wlr_data_control)
 configure_file(output: 'config.h', configuration: conf_data)
 
 protocols = []
@@ -46,6 +50,11 @@ if not have_gtk_primary_selection
 else
     gtk_primary_selection_xml = join_paths('protocol', 'gtk-primary-selection.xml')
     protocols += [['gtk-primary-selection', gtk_primary_selection_xml]]
+endif
+
+if have_wlr_data_control
+    wlr_data_control_xml = join_paths('protocol', 'wlr-data-control-unstable-v1.xml')
+    protocols += [['wlr-data-control', wlr_data_control_xml]]
 endif
 
 protocol_deps = []
