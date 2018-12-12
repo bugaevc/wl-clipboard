@@ -165,7 +165,7 @@ void seat_capabilities_handler
 ) {
     if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) {
         struct wl_keyboard *keyboard = wl_seat_get_keyboard(seat);
-        wl_keyboard_add_listener (keyboard, &keayboard_listener, NULL);
+        wl_keyboard_add_listener(keyboard, &keayboard_listener, NULL);
     } else {
         if (action_on_no_keyboard != NULL) {
             action_on_no_keyboard();
@@ -283,7 +283,7 @@ void init_wayland_globals() {
         bail("Missing a required global object");
     }
 
-    wl_seat_add_listener (seat, &seat_listener, NULL);
+    wl_seat_add_listener(seat, &seat_listener, NULL);
 
     data_device = wl_data_device_manager_get_data_device(
         data_device_manager,
@@ -311,7 +311,6 @@ void popup_tiny_invisible_surface() {
     } else {
 #ifdef HAVE_XDG_SHELL
         // use xdg-shell
-
         xdg_wm_base_add_listener(xdg_wm_base, &xdg_wm_base_listener, NULL);
         xdg_surface = xdg_wm_base_get_xdg_surface(xdg_wm_base, surface);
         xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
