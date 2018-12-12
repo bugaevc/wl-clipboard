@@ -301,6 +301,11 @@ void init_wayland_globals() {
 }
 
 void popup_tiny_invisible_surface() {
+    // make sure that we get the keyboard
+    // object before creating the surface,
+    // so that we get the enter event
+    wl_display_dispatch(display);
+
     surface = wl_compositor_create_surface(compositor);
 
     if (shell != NULL) {
