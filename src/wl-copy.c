@@ -158,6 +158,33 @@ void complain_about_missing_keyboard() {
 
 #endif
 
+#ifdef HAVE_WLR_DATA_CONTROL
+
+void data_control_source_send_handler
+(
+    void *data,
+    struct zwlr_data_control_source_v1 *data_control_source,
+    const char *mime_type,
+    int fd
+) {
+    do_send(mime_type, fd);
+}
+
+void data_control_source_cancelled_handler
+(
+    void *data,
+    struct zwlr_data_control_source_v1 *data_source
+) {
+    do_cancel();
+}
+
+const struct zwlr_data_control_source_v1_listener
+data_control_source_listener = {
+    .send = data_control_source_send_handler,
+    .cancelled = data_control_source_cancelled_handler
+};
+#endif
+
 void do_offer
 (
     char *mime_type,
@@ -301,7 +328,7 @@ int main(int argc, char * const argv[]) {
         }
     }
 
-    if (!primary) {
+    if (!primary && !use_wlr_data_control) {
         data_source = wl_data_device_manager_create_data_source(
             data_device_manager
         );
@@ -316,6 +343,29 @@ int main(int argc, char * const argv[]) {
         action_on_popup_surface_getting_focus = set_data_selection;
         action_on_no_keyboard = try_setting_data_selection_directly;
         popup_tiny_invisible_surface();
+    } else if (!primary) {
+#ifdef HAVE_WLR_DATA_CONTROL
+        struct zwlr_data_control_source_v1 *data_control_source =
+            zwlr_data_control_manager_v1_create_data_source(
+                data_control_manager
+            );
+        zwlr_data_control_source_v1_add_listener(
+            data_control_source,
+            &data_control_source_listener,
+            NULL
+        );
+
+        do_offer(
+            mime_type,
+            data_control_source,
+            (void (*)(void *, const char *)) zwlr_data_control_source_v1_offer
+        );
+
+        zwlr_data_control_device_v1_set_selection(
+            data_control_device,
+            data_control_source
+        );
+#endif
     } else {
 #ifdef HAVE_GTK_PRIMARY_SELECTION
         primary_selection_source =

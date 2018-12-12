@@ -93,6 +93,16 @@ void registry_global_handler
         );
     }
 #endif
+#ifdef HAVE_WLR_DATA_CONTROL
+    else if (strcmp(interface, "zwlr_data_control_manager_v1") == 0) {
+        data_control_manager = wl_registry_bind(
+            registry,
+            name,
+            &zwlr_data_control_manager_v1_interface,
+            1
+        );
+    }
+#endif
 }
 
 void registry_global_remove_handler
@@ -396,6 +406,16 @@ void init_wayland_globals() {
                 primary_selection_device_manager,
                 seat
             );
+    }
+#endif
+#ifdef HAVE_WLR_DATA_CONTROL
+    if (data_control_manager != NULL) {
+        data_control_device =
+            zwlr_data_control_manager_v1_get_data_device(
+                data_control_manager,
+                seat
+            );
+        use_wlr_data_control = 1;
     }
 #endif
 }

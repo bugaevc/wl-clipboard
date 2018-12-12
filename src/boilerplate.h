@@ -45,6 +45,10 @@
 #    include "gtk-primary-selection.h"
 #endif
 
+#ifdef HAVE_WLR_DATA_CONTROL
+#    include "wlr-data-control.h"
+#endif
+
 #define bail(message) do { fprintf(stderr, message "\n"); exit(1); } while (0)
 
 #define text_plain "text/plain"
@@ -77,10 +81,16 @@ struct gtk_primary_selection_device_manager *primary_selection_device_manager;
 struct gtk_primary_selection_device *primary_selection_device;
 #endif
 
+#ifdef HAVE_WLR_DATA_CONTROL
+struct zwlr_data_control_manager_v1 *data_control_manager;
+struct zwlr_data_control_device_v1 *data_control_device;
+#endif
+
 void process_new_seat(struct wl_seat *new_seat);
 const char *requested_seat_name;
 
 void init_wayland_globals(void);
+int use_wlr_data_control;
 
 void popup_tiny_invisible_surface(void);
 void destroy_popup_surface(void);

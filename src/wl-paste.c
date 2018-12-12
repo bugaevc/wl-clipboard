@@ -290,6 +290,52 @@ primary_selection_device_listener = {
 
 #endif
 
+#ifdef HAVE_WLR_DATA_CONTROL
+void data_control_offer_offer
+(
+    void *data,
+    struct zwlr_data_control_offer_v1 *data_offer,
+    const char *offered_mime_type
+) {
+    do_process_offer(offered_mime_type);
+}
+
+const struct zwlr_data_control_offer_v1_listener data_control_offer_listener = {
+    .offer = data_control_offer_offer
+};
+
+void data_control_device_data_offer
+(
+    void *data,
+    struct zwlr_data_control_device_v1 *data_control_device,
+    struct zwlr_data_control_offer_v1 *data_control_offer
+) {
+    zwlr_data_control_offer_v1_add_listener(
+        data_control_offer,
+        &data_control_offer_listener,
+        NULL
+    );
+}
+
+void data_control_device_selection
+(
+    void *data,
+    struct zwlr_data_control_device_v1 *data_control_device,
+    struct zwlr_data_control_offer_v1 *data_control_offer
+) {
+    do_paste(
+        data_control_offer,
+        (void (*)(void *, const char *, int)) zwlr_data_control_offer_v1_receive
+    );
+}
+
+const struct zwlr_data_control_device_v1_listener
+data_control_device_listener = {
+    .data_offer = data_control_device_data_offer,
+    .selection = data_control_device_selection
+};
+#endif
+
 void print_usage(FILE *f, const char *argv0) {
     fprintf(
         f,
@@ -378,8 +424,16 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
-    if (!primary) {
+    if (!primary && !use_wlr_data_control) {
         wl_data_device_add_listener(data_device, &data_device_listener, NULL);
+    } else if (!primary) {
+#ifdef HAVE_WLR_DATA_CONTROL
+        zwlr_data_control_device_v1_add_listener(
+            data_control_device,
+            &data_control_device_listener,
+            NULL
+        );
+#endif
     } else {
 #ifdef HAVE_GTK_PRIMARY_SELECTION
         if (primary_selection_device_manager == NULL) {
@@ -395,10 +449,12 @@ int main(int argc, char * const argv[]) {
 #endif
     }
 
-    // HACK:
-    // pop up a tiny invisible surface to get the keyboard focus,
-    // otherwise we won't be notified of the selection
-    popup_tiny_invisible_surface();
+    if (primary || !use_wlr_data_control) {
+        // HACK:
+        // pop up a tiny invisible surface to get the keyboard focus,
+        // otherwise we won't be notified of the selection
+        popup_tiny_invisible_surface();
+    }
 
     while (wl_display_dispatch(display) >= 0);
 
