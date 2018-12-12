@@ -34,7 +34,7 @@
 #include <linux/limits.h> // PATH_MAX
 
 #ifdef HAVE_XDG_SHELL
-#    include "xdg-shell-client.h"
+#    include "xdg-shell.h"
 #endif
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
