@@ -146,30 +146,25 @@ void complain_about_missing_keyboard() {
 
 #endif
 
-const char *plain_text_formats[] = {
-    text_plain,
-    text_plain_utf8,
-    "TEXT",
-    "STRING",
-    "UTF8_STRING",
-    NULL
-};
-
-void offer_plain_text(struct wl_data_source *data_source) {
-    for (const char **format = plain_text_formats; *format != NULL; format++) {
-        wl_data_source_offer(data_source, *format);
-    }
-}
-
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-void offer_plain_text_primary(
-    struct gtk_primary_selection_source *primary_selection_source
+void do_offer
+(
+    char *mime_type,
+    void *source,
+    void (*offer_f)(void *source, const char *type)
 ) {
-    for (const char **format = plain_text_formats; *format != NULL; format++) {
-        gtk_primary_selection_source_offer(primary_selection_source, *format);
+    if (mime_type == NULL || mime_type_is_text(mime_type)) {
+        // offer a few generic plain text formats
+        offer_f(source, text_plain);
+        offer_f(source, text_plain_utf8);
+        offer_f(source, "TEXT");
+        offer_f(source, "STRING");
+        offer_f(source, "UTF8_STRING");
     }
+    if (mime_type != NULL) {
+        offer_f(source, mime_type);
+    }
+    free(mime_type);
 }
-#endif
 
 int main(int argc, char * const argv[]) {
 
@@ -254,20 +249,11 @@ int main(int argc, char * const argv[]) {
             wl_data_device_manager_create_data_source(data_device_manager);
         wl_data_source_add_listener(data_source, &data_source_listener, NULL);
 
-        if (mime_type != NULL) {
-            if (strcmp(mime_type, text_plain) == 0) {
-                offer_plain_text(data_source);
-            } else {
-                wl_data_source_offer(data_source, mime_type);
-                if (mime_type_is_text(mime_type)) {
-                    // offer plain text as well
-                    offer_plain_text(data_source);
-                }
-            }
-            free(mime_type);
-        } else {
-            offer_plain_text(data_source);
-        }
+        do_offer(
+            mime_type,
+            data_source,
+            (void (*)(void *, const char *)) wl_data_source_offer
+        );
 
         wl_data_device_set_selection(data_device, data_source, get_serial());
     } else {
@@ -282,23 +268,11 @@ int main(int argc, char * const argv[]) {
             NULL
         );
 
-        if (mime_type != NULL) {
-            if (strcmp(mime_type, text_plain) == 0) {
-                offer_plain_text_primary(primary_selection_source);
-            } else {
-                gtk_primary_selection_source_offer(
-                    primary_selection_source,
-                    mime_type
-                );
-                if (mime_type_is_text(mime_type)) {
-                    // offer plain text as well
-                    offer_plain_text_primary(primary_selection_source);
-                }
-            }
-            free(mime_type);
-        } else {
-            offer_plain_text_primary(primary_selection_source);
-        }
+        do_offer(
+            mime_type,
+            primary_selection_source,
+            (void (*)(void *, const char *)) gtk_primary_selection_source_offer
+        );
 
         action_on_popup_surface_getting_focus = do_set_primary_selection;
         action_on_no_keyboard = complain_about_missing_keyboard;
