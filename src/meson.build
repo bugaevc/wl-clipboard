@@ -5,14 +5,17 @@ wayland_protocols = dependency('wayland-protocols', version: '>= 1.12', required
 
 if wayland_scanner.found()
     have_xdg_shell = wayland_protocols.found()
+    have_wlr_layer_shell = true
     have_gtk_primary_selection = true
 else
     have_xdg_shell = false
+    have_wlr_layer_shell = false
     have_gtk_primary_selection = false
 endif
 
 conf_data = configuration_data()
 conf_data.set('HAVE_XDG_SHELL', have_xdg_shell)
+conf_data.set('HAVE_WLR_LAYER_SHELL', have_wlr_layer_shell)
 conf_data.set('HAVE_GTK_PRIMARY_SELECTION', have_gtk_primary_selection)
 configure_file(output: 'config.h', configuration: conf_data)
 
@@ -24,6 +27,11 @@ else
     protocols_path = wayland_protocols.get_pkgconfig_variable('pkgdatadir')
     xdg_shell_xml = join_paths(protocols_path, 'stable', 'xdg-shell', 'xdg-shell.xml')
     protocols += [['xdg-shell', xdg_shell_xml]]
+endif
+
+if have_wlr_layer_shell
+    layer_shell_xml = join_paths('protocol', 'wlr-layer-shell-unstable-v1.xml')
+    protocols += [['wlr-layer-shell', layer_shell_xml]]
 endif
 
 if not have_gtk_primary_selection
