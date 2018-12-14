@@ -314,6 +314,9 @@ void init_wayland_globals() {
 #ifdef HAVE_XDG_SHELL
          && xdg_wm_base == NULL
 #endif
+#ifdef HAVE_WLR_LAYER_SHELL
+         && layer_shell == NULL
+#endif
         )
     ) {
         bail("Missing a required global object");
