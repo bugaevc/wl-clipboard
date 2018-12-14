@@ -30,8 +30,8 @@ else
 endif
 
 if have_wlr_layer_shell
-    layer_shell_xml = join_paths('protocol', 'wlr-layer-shell-unstable-v1.xml')
-    protocols += [['wlr-layer-shell', layer_shell_xml]]
+    wlr_layer_shell_xml = join_paths('protocol', 'wlr-layer-shell-unstable-v1.xml')
+    protocols += [['wlr-layer-shell', wlr_layer_shell_xml]]
 endif
 
 if not have_gtk_primary_selection
