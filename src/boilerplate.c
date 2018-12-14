@@ -389,6 +389,14 @@ void popup_tiny_invisible_surface() {
 #endif
     }
 
+    if (surface == NULL) {
+        // it's possible that we've been given focus without us
+        // ever commiting a buffer, in which case the handlers
+        // may have already destroyed the surface; there's no
+        // way or need for us to commit a buffer in that case
+        return;
+    }
+
     int width = 1;
     int height = 1;
     int stride = width * 4;
