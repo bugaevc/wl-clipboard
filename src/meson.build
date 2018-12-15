@@ -5,7 +5,7 @@ wayland_protocols = dependency('wayland-protocols', version: '>= 1.12', required
 
 if wayland_scanner.found()
     have_xdg_shell = wayland_protocols.found()
-    have_wlr_layer_shell = true
+    have_wlr_layer_shell = have_xdg_shell  # depends on xdg_popup
     have_gtk_primary_selection = true
 
     if wayland.version().version_compare('>= 1.15')
