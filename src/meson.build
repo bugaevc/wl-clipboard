@@ -7,6 +7,12 @@ if wayland_scanner.found()
     have_xdg_shell = wayland_protocols.found()
     have_wlr_layer_shell = true
     have_gtk_primary_selection = true
+
+    if wayland.version().version_compare('>= 1.15')
+        scanner_code_command = 'private-code'
+    else
+        scanner_code_command = 'code'
+    endif
 else
     have_xdg_shell = false
     have_wlr_layer_shell = false
@@ -52,7 +58,7 @@ foreach protocol : protocols
     )
     impl = custom_target(name + ' code',
         input: xml, output: name + '.c',
-        command: [wayland_scanner, 'private-code', '@INPUT@', '@OUTPUT@']
+        command: [wayland_scanner, scanner_code_command, '@INPUT@', '@OUTPUT@']
     )
     lib = static_library(name, impl, header)
     protocol_deps += lib
