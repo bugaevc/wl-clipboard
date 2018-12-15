@@ -100,6 +100,18 @@ const struct wl_data_source_listener data_source_listener = {
     .cancelled = data_source_cancelled_handler
 };
 
+struct wl_data_source *data_source;
+
+void set_data_selection(uint32_t serial) {
+    wl_data_device_set_selection(data_device, data_source, serial);
+    wl_display_roundtrip(display);
+    destroy_popup_surface();
+}
+
+void try_setting_data_selection_directly() {
+    set_data_selection(get_serial());
+}
+
 #ifdef HAVE_GTK_PRIMARY_SELECTION
 
 void primary_selection_source_send_handler
@@ -128,7 +140,7 @@ primary_selection_source_listener = {
 
 struct gtk_primary_selection_source *primary_selection_source;
 
-void do_set_primary_selection(uint32_t serial) {
+void set_primary_selection(uint32_t serial) {
 
     gtk_primary_selection_device_set_selection(
         primary_selection_device,
@@ -245,8 +257,9 @@ int main(int argc, char * const argv[]) {
     }
 
     if (!primary) {
-        struct wl_data_source *data_source =
-            wl_data_device_manager_create_data_source(data_device_manager);
+        data_source = wl_data_device_manager_create_data_source(
+            data_device_manager
+        );
         wl_data_source_add_listener(data_source, &data_source_listener, NULL);
 
         do_offer(
@@ -255,7 +268,9 @@ int main(int argc, char * const argv[]) {
             (void (*)(void *, const char *)) wl_data_source_offer
         );
 
-        wl_data_device_set_selection(data_device, data_source, get_serial());
+        action_on_popup_surface_getting_focus = set_data_selection;
+        action_on_no_keyboard = try_setting_data_selection_directly;
+        popup_tiny_invisible_surface();
     } else {
 #ifdef HAVE_GTK_PRIMARY_SELECTION
         primary_selection_source =
@@ -274,7 +289,7 @@ int main(int argc, char * const argv[]) {
             (void (*)(void *, const char *)) gtk_primary_selection_source_offer
         );
 
-        action_on_popup_surface_getting_focus = do_set_primary_selection;
+        action_on_popup_surface_getting_focus = set_primary_selection;
         action_on_no_keyboard = complain_about_missing_keyboard;
         popup_tiny_invisible_surface();
 #endif
