@@ -292,6 +292,10 @@ primary_selection_device_listener = {
 
 int main(int argc, char * const argv[]) {
 
+    if (argc < 1) {
+        bail("Empty argv");
+    }
+
     int primary = 0;
 
     static struct option long_options[] = {

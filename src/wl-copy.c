@@ -180,6 +180,10 @@ void do_offer
 
 int main(int argc, char * const argv[]) {
 
+    if (argc < 1) {
+        bail("Empty argv");
+    }
+
     int stay_in_foreground = 0;
     int clear = 0;
     char *mime_type = NULL;
