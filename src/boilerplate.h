@@ -90,6 +90,8 @@ int get_serial(void);
 int mime_type_is_text(const char *mime_type);
 int str_has_prefix(const char *string, const char *prefix);
 
+void print_version_info(void);
+
 // functions below this line return owned strings,
 // free() their return values when done with them
 

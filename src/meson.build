@@ -20,6 +20,7 @@ else
 endif
 
 conf_data = configuration_data()
+conf_data.set('PROJECT_VERSION', '"@0@"'.format(meson.project_version()))
 conf_data.set('HAVE_XDG_SHELL', have_xdg_shell)
 conf_data.set('HAVE_WLR_LAYER_SHELL', have_wlr_layer_shell)
 conf_data.set('HAVE_GTK_PRIMARY_SELECTION', have_gtk_primary_selection)

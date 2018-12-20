@@ -487,6 +487,17 @@ int str_has_prefix(const char *string, const char *prefix) {
     return strncmp(string, prefix, prefix_length) == 0;
 }
 
+void print_version_info() {
+    printf(
+        "wl-clipboard " PROJECT_VERSION "\n"
+        "Copyright (C) 2018 Sergey Bugaev\n"
+        "License GPLv3+: GNU GPL version 3 or later"
+        " <https://gnu.org/licenses/gpl.html>.\n"
+        "This is free software: you are free to change and redistribute it.\n"
+        "There is NO WARRANTY, to the extent permitted by law.\n"
+    );
+}
+
 char *path_for_fd(int fd) {
     char fdpath[64];
     snprintf(fdpath, sizeof(fdpath), "/proc/self/fd/%d", fd);
