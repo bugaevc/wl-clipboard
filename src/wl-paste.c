@@ -325,7 +325,8 @@ int main(int argc, char * const argv[]) {
         {"primary", no_argument, 0, 'p'},
         {"no-newline", no_argument, 0, 'n'},
         {"list-types", no_argument, 0, 'l'},
-        {"type", required_argument, 0, 't'}
+        {"type", required_argument, 0, 't'},
+        {0, 0, 0, 0}
     };
     while (1) {
         int option_index;

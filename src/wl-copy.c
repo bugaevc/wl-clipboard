@@ -220,7 +220,8 @@ int main(int argc, char * const argv[]) {
         {"paste-once", no_argument, 0, 'o'},
         {"foreground", no_argument, 0, 'f'},
         {"clear", no_argument, 0, 'c'},
-        {"type", required_argument, 0, 't'}
+        {"type", required_argument, 0, 't'},
+        {0, 0, 0, 0}
     };
     while (1) {
         int option_index;
