@@ -178,6 +178,30 @@ void do_offer
     free(mime_type);
 }
 
+void print_usage(FILE *f, const char *argv0) {
+    fprintf(
+        f,
+        "Usage:\n"
+        "\t%s [options] text to copy\n"
+        "\t%s [options] < file-to-copy\n\n"
+        "Copy content to the Wayland clipboard.\n\n"
+        "Options:\n"
+        "\t-o, --paste-once\tOnly serve one paste request and then exit.\n"
+        "\t-f, --foreground\tStay in the foreground instead of forking.\n"
+        "\t-c, --clear\t\tInstead of copying anything, clear the clipboard.\n"
+        "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
+        "\t-t, --type mime/type\t"
+        "Override the inferred MIME type for the content.\n"
+        "\t-v, --version\t\tDisplay version info.\n"
+        "\t-h, --help\t\tDisplay this message.\n"
+        "Mandatory arguments to long options are mandatory"
+        " for short options too.\n\n"
+        "See wl-clipboard(1) for more details.\n",
+        argv0,
+        argv0
+    );
+}
+
 int main(int argc, char * const argv[]) {
 
     if (argc < 1) {
@@ -190,6 +214,8 @@ int main(int argc, char * const argv[]) {
     int primary = 0;
 
     static struct option long_options[] = {
+        {"version", no_argument, 0, 'v'},
+        {"help", no_argument, 0, 'h'},
         {"primary", no_argument, 0, 'p'},
         {"paste-once", no_argument, 0, 'o'},
         {"foreground", no_argument, 0, 'f'},
@@ -198,7 +224,8 @@ int main(int argc, char * const argv[]) {
     };
     while (1) {
         int option_index;
-        int c = getopt_long(argc, argv, "pofct:", long_options, &option_index);
+        const char *opts = "vhpofct:";
+        int c = getopt_long(argc, argv, opts, long_options, &option_index);
         if (c == -1) {
             break;
         }
@@ -206,6 +233,12 @@ int main(int argc, char * const argv[]) {
             c = long_options[option_index].val;
         }
         switch (c) {
+        case 'v':
+            print_version_info();
+            exit(0);
+        case 'h':
+            print_usage(stdout, argv[0]);
+            exit(0);
         case 'p':
             primary = 1;
             break;
@@ -223,6 +256,7 @@ int main(int argc, char * const argv[]) {
             break;
         default:
             // getopt has already printed an error message
+            print_usage(stderr, argv[0]);
             exit(1);
         }
     }

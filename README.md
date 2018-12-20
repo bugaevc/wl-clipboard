@@ -55,6 +55,8 @@ For both:
 
 * `-p`, `--primary` Use the "primary" clipboard instead of the regular clipboard. This uses the private GTK+ primary selection protocol. See [the GNOME Wiki page on primary selection under Wayland](https://wiki.gnome.org/Initiatives/Wayland/PrimarySelection) for more details.
 * `-t mime/type`, `--type mime/type` Override the inferred MIME type for the content. For `wl-copy` this option controls which type `wl-copy` will offer the content as. For `wl-paste` it controls which of the offered types `wl-paste` will request the content in. In addition to specific MIME types such as _image/png_, `wl-paste` also accepts generic type names such as _text_ and _image_ which make it automatically pick some offered MIME type that matches the given generic name.
+* `-v`, `--version` Display the version of wl-clipboard and some short info about its license.
+* `-h`, `--help` Display a short help message listing the available options.
 
 # Building
 

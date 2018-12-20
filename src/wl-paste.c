@@ -290,6 +290,27 @@ primary_selection_device_listener = {
 
 #endif
 
+void print_usage(FILE *f, const char *argv0) {
+    fprintf(
+        f,
+        "Usage:\n"
+        "\t%s [options]\n"
+        "Paste content from the Wayland clipboard.\n\n"
+        "Options:\n"
+        "\t-n, --no-newline\tDo not append a newline character.\n"
+        "\t-l, --list-types\tInstead of pasting, list the offered types.\n"
+        "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
+        "\t-t, --type mime/type\t"
+        "Override the inferred MIME type for the content.\n"
+        "\t-v, --version\t\tDisplay version info.\n"
+        "\t-h, --help\t\tDisplay this message.\n"
+        "Mandatory arguments to long options are mandatory"
+        " for short options too.\n\n"
+        "See wl-clipboard(1) for more details.\n",
+        argv0
+    );
+}
+
 int main(int argc, char * const argv[]) {
 
     if (argc < 1) {
@@ -299,6 +320,8 @@ int main(int argc, char * const argv[]) {
     int primary = 0;
 
     static struct option long_options[] = {
+        {"version", no_argument, 0, 'v'},
+        {"help", no_argument, 0, 'h'},
         {"primary", no_argument, 0, 'p'},
         {"no-newline", no_argument, 0, 'n'},
         {"list-types", no_argument, 0, 'l'},
@@ -306,7 +329,7 @@ int main(int argc, char * const argv[]) {
     };
     while (1) {
         int option_index;
-        int c = getopt_long(argc, argv, "pnlt:", long_options, &option_index);
+        int c = getopt_long(argc, argv, "vhpnlt:", long_options, &option_index);
         if (c == -1) {
             break;
         }
@@ -314,6 +337,12 @@ int main(int argc, char * const argv[]) {
             c = long_options[option_index].val;
         }
         switch (c) {
+        case 'v':
+            print_version_info();
+            exit(0);
+        case 'h':
+            print_usage(stdout, argv[0]);
+            exit(0);
         case 'p':
             primary = 1;
             break;
@@ -328,6 +357,7 @@ int main(int argc, char * const argv[]) {
             break;
         default:
             // getopt has already printed an error message
+            print_usage(stderr, argv[0]);
             exit(1);
         }
     }
