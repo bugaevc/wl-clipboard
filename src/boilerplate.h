@@ -77,6 +77,9 @@ struct gtk_primary_selection_device_manager *primary_selection_device_manager;
 struct gtk_primary_selection_device *primary_selection_device;
 #endif
 
+void process_new_seat(struct wl_seat *new_seat);
+const char *requested_seat_name;
+
 void init_wayland_globals(void);
 
 void popup_tiny_invisible_surface(void);

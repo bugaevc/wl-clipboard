@@ -8,6 +8,7 @@ wl-clipboard \- Wayland copy and paste command line utiltites
 [\fB--foreground\fR]
 [\fB--clear\fR]
 [\fB--type \fImime/type\fR]
+[\fB--seat \fIseat-name\fR]
 [\fItext\fR...]
 .PP
 .B wl-paste
@@ -15,6 +16,7 @@ wl-clipboard \- Wayland copy and paste command line utiltites
 [\fB--no-newline\fR]
 [\fB--list-types\fR]
 [\fB--type \fImime/type\fR]
+[\fB--seat \fIseat-name\fR]
 .SH DESCRIPTION
 \fBwl-copy\fR copies the given \fItext\fR to the Wayland clipboard.
 If no \fItext\fR is given, \fBwl-copy\fR copies data from its standard input.
@@ -65,6 +67,20 @@ it controls which of the offered types \fBwl-paste\fR will request the content
 in. In addition to specific MIME types such as \fIimage/png\fR, \fBwl-paste\fR
 also accepts generic type names such as \fItext\fR and \fIimage\fR which make it
 automatically pick some offered MIME type that matches the given generic name.
+.TP
+\fB-s\fI seat-name\fR, \fB--seat\fI seat-name
+Specify which seat \fBwl-copy\fR and \fBwl-paste\fR should work with. Wayland
+natively supports multi-seat configurations where each seat gets its own mouse
+pointer, keyboard focus, and among other things its own separate clipboard. The
+name of the default seat is likely \fIdefault\fR or \fIseat0\fR, and additional
+seat names normally come form
+.BR udev (7)
+property \fBENV{WL_SEAT}\fR. You can view the list of the currently available
+seats as advertised by the compositor using the
+.BR weston-info (1)
+tool. If you don't specify the seat name explicitly, \fBwl-copy\fR and
+\fBwl-paste\fR will pick a seat arbitrarily. If you are using a single-seat
+system, there is little reason to use this option.
 .TP
 \fB-l\fR, \fB--list-types
 Instead of pasting the selection, output the list of MIME types it is offered

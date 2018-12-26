@@ -192,6 +192,8 @@ void print_usage(FILE *f, const char *argv0) {
         "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
         "\t-t, --type mime/type\t"
         "Override the inferred MIME type for the content.\n"
+        "\t-s, --seat seat-name\t"
+        "Pick the seat to work with.\n"
         "\t-v, --version\t\tDisplay version info.\n"
         "\t-h, --help\t\tDisplay this message.\n"
         "Mandatory arguments to long options are mandatory"
@@ -221,11 +223,12 @@ int main(int argc, char * const argv[]) {
         {"foreground", no_argument, 0, 'f'},
         {"clear", no_argument, 0, 'c'},
         {"type", required_argument, 0, 't'},
+        {"seat", required_argument, 0, 's'},
         {0, 0, 0, 0}
     };
     while (1) {
         int option_index;
-        const char *opts = "vhpofct:";
+        const char *opts = "vhpofct:s:";
         int c = getopt_long(argc, argv, opts, long_options, &option_index);
         if (c == -1) {
             break;
@@ -254,6 +257,9 @@ int main(int argc, char * const argv[]) {
             break;
         case 't':
             mime_type = strdup(optarg);
+            break;
+        case 's':
+            requested_seat_name = strdup(optarg);
             break;
         default:
             // getopt has already printed an error message

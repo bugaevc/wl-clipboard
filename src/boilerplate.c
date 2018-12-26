@@ -34,12 +34,13 @@ void registry_global_handler
             1
         );
     } else if (strcmp(interface, "wl_seat") == 0) {
-        seat = wl_registry_bind(
+        struct wl_seat *new_seat = wl_registry_bind(
             registry,
             name,
             &wl_seat_interface,
-            1
+            2
         );
+        process_new_seat(new_seat);
     } else if (strcmp(interface, "wl_compositor") == 0) {
         compositor = wl_registry_bind(
             registry,
@@ -125,6 +126,11 @@ void keyboard_enter_handler
     struct wl_surface *surface,
     struct wl_array *keys
 ) {
+    struct wl_seat *this_seat = (struct wl_seat *) data;
+    // when we get to here, global seat is already initialized
+    if (this_seat != seat) {
+        return;
+    }
     if (action_on_popup_surface_getting_focus != NULL) {
         action_on_popup_surface_getting_focus(serial);
     }
@@ -167,25 +173,66 @@ const struct wl_keyboard_listener keayboard_listener = {
     .modifiers = keyboard_modifiers_handler,
 };
 
+static int no_keyboard;
+
 void seat_capabilities_handler
 (
     void *data,
-    struct wl_seat *seat,
+    struct wl_seat *this_seat,
     uint32_t capabilities
 ) {
     if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) {
-        struct wl_keyboard *keyboard = wl_seat_get_keyboard(seat);
-        wl_keyboard_add_listener(keyboard, &keayboard_listener, NULL);
-    } else {
-        if (action_on_no_keyboard != NULL) {
-            action_on_no_keyboard();
+        struct wl_keyboard *keyboard = wl_seat_get_keyboard(this_seat);
+        wl_keyboard_add_listener(keyboard, &keayboard_listener, this_seat);
+    } else if (this_seat == seat) {
+        // we have already found the seat we want,
+        // and now we learn it has no keyboard
+        no_keyboard = 1;
+    } else if (seat == NULL) {
+        // we haven't yet decided what seat we want, so
+        // stash the capabilities of this seat for later
+        void *user_data = (void *) (unsigned long) capabilities;
+        wl_seat_set_user_data(this_seat, user_data);
+    }
+}
+
+void seat_name_handler
+(
+    void *data,
+    struct wl_seat *this_seat,
+    const char *name
+) {
+    if (requested_seat_name == NULL) {
+        return;
+    }
+    if (strcmp(name, requested_seat_name) == 0) {
+        seat = this_seat;
+
+        // check if we have saved capabilities for this seat
+        if (data != NULL) {
+            uint32_t capabilities = (uint32_t) (unsigned long) data;
+            if (!(capabilities & WL_SEAT_CAPABILITY_KEYBOARD)) {
+                no_keyboard = 1;
+            }
         }
     }
 }
 
 const struct wl_seat_listener seat_listener = {
-    .capabilities = seat_capabilities_handler
+    .capabilities = seat_capabilities_handler,
+    .name = seat_name_handler
 };
+
+void process_new_seat(struct wl_seat *new_seat) {
+    if (seat != NULL) {
+        wl_seat_destroy(new_seat);
+        return;
+    }
+    if (requested_seat_name == NULL) {
+        seat = new_seat;
+    }
+    wl_seat_add_listener(new_seat, &seat_listener, NULL);
+}
 
 void shell_surface_ping
 (
@@ -307,7 +354,6 @@ void init_wayland_globals() {
 
     if (
         data_device_manager == NULL ||
-        seat == NULL ||
         compositor == NULL ||
         shm == NULL ||
         (shell == NULL
@@ -322,7 +368,15 @@ void init_wayland_globals() {
         bail("Missing a required global object");
     }
 
-    wl_seat_add_listener(seat, &seat_listener, NULL);
+    if (seat == NULL && requested_seat_name != NULL) {
+        wl_display_roundtrip(display);
+    }
+    if (seat == NULL) {
+        if (requested_seat_name == NULL) {
+            bail("No seat available");
+        }
+        bail("Cannot find the requested seat");
+    }
 
     data_device = wl_data_device_manager_get_data_device(
         data_device_manager,
@@ -340,6 +394,14 @@ void init_wayland_globals() {
 }
 
 void popup_tiny_invisible_surface() {
+
+    if (no_keyboard) {
+        if (action_on_no_keyboard != NULL) {
+            action_on_no_keyboard();
+        }
+        return;
+    }
+
     // make sure that we get the keyboard
     // object before creating the surface,
     // so that we get the enter event
