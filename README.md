@@ -1,8 +1,8 @@
 # wl-clipboard: Wayland clipboard utilities
 
-This project implements two little Wayland clipboard utilities, `wl-copy` and
-`wl-paste`, that let you easily copy data between the clipboard and Unix pipes,
-sockets, files and so on.
+This project implements two command-line Wayland clipboard utilities, `wl-copy`
+and `wl-paste`, that let you easily copy data between the clipboard and Unix
+pipes, sockets, files and so on.
 
 Usage is as simple as:
 
