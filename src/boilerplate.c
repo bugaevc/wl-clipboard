@@ -487,6 +487,16 @@ int str_has_prefix(const char *string, const char *prefix) {
     return strncmp(string, prefix, prefix_length) == 0;
 }
 
+int str_has_suffix(const char *string, const char *suffix) {
+    size_t string_length = strlen(string);
+    size_t suffix_length = strlen(suffix);
+    if (string_length < suffix_length) {
+        return 0;
+    }
+    size_t offset = string_length - suffix_length;
+    return strcmp(string + offset, suffix) == 0;
+}
+
 void print_version_info() {
     printf(
         "wl-clipboard " PROJECT_VERSION "\n"
