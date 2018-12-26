@@ -479,7 +479,10 @@ int mime_type_is_text(const char *mime_type) {
     return str_has_prefix(mime_type, "text/")
         || strcmp(mime_type, "TEXT") == 0
         || strcmp(mime_type, "STRING") == 0
-        || strcmp(mime_type, "UTF8_STRING") == 0;
+        || strcmp(mime_type, "UTF8_STRING") == 0
+        || str_has_suffix(mime_type, "script")
+        || str_has_suffix(mime_type, "xml")
+        || strstr(mime_type, "json") != NULL;
 }
 
 int str_has_prefix(const char *string, const char *prefix) {
