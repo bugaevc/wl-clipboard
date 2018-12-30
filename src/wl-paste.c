@@ -333,7 +333,8 @@ int main(int argc, char * const argv[]) {
     };
     while (1) {
         int option_index;
-        int c = getopt_long(argc, argv, "vhpnlt:s:", long_options, &option_index);
+        const char *opts = "vhpnlt:s:";
+        int c = getopt_long(argc, argv, opts, long_options, &option_index);
         if (c == -1) {
             break;
         }
