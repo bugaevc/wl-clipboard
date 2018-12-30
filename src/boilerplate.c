@@ -173,26 +173,19 @@ const struct wl_keyboard_listener keayboard_listener = {
     .modifiers = keyboard_modifiers_handler,
 };
 
-static int no_keyboard;
-
 void seat_capabilities_handler
 (
     void *data,
     struct wl_seat *this_seat,
     uint32_t capabilities
 ) {
+    // stash the capabilities of this seat for later
+    void *user_data = (void *) (unsigned long) capabilities;
+    wl_seat_set_user_data(this_seat, user_data);
+
     if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) {
         struct wl_keyboard *keyboard = wl_seat_get_keyboard(this_seat);
         wl_keyboard_add_listener(keyboard, &keayboard_listener, this_seat);
-    } else if (this_seat == seat) {
-        // we have already found the seat we want,
-        // and now we learn it has no keyboard
-        no_keyboard = 1;
-    } else if (seat == NULL) {
-        // we haven't yet decided what seat we want, so
-        // stash the capabilities of this seat for later
-        void *user_data = (void *) (unsigned long) capabilities;
-        wl_seat_set_user_data(this_seat, user_data);
     }
 }
 
@@ -207,14 +200,6 @@ void seat_name_handler
     }
     if (strcmp(name, requested_seat_name) == 0) {
         seat = this_seat;
-
-        // check if we have saved capabilities for this seat
-        if (data != NULL) {
-            uint32_t capabilities = (uint32_t) (unsigned long) data;
-            if (!(capabilities & WL_SEAT_CAPABILITY_KEYBOARD)) {
-                no_keyboard = 1;
-            }
-        }
     }
 }
 
@@ -222,6 +207,8 @@ const struct wl_seat_listener seat_listener = {
     .capabilities = seat_capabilities_handler,
     .name = seat_name_handler
 };
+
+#define UNSET_CAPABILITIES ((void *) (uint32_t) 35)
 
 void process_new_seat(struct wl_seat *new_seat) {
     if (seat != NULL) {
@@ -231,8 +218,28 @@ void process_new_seat(struct wl_seat *new_seat) {
     if (requested_seat_name == NULL) {
         seat = new_seat;
     }
-    wl_seat_add_listener(new_seat, &seat_listener, NULL);
+    wl_seat_add_listener(new_seat, &seat_listener, UNSET_CAPABILITIES);
 }
+
+int ensure_seat_has_keyboard() {
+    void *user_data = wl_seat_get_user_data(seat);
+    while (user_data == UNSET_CAPABILITIES) {
+        wl_display_roundtrip(display);
+        user_data = wl_seat_get_user_data(seat);
+    }
+
+    uint32_t capabilities = (uint32_t) (unsigned long) user_data;
+    if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) {
+        return 1;
+    }
+
+    if (action_on_no_keyboard != NULL) {
+        action_on_no_keyboard();
+    }
+    return 0;
+}
+
+#undef UNSET_CAPABILITIES
 
 void shell_surface_ping
 (
@@ -395,12 +402,9 @@ void init_wayland_globals() {
 
 void popup_tiny_invisible_surface() {
 
-    if (no_keyboard) {
-        if (action_on_no_keyboard != NULL) {
-            action_on_no_keyboard();
-        }
-        return;
-    }
+   if (!ensure_seat_has_keyboard()) {
+       return;
+   }
 
     // make sure that we get the keyboard
     // object before creating the surface,
