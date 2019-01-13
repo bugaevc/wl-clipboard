@@ -78,7 +78,7 @@ $ sudo ninja install
 ```
 
 wl-clipboard only supports Linux (though patches to add BSD support are
-welcome!). The only manadatory dependency is the `wayland-client` library (try
+welcome!). The only mandatory dependency is the `wayland-client` library (try
 package named `wayland-devel` or `libwayland-dev`).
 
 Optional dependencies for building:
