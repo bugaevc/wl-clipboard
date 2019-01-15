@@ -78,9 +78,9 @@ $ ninja
 $ sudo ninja install
 ```
 
-wl-clipboard only supports Linux (though patches to add BSD support are
-welcome!). The only mandatory dependency is the `wayland-client` library (try
-package named `wayland-devel` or `libwayland-dev`).
+wl-clipboard supports Linux and BSD systems. The only mandatory dependency is
+the `wayland-client` library (try package named `wayland-devel` or
+`libwayland-dev`).
 
 Optional dependencies for building:
 * `wayland-scanner` for primary selection support using the bundled [gtk-primary-selection protocol](src/protocol/gtk-primary-selection.xml)

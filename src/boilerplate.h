@@ -31,8 +31,15 @@
 #include <stdlib.h> // exit
 #include <libgen.h> // basename
 #include <sys/wait.h>
-#include <sys/syscall.h> // syscall, SYS_memfd_create
-#include <linux/limits.h> // PATH_MAX
+#include <limits.h> // PATH_MAX
+
+#ifdef HAVE_MEMFD
+#    include <sys/syscall.h> // syscall, SYS_memfd_create
+#endif
+#ifdef HAVE_SHM_ANON
+#    include <sys/mman.h> // shm_open, SHM_ANON
+#endif
+
 
 #ifdef HAVE_XDG_SHELL
 #    include "xdg-shell.h"

@@ -420,6 +420,16 @@ void init_wayland_globals() {
 #endif
 }
 
+int create_anonymous_file() {
+#ifdef HAVE_MEMFD
+    return syscall(SYS_memfd_create, "buffer", 0);
+#endif
+#ifdef HAVE_SHM_ANON
+    return shm_open(SHM_ANON, O_RDWR | O_CREAT, 0600);
+#endif
+    return fileno(tmpfile());
+}
+
 void popup_tiny_invisible_surface() {
 
    if (!ensure_seat_has_keyboard()) {
@@ -492,7 +502,7 @@ void popup_tiny_invisible_surface() {
     int size = stride * height;  // bytes
 
     // open an anonymous file and write some zero bytes to it
-    int fd = syscall(SYS_memfd_create, "buffer", 0);
+    int fd = create_anonymous_file();
     ftruncate(fd, size);
 
     // turn it into a shared memory pool
@@ -599,7 +609,7 @@ void print_version_info() {
 
 char *path_for_fd(int fd) {
     char fdpath[64];
-    snprintf(fdpath, sizeof(fdpath), "/proc/self/fd/%d", fd);
+    snprintf(fdpath, sizeof(fdpath), "/dev/fd/%d", fd);
     return realpath(fdpath, NULL);
 }
 
@@ -657,6 +667,9 @@ char *infer_mime_type_from_name(const char *file_path) {
     }
 
     FILE *f = fopen("/etc/mime.types", "r");
+    if (f == NULL) {
+        f = fopen("/usr/local/etc/mime.types", "r");
+    }
     if (f == NULL) {
         return NULL;
     }

@@ -22,12 +22,21 @@ else
     have_wlr_data_control = false
 endif
 
+cc = meson.get_compiler('c')
+have_memfd = cc.has_header_symbol('sys/syscall.h', 'SYS_memfd_create')
+have_shm_anon = cc.has_header_symbol('sys/mman.h', 'SHM_ANON')
+
 conf_data = configuration_data()
+
 conf_data.set('PROJECT_VERSION', '"@0@"'.format(meson.project_version()))
 conf_data.set('HAVE_XDG_SHELL', have_xdg_shell)
 conf_data.set('HAVE_WLR_LAYER_SHELL', have_wlr_layer_shell)
 conf_data.set('HAVE_GTK_PRIMARY_SELECTION', have_gtk_primary_selection)
 conf_data.set('HAVE_WLR_DATA_CONTROL', have_wlr_data_control)
+
+conf_data.set('HAVE_MEMFD', have_memfd)
+conf_data.set('HAVE_SHM_ANON', have_shm_anon)
+
 configure_file(output: 'config.h', configuration: conf_data)
 
 protocols = []
@@ -70,7 +79,7 @@ foreach protocol : protocols
         input: xml, output: name + '.c',
         command: [wayland_scanner, scanner_code_command, '@INPUT@', '@OUTPUT@']
     )
-    lib = static_library(name, impl, header)
+    lib = static_library(name, impl, header, dependencies: wayland)
     protocol_deps += lib
 endforeach
 
