@@ -729,3 +729,35 @@ char *dump_stdin_into_a_temp_file() {
     }
     bail("Failed to copy the file");
 }
+
+void trim_trailing_newline(const char *file_path) {
+    int fd = open(file_path, O_RDWR);
+    if (fd < 0) {
+        perror("open file for trimming");
+        return;
+    }
+
+    int seek_res = lseek(fd, -1, SEEK_END);
+    if (seek_res < 0 && errno == EINVAL) {
+        // empty file
+        goto out;
+    } else if (seek_res < 0) {
+        perror("lseek");
+        goto out;
+    }
+    // otherwise, seek_res is the new file size
+
+    char last_char;
+    int read_res = read(fd, &last_char, 1);
+    if (read_res != 1) {
+        perror("read");
+        goto out;
+    }
+    if (last_char != '\n') {
+        goto out;
+    }
+
+    ftruncate(fd, seek_res);
+out:
+    close(fd);
+}

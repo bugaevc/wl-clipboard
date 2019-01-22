@@ -42,6 +42,7 @@ implicit type inference, you can explicitly specify the type to use with the
 
 For `wl-copy`:
 
+* `-n`, `--trim-newline` Do not copy the trailing newline character if it is present in the input file.
 * `-o`, `--paste-once` Only serve one paste request and then exit. Unless a clipboard manager specifically designed to prevent this is in use, this has the effect of clearing the clipboard after the first paste, which is useful for copying sensitive data such as passwords. Note that this may break pasting into some clients, in particular pasting into XWayland windows is known to break when this option is used.
 * `-f`, `--foreground` By default, `wl-copy` forks and serves data requests in the background; this option overrides that behavior, causing `wl-copy` to run in the foreground.
 * `-c`, `--clear` Instead of copying anything, clear the clipboard so that nothing is copied.

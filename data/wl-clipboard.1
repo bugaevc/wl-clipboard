@@ -1,9 +1,10 @@
-.TH WL-CLIPBOARD 1 2018-10-03 wl-clipboard
+.TH WL-CLIPBOARD 1 2019-01-22 wl-clipboard
 .SH NAME
 wl-clipboard \- Wayland copy and paste command line utiltites
 .SH SYNOPSIS
 .B wl-copy
 [\fB--primary\fR]
+[\fB--trim-newline\fR]
 [\fB--paste-once\fR]
 [\fB--foreground\fR]
 [\fB--clear\fR]
@@ -55,6 +56,9 @@ option overrides that behavior, causing \fBwl-copy\fR to run in the foreground.
 .TP
 \fB-c\fR, \fB--clear
 Instead of copying anything, clear the clipboard so that nothing is copied.
+.TP
+\fB-n\fR, \fB--trim-newline
+Do not copy the trailing newline character if it is present in the input file.
 .TP
 \fB-n\fR, \fB--no-newline
 Do not append a newline character after the pasted clipboard content. This

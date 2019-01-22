@@ -21,6 +21,7 @@
 #include <wayland-client.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <errno.h>
 #include <getopt.h>
 #include <string.h>
 #include <ctype.h> // isupper
@@ -105,6 +106,8 @@ int str_has_prefix(const char *string, const char *prefix);
 int str_has_suffix(const char *string, const char *suffix);
 
 void print_version_info(void);
+
+void trim_trailing_newline(const char *file_path);
 
 // functions below this line return owned strings,
 // free() their return values when done with them

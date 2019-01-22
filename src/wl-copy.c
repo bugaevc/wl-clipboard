@@ -217,6 +217,7 @@ void print_usage(FILE *f, const char *argv0) {
         "\t-f, --foreground\tStay in the foreground instead of forking.\n"
         "\t-c, --clear\t\tInstead of copying anything, clear the clipboard.\n"
         "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
+        "\t-n, --trim-newline\tDo not copy the trailing newline character.\n"
         "\t-t, --type mime/type\t"
         "Override the inferred MIME type for the content.\n"
         "\t-s, --seat seat-name\t"
@@ -241,11 +242,13 @@ int main(int argc, char * const argv[]) {
     int clear = 0;
     char *mime_type = NULL;
     int primary = 0;
+    int trim_newline = 0;
 
     static struct option long_options[] = {
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
         {"primary", no_argument, 0, 'p'},
+        {"trim-newline", no_argument, 0, 'n'},
         {"paste-once", no_argument, 0, 'o'},
         {"foreground", no_argument, 0, 'f'},
         {"clear", no_argument, 0, 'c'},
@@ -255,7 +258,7 @@ int main(int argc, char * const argv[]) {
     };
     while (1) {
         int option_index;
-        const char *opts = "vhpofct:s:";
+        const char *opts = "vhpnofct:s:";
         int c = getopt_long(argc, argv, opts, long_options, &option_index);
         if (c == -1) {
             break;
@@ -272,6 +275,9 @@ int main(int argc, char * const argv[]) {
             exit(0);
         case 'p':
             primary = 1;
+            break;
+        case 'n':
+            trim_newline = 1;
             break;
         case 'o':
             paste_once = 1;
@@ -314,6 +320,9 @@ int main(int argc, char * const argv[]) {
         } else {
             // copy stdin
             temp_file_to_copy = dump_stdin_into_a_temp_file();
+            if (trim_newline) {
+                trim_trailing_newline(temp_file_to_copy);
+            }
             if (mime_type == NULL) {
                 mime_type = infer_mime_type_from_contents(temp_file_to_copy);
             }
