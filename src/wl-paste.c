@@ -1,6 +1,6 @@
 /* wl-clipboard
  *
- * Copyright © 2018 Sergey Bugaev <bugaevc@gmail.com>
+ * Copyright © 2019 Sergey Bugaev <bugaevc@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
