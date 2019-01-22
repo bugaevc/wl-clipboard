@@ -22,6 +22,17 @@ char * const *data_to_copy = NULL;
 char *temp_file_to_copy = NULL;
 int paste_once = 0;
 
+void do_cancel() {
+    // we're done!
+    if (temp_file_to_copy != NULL) {
+        execlp("rm", "rm", "-r", dirname(temp_file_to_copy), NULL);
+        perror("exec rm");
+        exit(1);
+    } else {
+        exit(0);
+    }
+}
+
 void do_send(const char *mime_type, int fd) {
     // unset O_NONBLOCK
     fcntl(fd, F_SETFL, 0);
@@ -54,18 +65,7 @@ void do_send(const char *mime_type, int fd) {
     }
 
     if (paste_once) {
-        exit(0);
-    }
-}
-
-void do_cancel() {
-    // we're done!
-    if (temp_file_to_copy != NULL) {
-        execlp("rm", "rm", "-r", dirname(temp_file_to_copy), NULL);
-        perror("exec rm");
-        exit(1);
-    } else {
-        exit(0);
+        do_cancel();
     }
 }
 
