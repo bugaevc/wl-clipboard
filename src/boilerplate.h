@@ -45,6 +45,10 @@
 #    include "xdg-shell.h"
 #endif
 
+#ifdef HAVE_WP_PRIMARY_SELECTION
+#    include "wp-primary-selection.h"
+#endif
+
 #ifdef HAVE_WLR_LAYER_SHELL
 #    include "wlr-layer-shell.h"
 #endif
@@ -89,6 +93,11 @@ struct gtk_primary_selection_device_manager *gtk_primary_selection_device_manage
 struct gtk_primary_selection_device *gtk_primary_selection_device;
 #endif
 
+#ifdef HAVE_WP_PRIMARY_SELECTION
+struct zwp_primary_selection_device_manager_v1 *primary_selection_device_manager;
+struct zwp_primary_selection_device_v1 *primary_selection_device;
+#endif
+
 #ifdef HAVE_WLR_DATA_CONTROL
 struct zwlr_data_control_manager_v1 *data_control_manager;
 struct zwlr_data_control_device_v1 *data_control_device;
@@ -105,6 +114,8 @@ void destroy_popup_surface(void);
 
 void (*action_on_popup_surface_getting_focus)(uint32_t serial);
 void (*action_on_no_keyboard)(void);
+
+void ensure_has_primary_selection(void);
 
 int get_serial(void);
 

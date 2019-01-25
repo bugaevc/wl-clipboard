@@ -5,6 +5,7 @@ wayland_protocols = dependency('wayland-protocols', version: '>= 1.12', required
 
 if wayland_scanner.found()
     have_xdg_shell = wayland_protocols.found()
+    have_wp_primary_selection = wayland_protocols.found() and wayland_protocols.version().version_compare('>= 1.17')
     # these are bundled
     have_wlr_layer_shell = have_xdg_shell  # depends on xdg_popup
     have_gtk_primary_selection = true
@@ -30,6 +31,7 @@ conf_data = configuration_data()
 
 conf_data.set('PROJECT_VERSION', '"@0@"'.format(meson.project_version()))
 conf_data.set('HAVE_XDG_SHELL', have_xdg_shell)
+conf_data.set('HAVE_WP_PRIMARY_SELECTION', have_wp_primary_selection)
 conf_data.set('HAVE_WLR_LAYER_SHELL', have_wlr_layer_shell)
 conf_data.set('HAVE_GTK_PRIMARY_SELECTION', have_gtk_primary_selection)
 conf_data.set('HAVE_WLR_DATA_CONTROL', have_wlr_data_control)
@@ -39,14 +41,22 @@ conf_data.set('HAVE_SHM_ANON', have_shm_anon)
 
 configure_file(output: 'config.h', configuration: conf_data)
 
+if wayland_protocols.found()
+    protocols_path = wayland_protocols.get_pkgconfig_variable('pkgdatadir')
+endif
+
 protocols = []
 
 if not have_xdg_shell
     warning('Building without xdg-shell support')
 else
-    protocols_path = wayland_protocols.get_pkgconfig_variable('pkgdatadir')
     xdg_shell_xml = join_paths(protocols_path, 'stable', 'xdg-shell', 'xdg-shell.xml')
     protocols += [['xdg-shell', xdg_shell_xml]]
+endif
+
+if have_wp_primary_selection
+    wp_primary_selection_xml = join_paths(protocols_path, 'unstable', 'primary-selection', 'primary-selection-unstable-v1.xml')
+    protocols += [['wp-primary-selection', wp_primary_selection_xml]]
 endif
 
 if have_wlr_layer_shell

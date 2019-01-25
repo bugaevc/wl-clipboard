@@ -93,6 +93,16 @@ void registry_global_handler
         );
     }
 #endif
+#ifdef HAVE_WP_PRIMARY_SELECTION
+    else if (strcmp(interface, "zwp_primary_selection_device_manager_v1") == 0) {
+        primary_selection_device_manager = wl_registry_bind(
+            registry,
+            name,
+            &zwp_primary_selection_device_manager_v1_interface,
+            1
+        );
+    }
+#endif
 #ifdef HAVE_WLR_DATA_CONTROL
     else if (strcmp(interface, "zwlr_data_control_manager_v1") == 0) {
         data_control_manager = wl_registry_bind(
@@ -408,6 +418,15 @@ void init_wayland_globals() {
             );
     }
 #endif
+#ifdef HAVE_WP_PRIMARY_SELECTION
+    if (primary_selection_device_manager != NULL) {
+        primary_selection_device =
+            zwp_primary_selection_device_manager_v1_get_device(
+                primary_selection_device_manager,
+                seat
+            );
+    }
+#endif
 #ifdef HAVE_WLR_DATA_CONTROL
     if (data_control_manager != NULL) {
         data_control_device =
@@ -417,6 +436,25 @@ void init_wayland_globals() {
             );
         use_wlr_data_control = 1;
     }
+#endif
+}
+
+void ensure_has_primary_selection() {
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+    if (gtk_primary_selection_device_manager != NULL) {
+        return;
+    }
+#endif
+#ifdef HAVE_WP_PRIMARY_SELECTION
+    if (primary_selection_device_manager != NULL) {
+        return;
+    }
+#endif
+
+#if defined(HAVE_GTK_PRIMARY_SELECTION) || defined(HAVE_WP_PRIMARY_SELECTION)
+    bail("Primary selection is not supported on this compositor");
+#else
+    bail("wl-clipboard was built without primary selection support");
 #endif
 }
 

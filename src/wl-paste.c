@@ -290,6 +290,56 @@ gtk_primary_selection_device_listener = {
 
 #endif
 
+#ifdef HAVE_WP_PRIMARY_SELECTION
+
+void primary_selection_offer_offer
+(
+    void *data,
+    struct zwp_primary_selection_offer_v1 *primary_selection_offer,
+    const char *offered_mime_type
+) {
+    do_process_offer(offered_mime_type);
+}
+
+const struct zwp_primary_selection_offer_v1_listener
+primary_selection_offer_listener = {
+    .offer = primary_selection_offer_offer
+};
+
+void primary_selection_device_data_offer
+(
+    void *data,
+    struct zwp_primary_selection_device_v1 *primary_selection_device,
+    struct zwp_primary_selection_offer_v1 *primary_selection_offer
+) {
+    zwp_primary_selection_offer_v1_add_listener(
+        primary_selection_offer,
+        &primary_selection_offer_listener,
+        NULL
+    );
+}
+
+void primary_selection_device_selection
+(
+    void *data,
+    struct zwp_primary_selection_device_v1 *primary_selection_device,
+    struct zwp_primary_selection_offer_v1 *primary_selection_offer
+) {
+    do_paste(
+        primary_selection_offer,
+        (void (*)(void *, const char *, int))
+              zwp_primary_selection_offer_v1_receive
+    );
+}
+
+const struct zwp_primary_selection_device_v1_listener
+primary_selection_device_listener = {
+    .data_offer = primary_selection_device_data_offer,
+    .selection = primary_selection_device_selection
+};
+
+#endif
+
 #ifdef HAVE_WLR_DATA_CONTROL
 void data_control_offer_offer
 (
@@ -375,6 +425,20 @@ void init_selection() {
 }
 
 void init_primary_selection() {
+    ensure_has_primary_selection();
+
+#ifdef HAVE_WP_PRIMARY_SELECTION
+    if (primary_selection_device != NULL) {
+        zwp_primary_selection_device_v1_add_listener(
+            primary_selection_device,
+            &primary_selection_device_listener,
+            NULL
+        );
+        popup_tiny_invisible_surface();
+        return;
+    }
+#endif
+
 #ifdef HAVE_GTK_PRIMARY_SELECTION
     if (gtk_primary_selection_device != NULL) {
         gtk_primary_selection_device_add_listener(
@@ -383,11 +447,8 @@ void init_primary_selection() {
             NULL
         );
         popup_tiny_invisible_surface();
-    } else {
-        bail("Primary selection is not supported on this compositor");
+        return;
     }
-#else
-    bail("wl-clipboard was built without primary selection support");
 #endif
 }
 

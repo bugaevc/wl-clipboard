@@ -112,6 +112,11 @@ void try_setting_data_selection_directly() {
     set_data_selection(get_serial());
 }
 
+
+void complain_about_missing_keyboard() {
+    bail("Setting primary selection is not supported without a keyboard");
+}
+
 #ifdef HAVE_GTK_PRIMARY_SELECTION
 
 void gtk_primary_selection_source_send_handler
@@ -152,8 +157,46 @@ void set_gtk_primary_selection(uint32_t serial) {
     destroy_popup_surface();
 }
 
-void complain_about_missing_keyboard() {
-    bail("Setting primary selection is not supported without a keyboard");
+#endif
+
+#ifdef HAVE_WP_PRIMARY_SELECTION
+
+void primary_selection_source_send_handler
+(
+    void *data,
+    struct zwp_primary_selection_source_v1 *primary_selection_source,
+    const char *mime_type,
+    int fd
+) {
+    do_send(mime_type, fd);
+}
+
+void primary_selection_source_cancelled_handler
+(
+    void *data,
+    struct zwp_primary_selection_source_v1 *primary_selection_source
+) {
+    do_cancel();
+}
+
+const struct zwp_primary_selection_source_v1_listener
+primary_selection_source_listener = {
+    .send = primary_selection_source_send_handler,
+    .cancelled = primary_selection_source_cancelled_handler
+};
+
+struct zwp_primary_selection_source_v1 *primary_selection_source;
+
+void set_primary_selection(uint32_t serial) {
+
+    zwp_primary_selection_device_v1_set_selection(
+        primary_selection_device,
+        primary_selection_source,
+        serial
+    );
+
+    wl_display_roundtrip(display);
+    destroy_popup_surface();
 }
 
 #endif
@@ -248,26 +291,57 @@ void init_selection(char *mime_type) {
 }
 
 void init_primary_selection(char *mime_type) {
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-    gtk_primary_selection_source =
-        gtk_primary_selection_device_manager_create_source(
-            gtk_primary_selection_device_manager
+    ensure_has_primary_selection();
+
+#ifdef HAVE_WP_PRIMARY_SELECTION
+    if (primary_selection_device_manager != NULL) {
+        primary_selection_source =
+            zwp_primary_selection_device_manager_v1_create_source(
+                primary_selection_device_manager
+            );
+        zwp_primary_selection_source_v1_add_listener(
+            primary_selection_source,
+            &primary_selection_source_listener,
+            NULL
         );
-    gtk_primary_selection_source_add_listener(
-        gtk_primary_selection_source,
-        &gtk_primary_selection_source_listener,
-        NULL
-    );
 
-    do_offer(
-        mime_type,
-        gtk_primary_selection_source,
-        (void (*)(void *, const char *)) gtk_primary_selection_source_offer
-    );
+        do_offer(
+            mime_type,
+            primary_selection_source,
+            (void (*)(void *, const char *))
+                 zwp_primary_selection_source_v1_offer
+        );
 
-    action_on_popup_surface_getting_focus = set_gtk_primary_selection;
-    action_on_no_keyboard = complain_about_missing_keyboard;
-    popup_tiny_invisible_surface();
+        action_on_popup_surface_getting_focus = set_primary_selection;
+        action_on_no_keyboard = complain_about_missing_keyboard;
+        popup_tiny_invisible_surface();
+        return;
+    }
+#endif
+
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+    if (gtk_primary_selection_device_manager != NULL) {
+        gtk_primary_selection_source =
+            gtk_primary_selection_device_manager_create_source(
+                gtk_primary_selection_device_manager
+            );
+        gtk_primary_selection_source_add_listener(
+            gtk_primary_selection_source,
+            &gtk_primary_selection_source_listener,
+            NULL
+        );
+
+        do_offer(
+            mime_type,
+            gtk_primary_selection_source,
+            (void (*)(void *, const char *)) gtk_primary_selection_source_offer
+        );
+
+        action_on_popup_surface_getting_focus = set_gtk_primary_selection;
+        action_on_no_keyboard = complain_about_missing_keyboard;
+        popup_tiny_invisible_surface();
+        return;
+    }
 #endif
 }
 
@@ -370,13 +444,7 @@ int main(int argc, char * const argv[]) {
     init_wayland_globals();
 
     if (primary) {
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-        if (gtk_primary_selection_device_manager == NULL) {
-            bail("Primary selection is not supported on this compositor");
-        }
-#else
-        bail("wl-clipboard was built without primary selection support");
-#endif
+        ensure_has_primary_selection();
     }
 
     if (!clear) {
