@@ -114,37 +114,37 @@ void try_setting_data_selection_directly() {
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
 
-void primary_selection_source_send_handler
+void gtk_primary_selection_source_send_handler
 (
     void *data,
-    struct gtk_primary_selection_source *primary_selection_source,
+    struct gtk_primary_selection_source *gtk_primary_selection_source,
     const char *mime_type,
     int fd
 ) {
     do_send(mime_type, fd);
 }
 
-void primary_selection_source_cancelled_handler
+void gtk_primary_selection_source_cancelled_handler
 (
     void *data,
-    struct gtk_primary_selection_source *primary_selection_source
+    struct gtk_primary_selection_source *gtk_primary_selection_source
 ) {
     do_cancel();
 }
 
 const struct gtk_primary_selection_source_listener
-primary_selection_source_listener = {
-    .send = primary_selection_source_send_handler,
-    .cancelled = primary_selection_source_cancelled_handler
+gtk_primary_selection_source_listener = {
+    .send = gtk_primary_selection_source_send_handler,
+    .cancelled = gtk_primary_selection_source_cancelled_handler
 };
 
-struct gtk_primary_selection_source *primary_selection_source;
+struct gtk_primary_selection_source *gtk_primary_selection_source;
 
-void set_primary_selection(uint32_t serial) {
+void set_gtk_primary_selection(uint32_t serial) {
 
     gtk_primary_selection_device_set_selection(
-        primary_selection_device,
-        primary_selection_source,
+        gtk_primary_selection_device,
+        gtk_primary_selection_source,
         serial
     );
 
@@ -305,7 +305,7 @@ int main(int argc, char * const argv[]) {
 
     if (primary) {
 #ifdef HAVE_GTK_PRIMARY_SELECTION
-        if (primary_selection_device_manager == NULL) {
+        if (gtk_primary_selection_device_manager == NULL) {
             bail("Primary selection is not supported on this compositor");
         }
 #else
@@ -377,23 +377,23 @@ int main(int argc, char * const argv[]) {
 #endif
     } else {
 #ifdef HAVE_GTK_PRIMARY_SELECTION
-        primary_selection_source =
+        gtk_primary_selection_source =
             gtk_primary_selection_device_manager_create_source(
-                primary_selection_device_manager
+                gtk_primary_selection_device_manager
             );
         gtk_primary_selection_source_add_listener(
-            primary_selection_source,
-            &primary_selection_source_listener,
+            gtk_primary_selection_source,
+            &gtk_primary_selection_source_listener,
             NULL
         );
 
         do_offer(
             mime_type,
-            primary_selection_source,
+            gtk_primary_selection_source,
             (void (*)(void *, const char *)) gtk_primary_selection_source_offer
         );
 
-        action_on_popup_surface_getting_focus = set_primary_selection;
+        action_on_popup_surface_getting_focus = set_gtk_primary_selection;
         action_on_no_keyboard = complain_about_missing_keyboard;
         popup_tiny_invisible_surface();
 #endif

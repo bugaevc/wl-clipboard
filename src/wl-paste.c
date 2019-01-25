@@ -242,50 +242,50 @@ const struct wl_data_device_listener data_device_listener = {
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
 
-void primary_selection_offer_offer
+void gtk_primary_selection_offer_offer
 (
     void *data,
-    struct gtk_primary_selection_offer *primary_selection_offer,
+    struct gtk_primary_selection_offer *gtk_primary_selection_offer,
     const char *offered_mime_type
 ) {
     do_process_offer(offered_mime_type);
 }
 
 const struct gtk_primary_selection_offer_listener
-primary_selection_offer_listener = {
-    .offer = primary_selection_offer_offer
+gtk_primary_selection_offer_listener = {
+    .offer = gtk_primary_selection_offer_offer
 };
 
-void primary_selection_device_data_offer
+void gtk_primary_selection_device_data_offer
 (
     void *data,
-    struct gtk_primary_selection_device *primary_selection_device,
-    struct gtk_primary_selection_offer *primary_selection_offer
+    struct gtk_primary_selection_device *gtk_primary_selection_device,
+    struct gtk_primary_selection_offer *gtk_primary_selection_offer
 ) {
     gtk_primary_selection_offer_add_listener(
-        primary_selection_offer,
-        &primary_selection_offer_listener,
+        gtk_primary_selection_offer,
+        &gtk_primary_selection_offer_listener,
         NULL
     );
 }
 
-void primary_selection_device_selection
+void gtk_primary_selection_device_selection
 (
     void *data,
-    struct gtk_primary_selection_device *primary_selection_device,
-    struct gtk_primary_selection_offer *primary_selection_offer
+    struct gtk_primary_selection_device *gtk_primary_selection_device,
+    struct gtk_primary_selection_offer *gtk_primary_selection_offer
 ) {
     do_paste(
-        primary_selection_offer,
+        gtk_primary_selection_offer,
         (void (*)(void *, const char *, int))
               gtk_primary_selection_offer_receive
     );
 }
 
 const struct gtk_primary_selection_device_listener
-primary_selection_device_listener = {
-    .data_offer = primary_selection_device_data_offer,
-    .selection = primary_selection_device_selection
+gtk_primary_selection_device_listener = {
+    .data_offer = gtk_primary_selection_device_data_offer,
+    .selection = gtk_primary_selection_device_selection
 };
 
 #endif
@@ -436,12 +436,12 @@ int main(int argc, char * const argv[]) {
 #endif
     } else {
 #ifdef HAVE_GTK_PRIMARY_SELECTION
-        if (primary_selection_device_manager == NULL) {
+        if (gtk_primary_selection_device_manager == NULL) {
             bail("Primary selection is not supported on this compositor");
         }
         gtk_primary_selection_device_add_listener(
-            primary_selection_device,
-            &primary_selection_device_listener,
+            gtk_primary_selection_device,
+            &gtk_primary_selection_device_listener,
             NULL
         );
 #else

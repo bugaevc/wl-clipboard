@@ -85,7 +85,7 @@ void registry_global_handler
 #endif
 #ifdef HAVE_GTK_PRIMARY_SELECTION
     else if (strcmp(interface, "gtk_primary_selection_device_manager") == 0) {
-        primary_selection_device_manager = wl_registry_bind(
+        gtk_primary_selection_device_manager = wl_registry_bind(
             registry,
             name,
             &gtk_primary_selection_device_manager_interface,
@@ -400,10 +400,10 @@ void init_wayland_globals() {
         seat
     );
 #ifdef HAVE_GTK_PRIMARY_SELECTION
-    if (primary_selection_device_manager != NULL) {
-        primary_selection_device =
+    if (gtk_primary_selection_device_manager != NULL) {
+        gtk_primary_selection_device =
             gtk_primary_selection_device_manager_get_device(
-                primary_selection_device_manager,
+                gtk_primary_selection_device_manager,
                 seat
             );
     }

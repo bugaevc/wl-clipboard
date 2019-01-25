@@ -85,8 +85,8 @@ struct zwlr_layer_surface_v1 *layer_surface;
 struct wl_data_device *data_device;
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
-struct gtk_primary_selection_device_manager *primary_selection_device_manager;
-struct gtk_primary_selection_device *primary_selection_device;
+struct gtk_primary_selection_device_manager *gtk_primary_selection_device_manager;
+struct gtk_primary_selection_device *gtk_primary_selection_device;
 #endif
 
 #ifdef HAVE_WLR_DATA_CONTROL
