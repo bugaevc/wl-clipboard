@@ -431,6 +431,9 @@ int create_anonymous_file() {
 }
 
 void popup_tiny_invisible_surface() {
+    // HACK:
+    // pop up a tiny invisible surface to get the keyboard focus,
+    // otherwise we won't be notified of the selection
 
     if (!ensure_seat_has_keyboard()) {
         return;

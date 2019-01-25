@@ -205,6 +205,72 @@ void do_offer
     free(mime_type);
 }
 
+void init_selection(char *mime_type) {
+    if (use_wlr_data_control) {
+#ifdef HAVE_WLR_DATA_CONTROL
+        struct zwlr_data_control_source_v1 *data_control_source =
+            zwlr_data_control_manager_v1_create_data_source(
+                data_control_manager
+            );
+        zwlr_data_control_source_v1_add_listener(
+            data_control_source,
+            &data_control_source_listener,
+            NULL
+        );
+
+        do_offer(
+            mime_type,
+            data_control_source,
+            (void (*)(void *, const char *)) zwlr_data_control_source_v1_offer
+        );
+
+        zwlr_data_control_device_v1_set_selection(
+            data_control_device,
+            data_control_source
+        );
+#endif
+    } else {
+        data_source = wl_data_device_manager_create_data_source(
+            data_device_manager
+        );
+        wl_data_source_add_listener(data_source, &data_source_listener, NULL);
+
+        do_offer(
+            mime_type,
+            data_source,
+            (void (*)(void *, const char *)) wl_data_source_offer
+        );
+
+        action_on_popup_surface_getting_focus = set_data_selection;
+        action_on_no_keyboard = try_setting_data_selection_directly;
+        popup_tiny_invisible_surface();
+    }
+}
+
+void init_primary_selection(char *mime_type) {
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+    gtk_primary_selection_source =
+        gtk_primary_selection_device_manager_create_source(
+            gtk_primary_selection_device_manager
+        );
+    gtk_primary_selection_source_add_listener(
+        gtk_primary_selection_source,
+        &gtk_primary_selection_source_listener,
+        NULL
+    );
+
+    do_offer(
+        mime_type,
+        gtk_primary_selection_source,
+        (void (*)(void *, const char *)) gtk_primary_selection_source_offer
+    );
+
+    action_on_popup_surface_getting_focus = set_gtk_primary_selection;
+    action_on_no_keyboard = complain_about_missing_keyboard;
+    popup_tiny_invisible_surface();
+#endif
+}
+
 void print_usage(FILE *f, const char *argv0) {
     fprintf(
         f,
@@ -337,66 +403,10 @@ int main(int argc, char * const argv[]) {
         }
     }
 
-    if (!primary && !use_wlr_data_control) {
-        data_source = wl_data_device_manager_create_data_source(
-            data_device_manager
-        );
-        wl_data_source_add_listener(data_source, &data_source_listener, NULL);
-
-        do_offer(
-            mime_type,
-            data_source,
-            (void (*)(void *, const char *)) wl_data_source_offer
-        );
-
-        action_on_popup_surface_getting_focus = set_data_selection;
-        action_on_no_keyboard = try_setting_data_selection_directly;
-        popup_tiny_invisible_surface();
-    } else if (!primary) {
-#ifdef HAVE_WLR_DATA_CONTROL
-        struct zwlr_data_control_source_v1 *data_control_source =
-            zwlr_data_control_manager_v1_create_data_source(
-                data_control_manager
-            );
-        zwlr_data_control_source_v1_add_listener(
-            data_control_source,
-            &data_control_source_listener,
-            NULL
-        );
-
-        do_offer(
-            mime_type,
-            data_control_source,
-            (void (*)(void *, const char *)) zwlr_data_control_source_v1_offer
-        );
-
-        zwlr_data_control_device_v1_set_selection(
-            data_control_device,
-            data_control_source
-        );
-#endif
+    if (!primary) {
+        init_selection(mime_type);
     } else {
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-        gtk_primary_selection_source =
-            gtk_primary_selection_device_manager_create_source(
-                gtk_primary_selection_device_manager
-            );
-        gtk_primary_selection_source_add_listener(
-            gtk_primary_selection_source,
-            &gtk_primary_selection_source_listener,
-            NULL
-        );
-
-        do_offer(
-            mime_type,
-            gtk_primary_selection_source,
-            (void (*)(void *, const char *)) gtk_primary_selection_source_offer
-        );
-
-        action_on_popup_surface_getting_focus = set_gtk_primary_selection;
-        action_on_no_keyboard = complain_about_missing_keyboard;
-        popup_tiny_invisible_surface();
-#endif
+        init_primary_selection(mime_type);
     }
 
     if (clear) {

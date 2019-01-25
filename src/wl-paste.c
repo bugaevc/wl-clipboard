@@ -359,6 +359,38 @@ void print_usage(FILE *f, const char *argv0) {
     );
 }
 
+void init_selection() {
+    if (use_wlr_data_control) {
+#ifdef HAVE_WLR_DATA_CONTROL
+        zwlr_data_control_device_v1_add_listener(
+            data_control_device,
+            &data_control_device_listener,
+            NULL
+        );
+#endif
+    } else {
+        wl_data_device_add_listener(data_device, &data_device_listener, NULL);
+        popup_tiny_invisible_surface();
+    }
+}
+
+void init_primary_selection() {
+#ifdef HAVE_GTK_PRIMARY_SELECTION
+    if (gtk_primary_selection_device != NULL) {
+        gtk_primary_selection_device_add_listener(
+            gtk_primary_selection_device,
+            &gtk_primary_selection_device_listener,
+            NULL
+        );
+        popup_tiny_invisible_surface();
+    } else {
+        bail("Primary selection is not supported on this compositor");
+    }
+#else
+    bail("wl-clipboard was built without primary selection support");
+#endif
+}
+
 int main(int argc, char * const argv[]) {
 
     if (argc < 1) {
@@ -424,36 +456,10 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
-    if (!primary && !use_wlr_data_control) {
-        wl_data_device_add_listener(data_device, &data_device_listener, NULL);
-    } else if (!primary) {
-#ifdef HAVE_WLR_DATA_CONTROL
-        zwlr_data_control_device_v1_add_listener(
-            data_control_device,
-            &data_control_device_listener,
-            NULL
-        );
-#endif
+    if (!primary) {
+        init_selection();
     } else {
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-        if (gtk_primary_selection_device_manager == NULL) {
-            bail("Primary selection is not supported on this compositor");
-        }
-        gtk_primary_selection_device_add_listener(
-            gtk_primary_selection_device,
-            &gtk_primary_selection_device_listener,
-            NULL
-        );
-#else
-        bail("wl-clipboard was built without primary selection support");
-#endif
-    }
-
-    if (primary || !use_wlr_data_control) {
-        // HACK:
-        // pop up a tiny invisible surface to get the keyboard focus,
-        // otherwise we won't be notified of the selection
-        popup_tiny_invisible_surface();
+        init_primary_selection();
     }
 
     while (wl_display_dispatch(display) >= 0);
