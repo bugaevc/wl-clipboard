@@ -432,9 +432,9 @@ int create_anonymous_file() {
 
 void popup_tiny_invisible_surface() {
 
-   if (!ensure_seat_has_keyboard()) {
-       return;
-   }
+    if (!ensure_seat_has_keyboard()) {
+        return;
+    }
 
     // make sure that we get the keyboard
     // object before creating the surface,
