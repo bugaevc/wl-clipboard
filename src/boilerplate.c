@@ -586,7 +586,7 @@ void destroy_popup_surface() {
     }
 }
 
-static int global_serial;
+static uint32_t global_serial;
 
 void callback_done
 (
@@ -601,7 +601,7 @@ const struct wl_callback_listener callback_listener = {
     .done = callback_done
 };
 
-int get_serial() {
+uint32_t get_serial() {
     struct wl_callback *callback = wl_display_sync(display);
     wl_callback_add_listener(callback, &callback_listener, NULL);
 

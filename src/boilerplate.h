@@ -117,7 +117,7 @@ void (*action_on_no_keyboard)(void);
 
 void ensure_has_primary_selection(void);
 
-int get_serial(void);
+uint32_t get_serial(void);
 
 int mime_type_is_text(const char *mime_type);
 int str_has_prefix(const char *string, const char *prefix);
