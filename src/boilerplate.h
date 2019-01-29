@@ -31,7 +31,12 @@
 #include <stdlib.h> // exit
 #include <libgen.h> // basename
 #include <sys/wait.h>
-#include <limits.h> // PATH_MAX
+
+#if defined(__BSD__)
+#    include <limits.h> // PATH_MAX for BSD
+#else
+#    include <linux/limits.h> // PATH_MAX for Linux
+#endif
 
 #ifdef HAVE_MEMFD
 #    include <sys/syscall.h> // syscall, SYS_memfd_create
