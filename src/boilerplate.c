@@ -105,12 +105,17 @@ void registry_global_handler
 #endif
 #ifdef HAVE_WLR_DATA_CONTROL
     else if (strcmp(interface, "zwlr_data_control_manager_v1") == 0) {
+        if (version > 2) {
+            // the maximum verison wl-clipboard knows about
+            version = 2;
+        }
         data_control_manager = wl_registry_bind(
             registry,
             name,
             &zwlr_data_control_manager_v1_interface,
-            1
+            version
         );
+        data_control_version = version;
     }
 #endif
 }
@@ -367,6 +372,23 @@ const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 
 #endif
 
+#ifdef HAVE_WLR_DATA_CONTROL
+
+void data_control_manager_primary_selection
+(
+    void *data,
+    struct zwlr_data_control_manager_v1 *data_control_manager
+) {
+    data_control_supports_primary_selection = 1;
+}
+
+const struct zwlr_data_control_manager_v1_listener
+data_control_manager_listener = {
+    .primary_selection = data_control_manager_primary_selection
+};
+
+#endif
+
 void init_wayland_globals() {
     display = wl_display_connect(NULL);
     if (display == NULL) {
@@ -429,17 +451,33 @@ void init_wayland_globals() {
 #endif
 #ifdef HAVE_WLR_DATA_CONTROL
     if (data_control_manager != NULL) {
+        zwlr_data_control_manager_v1_add_listener(
+            data_control_manager,
+            &data_control_manager_listener,
+            NULL
+        );
         data_control_device =
             zwlr_data_control_manager_v1_get_data_device(
                 data_control_manager,
                 seat
             );
-        use_wlr_data_control = 1;
     }
 #endif
 }
 
 void ensure_has_primary_selection() {
+#ifdef HAVE_WLR_DATA_CONTROL
+    if (data_control_version >=
+        ZWLR_DATA_CONTROL_MANAGER_V1_PRIMARY_SELECTION_SINCE_VERSION) {
+
+        if (!data_control_supports_primary_selection) {
+            wl_display_roundtrip(display);
+        }
+        if (data_control_supports_primary_selection) {
+            return;
+        }
+    }
+#endif
 #ifdef HAVE_GTK_PRIMARY_SELECTION
     if (gtk_primary_selection_device_manager != NULL) {
         return;

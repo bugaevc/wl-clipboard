@@ -101,13 +101,15 @@ struct zwp_primary_selection_device_v1 *primary_selection_device;
 #ifdef HAVE_WLR_DATA_CONTROL
 struct zwlr_data_control_manager_v1 *data_control_manager;
 struct zwlr_data_control_device_v1 *data_control_device;
+
+int data_control_supports_primary_selection;
 #endif
 
 void process_new_seat(struct wl_seat *new_seat);
 const char *requested_seat_name;
 
 void init_wayland_globals(void);
-int use_wlr_data_control;
+int data_control_version;
 
 void popup_tiny_invisible_surface(void);
 void destroy_popup_surface(void);

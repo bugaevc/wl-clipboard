@@ -23,6 +23,7 @@ struct {
     char *inferred_type;
     int no_newline;
     int list_types;
+    int primary;
 } options;
 
 struct {
@@ -373,6 +374,24 @@ void data_control_device_selection
     struct zwlr_data_control_device_v1 *data_control_device,
     struct zwlr_data_control_offer_v1 *data_control_offer
 ) {
+    if (options.primary) {
+        return;
+    }
+    do_paste(
+        data_control_offer,
+        (void (*)(void *, const char *, int)) zwlr_data_control_offer_v1_receive
+    );
+}
+
+void data_control_device_primary_selection
+(
+    void *data,
+    struct zwlr_data_control_device_v1 *data_control_device,
+    struct zwlr_data_control_offer_v1 *data_control_offer
+) {
+    if (!options.primary) {
+        return;
+    }
     do_paste(
         data_control_offer,
         (void (*)(void *, const char *, int)) zwlr_data_control_offer_v1_receive
@@ -382,7 +401,8 @@ void data_control_device_selection
 const struct zwlr_data_control_device_v1_listener
 data_control_device_listener = {
     .data_offer = data_control_device_data_offer,
-    .selection = data_control_device_selection
+    .selection = data_control_device_selection,
+    .primary_selection = data_control_device_primary_selection
 };
 #endif
 
@@ -410,7 +430,7 @@ void print_usage(FILE *f, const char *argv0) {
 }
 
 void init_selection() {
-    if (use_wlr_data_control) {
+    if (data_control_version) {
 #ifdef HAVE_WLR_DATA_CONTROL
         zwlr_data_control_device_v1_add_listener(
             data_control_device,
@@ -426,6 +446,17 @@ void init_selection() {
 
 void init_primary_selection() {
     ensure_has_primary_selection();
+
+#ifdef HAVE_WLR_DATA_CONTROL
+    if (data_control_supports_primary_selection) {
+        zwlr_data_control_device_v1_add_listener(
+            data_control_device,
+            &data_control_device_listener,
+            NULL
+        );
+        return;
+    }
+#endif
 
 #ifdef HAVE_WP_PRIMARY_SELECTION
     if (primary_selection_device != NULL) {
@@ -458,8 +489,6 @@ int main(int argc, char * const argv[]) {
         bail("Empty argv");
     }
 
-    int primary = 0;
-
     static struct option long_options[] = {
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
@@ -488,7 +517,7 @@ int main(int argc, char * const argv[]) {
             print_usage(stdout, argv[0]);
             exit(0);
         case 'p':
-            primary = 1;
+            options.primary = 1;
             break;
         case 'n':
             options.no_newline = 1;
@@ -517,7 +546,7 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
-    if (!primary) {
+    if (!options.primary) {
         init_selection();
     } else {
         init_primary_selection();

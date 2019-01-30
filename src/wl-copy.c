@@ -248,24 +248,33 @@ void do_offer
     free(mime_type);
 }
 
+#ifdef HAVE_WLR_DATA_CONTROL
+
+struct zwlr_data_control_source_v1 *
+create_data_control_source(char *mime_type) {
+    struct zwlr_data_control_source_v1 *data_control_source =
+        zwlr_data_control_manager_v1_create_data_source(data_control_manager);
+    zwlr_data_control_source_v1_add_listener(
+        data_control_source,
+        &data_control_source_listener,
+        NULL
+    );
+
+    do_offer(
+        mime_type,
+        data_control_source,
+        (void (*)(void *, const char *)) zwlr_data_control_source_v1_offer
+    );
+    return data_control_source;
+}
+
+#endif
+
 void init_selection(char *mime_type) {
-    if (use_wlr_data_control) {
+    if (data_control_version) {
 #ifdef HAVE_WLR_DATA_CONTROL
         struct zwlr_data_control_source_v1 *data_control_source =
-            zwlr_data_control_manager_v1_create_data_source(
-                data_control_manager
-            );
-        zwlr_data_control_source_v1_add_listener(
-            data_control_source,
-            &data_control_source_listener,
-            NULL
-        );
-
-        do_offer(
-            mime_type,
-            data_control_source,
-            (void (*)(void *, const char *)) zwlr_data_control_source_v1_offer
-        );
+            create_data_control_source(mime_type);
 
         zwlr_data_control_device_v1_set_selection(
             data_control_device,
@@ -292,6 +301,19 @@ void init_selection(char *mime_type) {
 
 void init_primary_selection(char *mime_type) {
     ensure_has_primary_selection();
+
+#ifdef HAVE_WLR_DATA_CONTROL
+    if (data_control_supports_primary_selection) {
+        struct zwlr_data_control_source_v1 *data_control_source =
+            create_data_control_source(mime_type);
+
+        zwlr_data_control_device_v1_set_primary_selection(
+            data_control_device,
+            data_control_source
+        );
+        return;
+    }
+#endif
 
 #ifdef HAVE_WP_PRIMARY_SELECTION
     if (primary_selection_device_manager != NULL) {
