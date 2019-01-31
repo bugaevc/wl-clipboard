@@ -18,6 +18,10 @@
 
 #include "config.h"
 
+#include "util/string.h"
+#include "util/files.h"
+#include "util/misc.h"
+
 #include <wayland-client.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -32,13 +36,6 @@
 #include <libgen.h> // basename
 #include <sys/wait.h>
 #include <limits.h> // PATH_MAX
-
-#ifdef HAVE_MEMFD
-#    include <sys/syscall.h> // syscall, SYS_memfd_create
-#endif
-#ifdef HAVE_SHM_ANON
-#    include <sys/mman.h> // shm_open, SHM_ANON
-#endif
 
 
 #ifdef HAVE_XDG_SHELL
@@ -60,11 +57,6 @@
 #ifdef HAVE_WLR_DATA_CONTROL
 #    include "wlr-data-control.h"
 #endif
-
-#define bail(message) do { fprintf(stderr, message "\n"); exit(1); } while (0)
-
-#define text_plain "text/plain"
-#define text_plain_utf8 "text/plain;charset=utf-8"
 
 struct wl_display *display;
 struct wl_data_device_manager *data_device_manager;
@@ -118,21 +110,3 @@ void (*action_on_no_keyboard)(void);
 void ensure_has_primary_selection(void);
 
 uint32_t get_serial(void);
-
-int mime_type_is_text(const char *mime_type);
-int str_has_prefix(const char *string, const char *prefix);
-int str_has_suffix(const char *string, const char *suffix);
-
-void print_version_info(void);
-
-void trim_trailing_newline(const char *file_path);
-
-// functions below this line return owned strings,
-// free() their return values when done with them
-
-char *path_for_fd(int fd);
-char *infer_mime_type_from_contents(const char *file_path);
-char *infer_mime_type_from_name(const char *file_path);
-
-// returns the name of a new file
-char *dump_stdin_into_a_temp_file(void);
