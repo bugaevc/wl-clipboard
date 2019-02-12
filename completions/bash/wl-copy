@@ -1,0 +1,42 @@
+# wl-copy(1) completion
+
+_wl_clipboard_list_seats() {
+    weston-info 2>/dev/null | sed -n '/wl_seat/{n;s/\s*name: //;p}'
+}
+
+_wl_clipboard_complete_types() {
+    local cur prev types
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    types="$1"
+    if [ "${cur:0:1}" = \' -o "${cur:0:1}" = \" ]; then
+        COMPREPLY=($(compgen -W "$types" -- "$cur"))
+    else
+        COMPREPLY=($(compgen -W "$types" -- "$cur" | sed 's/;/\\;/g'))
+    fi
+}
+
+_wl_copy_completion() {
+    compopt +o default
+    local cur prev opts types seats
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="-o --paste-once -f --foreground -c --clear -p --primary -n --trim-newline -t --type -s --seat -v --version -h --help"
+    if [ "$prev" = "<" ]; then
+        compopt -o default
+        COMPREPLY=()
+    elif [ \( "x${prev:0:1}" = "x-" -a "x${prev:1:2}" != "x-" -a "${prev: -1}" = "t" \) -o "$prev" = "--type" ]; then
+        types="$(sed 's/^\(\S\+\).*/\1/' /etc/mime.types 2>/dev/null)"
+        _wl_clipboard_complete_types "$types"
+    elif [ \( "x${prev:0:1}" = "x-" -a "x${prev:1:2}" != "x-" -a "${prev: -1}" = "s" \) -o "$prev" = "--seat" ]; then
+        seats="$(_wl_clipboard_list_seats)"
+        COMPREPLY=($(compgen -W "$seats" -- "$cur"))
+    elif [ "${cur:0:1}" = "<" ]; then
+        compopt -o default
+        COMPREPLY=()
+    else
+        COMPREPLY=($(compgen -W "$opts" -- "$cur"))
+    fi
+}
+
+complete -o default -F _wl_copy_completion wl-copy

@@ -6,3 +6,4 @@ project('wl-clipboard', 'c',
 
 subdir('src')
 subdir('data')
+subdir('completions')

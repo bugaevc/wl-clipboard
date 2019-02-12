@@ -1,0 +1,72 @@
+# wl-paste(1) completion
+
+_wl_clipboard_list_seats() {
+    weston-info 2>/dev/null | sed -n '/wl_seat/{n;s/\s*name: //;p}'
+}
+
+_wl_clipboard_complete_types() {
+    local cur prev types
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    types="$1"
+    if [ "${cur:0:1}" = \' -o "${cur:0:1}" = \" ]; then
+        COMPREPLY=($(compgen -W "$types" -- "$cur"))
+    else
+        COMPREPLY=($(compgen -W "$types" -- "$cur" | sed 's/;/\\;/g'))
+    fi
+}
+
+_wl_clipboard_complete_paste_types() {
+    local i cur primary seat cmd types
+    for (( i = 0; i < "${#COMP_WORDS[@]}"; ++i )); do
+        cur="${COMP_WORDS[i]}"
+        if [ "x${cur:0:1}" = "x-" -a "x${cur:1:2}" != "x-" ]; then
+            case "$cur" in
+              *p*)
+                primary="yes"
+                ;;
+              *s)
+                seat="${COMP_WORDS[i+1]}"
+                ;;
+            esac
+        elif [ "$cur" = "--primary" ]; then
+            primary="yes"
+        elif [ "$cur" = "--seat" ]; then
+            seat="${COMP_WORDS[i+1]}"
+        fi
+    done
+    cmd="${COMP_WORDS[0]}"
+    if [ -n "$primary" ]; then
+        cmd="$cmd -p"
+    fi
+    if [ -n "$seat" ]; then
+        cmd="$cmd -s $seat"
+    fi
+    cmd="$cmd -l"
+    types="$($cmd 2>/dev/null)"
+    _wl_clipboard_complete_types "$types"
+}
+
+_wl_paste_completion() {
+    compopt +o default
+    local cur prev opts types seats
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="-n --no-newline -l --list-types -p --primary -t --type -s --seat -v --version -h --help"
+    if [ "$prev" = ">" ]; then
+        compopt -o default
+        COMPREPLY=()
+    elif [ \( "x${prev:0:1}" = "x-" -a "x${prev:1:2}" != "x-" -a "${prev: -1}" = "t" \) -o "$prev" = "--type" ]; then
+        _wl_clipboard_complete_paste_types
+    elif [ \( "x${prev:0:1}" = "x-" -a "x${prev:1:2}" != "x-" -a "${prev: -1}" = "s" \) -o "$prev" = "--seat" ]; then
+        seats="$(_wl_clipboard_list_seats)"
+        COMPREPLY=($(compgen -W "$seats" -- "$cur"))
+    elif [ "${cur:0:1}" = ">" ]; then
+        compopt -o default
+        COMPREPLY=()
+    else
+        COMPREPLY=($(compgen -W "$opts" -- "$cur"))
+    fi
+}
+
+complete -o default -F _wl_paste_completion wl-paste
