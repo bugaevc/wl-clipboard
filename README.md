@@ -94,3 +94,8 @@ Optional dependencies for running:
 
 wl-clipboard is free software, available under the GNU General Public License
 version 3 or later.
+
+# Related projects
+
+* [wl-clipboard-x11](https://github.com/brunelli/wl-clipboard-x11): A wrapper to use wl-clipboard as a drop-in replacement to X11 clipboard tools.
+* [wl-clipboard-rs](https://github.com/YaLTeR/wl-clipboard-rs): A Rust crate (library) for working with the Wayland clipboard which includes a reimplementation of `wl-copy` and `wl-paste`.
