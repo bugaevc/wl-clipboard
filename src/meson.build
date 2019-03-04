@@ -1,6 +1,6 @@
 wayland = dependency('wayland-client')
 
-wayland_scanner = find_program('wayland-scanner', required: false)
+wayland_scanner = find_program('wayland-scanner', required: false, native: true)
 wayland_protocols = dependency('wayland-protocols', version: '>= 1.12', required: false)
 
 if wayland_scanner.found()
