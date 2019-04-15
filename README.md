@@ -54,7 +54,7 @@ For `wl-paste`:
 
 For both:
 
-* `-p`, `--primary` Use the "primary" clipboard instead of the regular clipboard. This uses the private GTK+ primary selection protocol. See [the GNOME Wiki page on primary selection under Wayland](https://wiki.gnome.org/Initiatives/Wayland/PrimarySelection) for more details.
+* `-p`, `--primary` Use the "primary" clipboard instead of the regular clipboard.
 * `-t mime/type`, `--type mime/type` Override the inferred MIME type for the content. For `wl-copy` this option controls which type `wl-copy` will offer the content as. For `wl-paste` it controls which of the offered types `wl-paste` will request the content in. In addition to specific MIME types such as _image/png_, `wl-paste` also accepts generic type names such as _text_ and _image_ which make it automatically pick some offered MIME type that matches the given generic name.
 * `-s seat-name`, `--seat seat-name` Specify which seat `wl-copy` and `wl-paste` should work with. Wayland natively supports multi-seat configurations where each seat gets its own mouse pointer, keyboard focus, and among other things its own separate clipboard. The name of the default seat is likely _default_ or _seat0_, and additional seat names normally come form `udev(7)` property `ENV{WL_SEAT}`. You can view the list of the currently available seats as advertised by the compositor using the `weston-info(1)` tool. If you don't specify the seat name explicitly, `wl-copy` and `wl-paste` will pick a seat arbitrarily. If you are using a single-seat system, there is little reason to use this option.
 * `-v`, `--version` Display the version of wl-clipboard and some short info about its license.
