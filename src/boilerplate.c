@@ -459,11 +459,18 @@ void ensure_has_primary_selection() {
 }
 
 int create_anonymous_file() {
+    int res;
 #ifdef HAVE_MEMFD
-    return syscall(SYS_memfd_create, "buffer", 0);
+    res = syscall(SYS_memfd_create, "buffer", 0);
+    if (res >= 0) {
+        return res;
+    }
 #endif
 #ifdef HAVE_SHM_ANON
-    return shm_open(SHM_ANON, O_RDWR | O_CREAT, 0600);
+    res = shm_open(SHM_ANON, O_RDWR | O_CREAT, 0600);
+    if (res >= 0) {
+        return res;
+    }
 #endif
     return fileno(tmpfile());
 }
