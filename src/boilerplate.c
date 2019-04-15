@@ -768,13 +768,13 @@ char *dump_stdin_into_a_temp_file() {
     }
 
     if (fork() == 0) {
-        FILE *res = fopen(res_path, "w");
-        if (res == NULL) {
-            perror("fopen");
+        int fd = creat(res_path, S_IRUSR | S_IWUSR);
+        if (fd < 0) {
+            perror("creat");
             exit(1);
         }
-        dup2(fileno(res), STDOUT_FILENO);
-        fclose(res);
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
         execlp("cat", "cat", NULL);
         perror("exec cat");
         exit(1);
