@@ -396,17 +396,11 @@ int main(int argc, char * const argv[]) {
         {"seat", required_argument, 0, 's'},
         {0, 0, 0, 0}
     };
-    while (1) {
-        int option_index;
-        const char *opts = "vhpnofct:s:";
-        int c = getopt_long(argc, argv, opts, long_options, &option_index);
-        if (c == -1) {
-            break;
-        }
-        if (c == 0) {
-            c = long_options[option_index].val;
-        }
-        switch (c) {
+    const char *opts = "vhpnofct:s:";
+    int opt;
+
+    while ((opt = getopt_long(argc, argv, opts, long_options, NULL)) != -1) {
+        switch (opt) {
         case 'v':
             print_version_info();
             exit(0);
