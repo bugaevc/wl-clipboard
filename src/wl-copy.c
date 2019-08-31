@@ -450,7 +450,7 @@ int main(int argc, char * const argv[]) {
     if (!clear) {
         if (optind < argc) {
             // copy our command-line args
-            data_to_copy = &argv[optind];
+            data_to_copy = &argv[optind++];
         } else {
             // copy stdin
             temp_file_to_copy = dump_stdin_into_a_temp_file();
@@ -461,13 +461,12 @@ int main(int argc, char * const argv[]) {
                 mime_type = infer_mime_type_from_contents(temp_file_to_copy);
             }
         }
-    }
-
-    if (!stay_in_foreground && !clear) {
-        if (fork() != 0) {
-            // exit in the parent, but leave the
-            // child running in the background
-            exit(0);
+        if (!stay_in_foreground) {
+            if (fork() != 0) {
+                // exit in the parent, but leave the
+                // child running in the background
+                exit(0);
+            }
         }
     }
 

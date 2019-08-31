@@ -750,26 +750,27 @@ char *infer_mime_type_from_name(const char *file_path) {
 
 char *dump_stdin_into_a_temp_file() {
     char dirpath[] = "/tmp/wl-copy-buffer-XXXXXX";
-    if (mkdtemp(dirpath) != dirpath) {
+    if (mkdtemp(dirpath) == NULL) {
         perror("mkdtemp");
         exit(1);
     }
     char *original_path = path_for_fd(STDIN_FILENO);
 
-    char *res_path = malloc(PATH_MAX + 1);
+    char *res_path = malloc(PATH_MAX);
     memcpy(res_path, dirpath, sizeof(dirpath));
-    strcat(res_path, "/");
+    res_path[sizeof(dirpath)] = '/';
+    res_path[sizeof(dirpath) + 1] = '\0';
 
     if (original_path != NULL) {
         char *name = basename(original_path);
-        strcat(res_path, name);
+        strcpy(res_path + sizeof(dirpath) + 2, name);
     } else {
-        strcat(res_path, "stdin");
+        strcpy(res_path + sizeof(dirpath) + 2, "stdin");
     }
 
     if (fork() == 0) {
         int fd = creat(res_path, S_IRUSR | S_IWUSR);
-        if (fd < 0) {
+        if (fd == -1) {
             perror("creat");
             exit(1);
         }
