@@ -28,6 +28,8 @@ int mime_type_is_text(const char *mime_type) {
         || strcmp(mime_type, "UTF8_STRING") == 0
         || str_has_suffix(mime_type, "script")
         || str_has_suffix(mime_type, "xml")
+        || str_has_suffix(mime_type, "yaml")
+        || str_has_suffix(mime_type, "pgp-keys")
         || strstr(mime_type, "json") != NULL;
 }
 
