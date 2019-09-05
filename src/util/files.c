@@ -116,8 +116,8 @@ char *infer_mime_type_from_contents(const char *file_path) {
     int wstatus;
     wait(&wstatus);
     if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == 0) {
-        char *res = malloc(PATH_MAX + 1);
-        size_t len = read(pipefd[0], res, PATH_MAX + 1);
+        char *res = malloc(256);
+        size_t len = read(pipefd[0], res, 256);
         len--; // trim the newline
         close(pipefd[0]);
         res[len] = 0;
@@ -180,17 +180,12 @@ char *dump_stdin_into_a_temp_file() {
         exit(1);
     }
     char *original_path = path_for_fd(STDIN_FILENO);
+    char *name = original_path != NULL ? basename(original_path) : "stdin";
 
-    char *res_path = malloc(PATH_MAX + 1);
+    char *res_path = malloc(strlen(dirpath) + 1 + strlen(name) + 1);
     memcpy(res_path, dirpath, sizeof(dirpath));
     strcat(res_path, "/");
-
-    if (original_path != NULL) {
-        char *name = basename(original_path);
-        strcat(res_path, name);
-    } else {
-        strcat(res_path, "stdin");
-    }
+    strcat(res_path, name);
 
     if (fork() == 0) {
         int fd = creat(res_path, S_IRUSR | S_IWUSR);
