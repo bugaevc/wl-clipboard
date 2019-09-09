@@ -115,22 +115,24 @@ char *infer_mime_type_from_contents(const char *file_path) {
     close(pipefd[1]);
     int wstatus;
     wait(&wstatus);
-    if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == 0) {
-        char *res = malloc(256);
-        size_t len = read(pipefd[0], res, 256);
-        len--; // trim the newline
+
+    if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
         close(pipefd[0]);
-        res[len] = 0;
-
-        if (str_has_prefix(res, "inode/")) {
-            free(res);
-            return NULL;
-        }
-
-        return res;
+        return NULL;
     }
+
+    char *res = malloc(256);
+    size_t len = read(pipefd[0], res, 256);
+    len--; // trim the newline
+    res[len] = 0;
     close(pipefd[0]);
-    return NULL;
+
+    if (str_has_prefix(res, "inode/")) {
+        free(res);
+        return NULL;
+    }
+
+    return res;
 }
 
 char *infer_mime_type_from_name(const char *file_path) {
@@ -184,8 +186,8 @@ char *dump_stdin_into_a_temp_file() {
 
     char *res_path = malloc(strlen(dirpath) + 1 + strlen(name) + 1);
     memcpy(res_path, dirpath, sizeof(dirpath));
-    strcat(res_path, "/");
-    strcat(res_path, name);
+    res_path[sizeof(dirpath) - 1] = '/';
+    strcpy(res_path + sizeof(dirpath), name);
 
     if (fork() == 0) {
         int fd = creat(res_path, S_IRUSR | S_IWUSR);
@@ -205,8 +207,8 @@ char *dump_stdin_into_a_temp_file() {
     if (original_path != NULL) {
         free(original_path);
     }
-    if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == 0) {
-        return res_path;
+    if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
+        bail("Failed to copy the file");
     }
-    bail("Failed to copy the file");
+    return res_path;
 }
