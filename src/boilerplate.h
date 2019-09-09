@@ -46,10 +46,6 @@
 #    include "wp-primary-selection.h"
 #endif
 
-#ifdef HAVE_WLR_LAYER_SHELL
-#    include "wlr-layer-shell.h"
-#endif
-
 #ifdef HAVE_GTK_PRIMARY_SELECTION
 #    include "gtk-primary-selection.h"
 #endif
@@ -71,11 +67,6 @@ struct wl_shell_surface *shell_surface;
 struct xdg_wm_base *xdg_wm_base;
 struct xdg_surface *xdg_surface;
 struct xdg_toplevel *xdg_toplevel;
-#endif
-
-#ifdef HAVE_WLR_LAYER_SHELL
-struct zwlr_layer_shell_v1 *layer_shell;
-struct zwlr_layer_surface_v1 *layer_surface;
 #endif
 
 struct wl_data_device *data_device;

@@ -7,7 +7,6 @@ if wayland_scanner.found()
     have_xdg_shell = wayland_protocols.found()
     have_wp_primary_selection = wayland_protocols.found() and wayland_protocols.version().version_compare('>= 1.17')
     # these are bundled
-    have_wlr_layer_shell = have_xdg_shell  # depends on xdg_popup
     have_gtk_primary_selection = true
     have_wlr_data_control = true
 
@@ -18,7 +17,6 @@ if wayland_scanner.found()
     endif
 else
     have_xdg_shell = false
-    have_wlr_layer_shell = false
     have_gtk_primary_selection = false
     have_wlr_data_control = false
 endif
@@ -32,7 +30,6 @@ conf_data = configuration_data()
 conf_data.set('PROJECT_VERSION', '"@0@"'.format(meson.project_version()))
 conf_data.set('HAVE_XDG_SHELL', have_xdg_shell)
 conf_data.set('HAVE_WP_PRIMARY_SELECTION', have_wp_primary_selection)
-conf_data.set('HAVE_WLR_LAYER_SHELL', have_wlr_layer_shell)
 conf_data.set('HAVE_GTK_PRIMARY_SELECTION', have_gtk_primary_selection)
 conf_data.set('HAVE_WLR_DATA_CONTROL', have_wlr_data_control)
 
@@ -57,11 +54,6 @@ endif
 if have_wp_primary_selection
     wp_primary_selection_xml = join_paths(protocols_path, 'unstable', 'primary-selection', 'primary-selection-unstable-v1.xml')
     protocols += [['wp-primary-selection', wp_primary_selection_xml]]
-endif
-
-if have_wlr_layer_shell
-    wlr_layer_shell_xml = join_paths('protocol', 'wlr-layer-shell-unstable-v1.xml')
-    protocols += [['wlr-layer-shell', wlr_layer_shell_xml]]
 endif
 
 if not have_gtk_primary_selection
