@@ -73,16 +73,6 @@ void registry_global_handler
         );
     }
 #endif
-#ifdef HAVE_WLR_LAYER_SHELL
-    else if (strcmp(interface, "zwlr_layer_shell_v1") == 0) {
-        layer_shell = wl_registry_bind(
-            registry,
-            name,
-            &zwlr_layer_shell_v1_interface,
-            1
-        );
-    }
-#endif
 #ifdef HAVE_GTK_PRIMARY_SELECTION
     else if (strcmp(interface, "gtk_primary_selection_device_manager") == 0) {
         gtk_primary_selection_device_manager = wl_registry_bind(
@@ -341,32 +331,6 @@ const struct xdg_wm_base_listener xdg_wm_base_listener = {
 
 #endif
 
-#ifdef HAVE_WLR_LAYER_SHELL
-
-void layer_surface_configure_handler
-(
-    void *data,
-    struct zwlr_layer_surface_v1 *layer_surface,
-    uint32_t serial,
-    uint32_t width,
-    uint32_t height
-) {
-    zwlr_layer_surface_v1_ack_configure(layer_surface, serial);
-}
-
-void layer_surface_closed_handler
-(
-    void *data,
-    struct zwlr_layer_surface_v1 *layer_surface
-) {}
-
-const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
-    .configure = layer_surface_configure_handler,
-    .closed = layer_surface_closed_handler
-};
-
-#endif
-
 void init_wayland_globals() {
     display = wl_display_connect(NULL);
     if (display == NULL) {
@@ -386,9 +350,6 @@ void init_wayland_globals() {
         (shell == NULL
 #ifdef HAVE_XDG_SHELL
          && xdg_wm_base == NULL
-#endif
-#ifdef HAVE_WLR_LAYER_SHELL
-         && layer_shell == NULL
 #endif
         )
     ) {
@@ -476,28 +437,6 @@ void popup_tiny_invisible_surface() {
 
     surface = wl_compositor_create_surface(compositor);
 
-#ifdef HAVE_WLR_LAYER_SHELL
-    if (layer_shell != NULL) {
-        /* Use wlr-layer-shell */
-        layer_surface = zwlr_layer_shell_v1_get_layer_surface(
-            layer_shell,
-            surface,
-            NULL,  // output
-            ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY,
-            "wl-clipboard"  // namespace
-        );
-        zwlr_layer_surface_v1_add_listener(
-            layer_surface,
-            &layer_surface_listener,
-            NULL
-        );
-        zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface, 1);
-        /* Signal that the surface is ready to be configured */
-        wl_surface_commit(surface);
-        /* Wait for the surface to be configured */
-        wl_display_roundtrip(display);
-    } else
-#endif
     if (shell != NULL) {
         /* Use wl_shell */
         shell_surface = wl_shell_get_shell_surface(shell, surface);
@@ -553,12 +492,6 @@ void popup_tiny_invisible_surface() {
 }
 
 void destroy_popup_surface() {
-#ifdef HAVE_WLR_LAYER_SHELL
-    if (layer_surface != NULL) {
-        zwlr_layer_surface_v1_destroy(layer_surface);
-        layer_surface = NULL;
-    }
-#endif
     if (shell_surface != NULL) {
         wl_shell_surface_destroy(shell_surface);
         shell_surface = NULL;
