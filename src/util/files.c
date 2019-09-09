@@ -70,14 +70,15 @@ void trim_trailing_newline(const char *file_path) {
 
     int seek_res = lseek(fd, -1, SEEK_END);
     if (seek_res < 0 && errno == EINVAL) {
-        // empty file
+        /* It was an empty file */
         goto out;
     } else if (seek_res < 0) {
         perror("lseek");
         goto out;
     }
-    // otherwise, seek_res is the new file size
-
+    /* If the seek was successful, seek_res is the
+     * new file size after trimming the newline.
+     */
     char last_char;
     int read_res = read(fd, &last_char, 1);
     if (read_res != 1) {
@@ -100,6 +101,7 @@ char *path_for_fd(int fd) {
 }
 
 char *infer_mime_type_from_contents(const char *file_path) {
+    /* Spawn xdg-mime query filetype */
     int pipefd[2];
     pipe(pipefd);
     if (fork() == 0) {
@@ -117,14 +119,17 @@ char *infer_mime_type_from_contents(const char *file_path) {
     int wstatus;
     wait(&wstatus);
 
+    /* See if that worked */
     if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
         close(pipefd[0]);
         return NULL;
     }
 
+    /* Read the result */
     char *res = malloc(256);
     size_t len = read(pipefd[0], res, 256);
-    len--; // trim the newline
+    /* Trim the newline */
+    len--;
     res[len] = 0;
     close(pipefd[0]);
 
@@ -151,16 +156,16 @@ char *infer_mime_type_from_name(const char *file_path) {
     }
 
     for (char line[200]; fgets(line, sizeof(line), f) != NULL;) {
-        // skip comments and blank lines
+        /* Skip comments and black lines */
         if (line[0] == '#' || line[0] == '\n') {
             continue;
         }
 
-        // each line consists of a mime type and a list of extensions
+        /* Each line consists of a mime type and a list of extensions */
         char mime_type[200];
         int consumed;
         if (sscanf(line, "%199s%n", mime_type, &consumed) != 1) {
-            // malformed line?
+            /* A malformed line, perhaps? */
             continue;
         }
         char *lineptr = line + consumed;
@@ -176,20 +181,30 @@ char *infer_mime_type_from_name(const char *file_path) {
     return NULL;
 }
 
+/* Returns the name of a new file */
 char *dump_stdin_into_a_temp_file() {
+    /* Create a temp directory to host out file */
     char dirpath[] = "/tmp/wl-copy-buffer-XXXXXX";
     if (mkdtemp(dirpath) != dirpath) {
         perror("mkdtemp");
         exit(1);
     }
+
+    /* Pick a name for the file we'll be
+     * creating inside that directory. We
+     * try to preserve the origial name for
+     * the mime type inference to work.
+     */
     char *original_path = path_for_fd(STDIN_FILENO);
     char *name = original_path != NULL ? basename(original_path) : "stdin";
 
+    /* Construct the path */
     char *res_path = malloc(strlen(dirpath) + 1 + strlen(name) + 1);
     memcpy(res_path, dirpath, sizeof(dirpath));
     res_path[sizeof(dirpath) - 1] = '/';
     strcpy(res_path + sizeof(dirpath), name);
 
+    /* Spawn cat to perform the copy */
     if (fork() == 0) {
         int fd = creat(res_path, S_IRUSR | S_IWUSR);
         if (fd < 0) {

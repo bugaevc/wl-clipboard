@@ -121,7 +121,9 @@ const char *mime_type_to_request() {
             try_prefixed;
         }
     } else {
-        // no mime type requested explicitly, try to guess
+        /* No mime type requested explicitly,
+         * so try to guess.
+         */
         if (options.inferred_type == NULL) {
             try_text_plain_utf8;
             try_text_plain;
@@ -169,7 +171,7 @@ void do_paste
     }
 
     const char *mime_type = mime_type_to_request();
-    // never append a newline character to binary content
+    /* Never append a newline character to binary content */
     if (!mime_type_is_text(mime_type)) {
         options.no_newline = 1;
     }
@@ -184,6 +186,7 @@ void do_paste
 
     wl_display_roundtrip(display);
 
+    /* Spawn a cat to perform the copy */
     if (fork() == 0) {
         dup2(pipefd[0], STDIN_FILENO);
         close(pipefd[0]);
@@ -503,7 +506,7 @@ int main(int argc, char * const argv[]) {
             requested_seat_name = strdup(optarg);
             break;
         default:
-            // getopt has already printed an error message
+            /* getopt has already printed an error message */
             print_usage(stderr, argv[0]);
             exit(1);
         }

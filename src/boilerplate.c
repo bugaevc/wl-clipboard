@@ -147,7 +147,7 @@ void keyboard_enter_handler
     struct wl_array *keys
 ) {
     struct wl_seat *this_seat = (struct wl_seat *) data;
-    // when we get to here, global seat is already initialized
+    /* When we get to here, global seat is already initialized */
     if (this_seat != seat) {
         return;
     }
@@ -199,7 +199,7 @@ void seat_capabilities_handler
     struct wl_seat *this_seat,
     uint32_t capabilities
 ) {
-    // stash the capabilities of this seat for later
+    /* Stash the capabilities of this seat for later */
     void *user_data = (void *) (unsigned long) capabilities;
     wl_seat_set_user_data(this_seat, user_data);
 
@@ -376,7 +376,7 @@ void init_wayland_globals() {
     struct wl_registry *registry = wl_display_get_registry(display);
     wl_registry_add_listener(registry, &registry_listener, NULL);
 
-    // wait for the "initial" set of globals to appear
+    /* Wait for the "initial" set of globals to appear */
     wl_display_roundtrip(display);
 
     if (
@@ -459,24 +459,26 @@ void ensure_has_primary_selection() {
 }
 
 void popup_tiny_invisible_surface() {
-    // HACK:
-    // pop up a tiny invisible surface to get the keyboard focus,
-    // otherwise we won't be notified of the selection
+    /* HACK:
+     * Pop up a tiny invisible surface to get the keyboard focus,
+     * otherwise we won't be notified of the selection.
+     */
 
     if (!ensure_seat_has_keyboard()) {
         return;
     }
 
-    // make sure that we get the keyboard
-    // object before creating the surface,
-    // so that we get the enter event
+    /* Make sure that we get the keyboard
+     * object before creating the surface,
+     * so that we get the enter event.
+     */
     wl_display_dispatch(display);
 
     surface = wl_compositor_create_surface(compositor);
 
 #ifdef HAVE_WLR_LAYER_SHELL
     if (layer_shell != NULL) {
-        // use wlr-layer-shell
+        /* Use wlr-layer-shell */
         layer_surface = zwlr_layer_shell_v1_get_layer_surface(
             layer_shell,
             surface,
@@ -490,29 +492,29 @@ void popup_tiny_invisible_surface() {
             NULL
         );
         zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface, 1);
-        // signal that the surface is ready to be configured
+        /* Signal that the surface is ready to be configured */
         wl_surface_commit(surface);
-        // wait for the surface to be configured
+        /* Wait for the surface to be configured */
         wl_display_roundtrip(display);
     } else
 #endif
     if (shell != NULL) {
-        // use wl_shell
+        /* Use wl_shell */
         shell_surface = wl_shell_get_shell_surface(shell, surface);
         wl_shell_surface_set_toplevel(shell_surface);
         wl_shell_surface_set_title(shell_surface, "wl-clipboard");
     } else {
 #ifdef HAVE_XDG_SHELL
-        // use xdg-shell
+        /* Use xdg-shell */
         xdg_wm_base_add_listener(xdg_wm_base, &xdg_wm_base_listener, NULL);
         xdg_surface = xdg_wm_base_get_xdg_surface(xdg_wm_base, surface);
         xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
         xdg_toplevel = xdg_surface_get_toplevel(xdg_surface);
         xdg_toplevel_add_listener(xdg_toplevel, &xdg_toplevel_listener, NULL);
         xdg_toplevel_set_title(xdg_toplevel, "wl-clipboard");
-        // signal that the surface is ready to be configured
+        /* Signal that the surface is ready to be configured */
         wl_surface_commit(surface);
-        // wait for the surface to be configured
+        /* Wait for the surface to be configured */
         wl_display_roundtrip(display);
 #else
         bail("Unreachable: HAVE_XDG_SHELL undefined and no wl_shell");
@@ -520,10 +522,11 @@ void popup_tiny_invisible_surface() {
     }
 
     if (surface == NULL) {
-        // it's possible that we've been given focus without us
-        // ever commiting a buffer, in which case the handlers
-        // may have already destroyed the surface; there's no
-        // way or need for us to commit a buffer in that case
+        /* It's possible that we've been given focus without us
+         * ever commiting a buffer, in which case the handlers
+         * may have already destroyed the surface; there's no
+         * way or need for us to commit a buffer in that case.
+         */
         return;
     }
 
@@ -532,17 +535,17 @@ void popup_tiny_invisible_surface() {
     int stride = width * 4;
     int size = stride * height;  // bytes
 
-    // open an anonymous file and write some zero bytes to it
+    /* Open an anonymous file and write some zero bytes to it */
     int fd = create_anonymous_file();
     ftruncate(fd, size);
 
-    // turn it into a shared memory pool
+    /* Turn it into a shared memory pool */
     struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
 
-    // allocate the buffer in that pool
+    /* Allocate the buffer in that pool */
     struct wl_buffer *buffer = wl_shm_pool_create_buffer(pool,
         0, width, height, stride, WL_SHM_FORMAT_ARGB8888);
-    // zeros in ARGB8888 mean fully transparent
+    /* Zeros in ARGB8888 mean fully transparent */
 
     wl_surface_attach(surface, buffer, 0, 0);
     wl_surface_damage(surface, 0, 0, width, height);
