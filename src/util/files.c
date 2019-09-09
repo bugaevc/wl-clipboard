@@ -159,12 +159,12 @@ char *infer_mime_type_from_name(const char *file_path) {
         // each line consists of a mime type and a list of extensions
         char mime_type[200];
         int consumed;
-        if (sscanf(line, "%s%n", mime_type, &consumed) != 1) {
+        if (sscanf(line, "%199s%n", mime_type, &consumed) != 1) {
             // malformed line?
             continue;
         }
         char *lineptr = line + consumed;
-        for (char ext[200]; sscanf(lineptr, "%s%n", ext, &consumed) == 1;) {
+        for (char ext[200]; sscanf(lineptr, "%199s%n", ext, &consumed) == 1;) {
             if (strcmp(ext, actual_ext) == 0) {
                 fclose(f);
                 return strdup(mime_type);
