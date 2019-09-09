@@ -23,7 +23,7 @@ char *temp_file_to_copy = NULL;
 int paste_once = 0;
 
 void do_cancel() {
-    // we're done!
+    /* We're done! */
     if (temp_file_to_copy != NULL) {
         execlp("rm", "rm", "-r", dirname(temp_file_to_copy), NULL);
         perror("exec rm");
@@ -34,10 +34,10 @@ void do_cancel() {
 }
 
 void do_send(const char *mime_type, int fd) {
-    // unset O_NONBLOCK
+    /* Unset O_NONBLOCK */
     fcntl(fd, F_SETFL, 0);
     if (data_to_copy != NULL) {
-        // copy the specified data, separated by spaces
+        /* Copy the specified data, separated by spaces */
         FILE *f = fdopen(fd, "w");
         if (f == NULL) {
             perror("fdopen");
@@ -52,8 +52,9 @@ void do_send(const char *mime_type, int fd) {
         }
         fclose(f);
     } else {
-        // copy from the temp file; for that, we delegate to a
-        // (hopefully) highly optimized implementation of copying
+        /* Copy from the temp file; for that, we delegate to a
+         * (hopefully) highly optimized implementation of copying.
+         */
         if (fork() == 0) {
             dup2(fd, STDOUT_FILENO);
             execlp("cat", "cat", temp_file_to_copy, NULL);
@@ -235,7 +236,7 @@ void do_offer
     void (*offer_f)(void *source, const char *type)
 ) {
     if (mime_type == NULL || mime_type_is_text(mime_type)) {
-        // offer a few generic plain text formats
+        /* Offer a few generic plain text formats */
         offer_f(source, text_plain);
         offer_f(source, text_plain_utf8);
         offer_f(source, "TEXT");
@@ -435,7 +436,7 @@ int main(int argc, char * const argv[]) {
             requested_seat_name = strdup(optarg);
             break;
         default:
-            // getopt has already printed an error message
+            /* getopt has already printed an error message */
             print_usage(stderr, argv[0]);
             exit(1);
         }
@@ -449,10 +450,10 @@ int main(int argc, char * const argv[]) {
 
     if (!clear) {
         if (optind < argc) {
-            // copy our command-line args
+            /* Copy our command-line arguments */
             data_to_copy = &argv[optind];
         } else {
-            // copy stdin
+            /* Copy data from our stdin */
             temp_file_to_copy = dump_stdin_into_a_temp_file();
             if (trim_newline) {
                 trim_trailing_newline(temp_file_to_copy);
@@ -465,8 +466,11 @@ int main(int argc, char * const argv[]) {
 
     if (!stay_in_foreground && !clear) {
         if (fork() != 0) {
-            // exit in the parent, but leave the
-            // child running in the background
+            /* Move to background.
+             * We fork our process and leave the
+             * child running in the background,
+             * while exiting in the parent.
+             */
             exit(0);
         }
     }
