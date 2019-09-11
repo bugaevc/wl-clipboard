@@ -63,7 +63,13 @@ static void do_send(const char *mime_type, int fd) {
         /* Copy from the temp file; for that, we delegate to a
          * (hopefully) highly optimized implementation of copying.
          */
-        if (fork() == 0) {
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("fork");
+            close(fd);
+            return;
+        }
+        if (pid == 0) {
             dup2(fd, STDOUT_FILENO);
             execlp("cat", "cat", temp_file_to_copy, NULL);
             perror("exec cat");
@@ -471,12 +477,17 @@ int main(int argc, char * const argv[]) {
     }
 
     if (!options.stay_in_foreground && !options.clear) {
-        if (fork() != 0) {
-            /* Move to background.
-             * We fork our process and leave the
-             * child running in the background,
-             * while exiting in the parent.
-             */
+        /* Move to background.
+         * We fork our process and leave the
+         * child running in the background,
+         * while exiting in the parent.
+         */
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("fork");
+            /* Proceed without forking */
+        }
+        if (pid > 0) {
             exit(0);
         }
     }

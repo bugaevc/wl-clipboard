@@ -104,7 +104,15 @@ char *infer_mime_type_from_contents(const char *file_path) {
     /* Spawn xdg-mime query filetype */
     int pipefd[2];
     pipe(pipefd);
-    if (fork() == 0) {
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        close(pipefd[0]);
+        close(pipefd[1]);
+        return NULL;
+    }
+    if (pid == 0) {
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[0]);
         close(pipefd[1]);
@@ -205,7 +213,12 @@ char *dump_stdin_into_a_temp_file() {
     strcpy(res_path + sizeof(dirpath), name);
 
     /* Spawn cat to perform the copy */
-    if (fork() == 0) {
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        exit(1);
+    }
+    if (pid == 0) {
         int fd = creat(res_path, S_IRUSR | S_IWUSR);
         if (fd < 0) {
             perror("creat");

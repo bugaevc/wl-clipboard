@@ -188,7 +188,12 @@ static void do_paste
     wl_display_roundtrip(display);
 
     /* Spawn a cat to perform the copy */
-    if (fork() == 0) {
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        exit(1);
+    }
+    if (pid == 0) {
         dup2(pipefd[0], STDIN_FILENO);
         close(pipefd[0]);
         close(pipefd[1]);
