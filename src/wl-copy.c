@@ -381,8 +381,7 @@ void print_usage(FILE *f, const char *argv0) {
     );
 }
 
-int main(int argc, char * const argv[]) {
-
+void parse_options(int argc, char * const argv[]) {
     if (argc < 1) {
         bail("Empty argv");
     }
@@ -443,6 +442,10 @@ int main(int argc, char * const argv[]) {
             exit(1);
         }
     }
+}
+
+int main(int argc, char * const argv[]) {
+    parse_options(argc, argv);
 
     init_wayland_globals();
 
