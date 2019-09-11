@@ -456,8 +456,7 @@ void init_primary_selection() {
 #endif
 }
 
-int main(int argc, char * const argv[]) {
-
+void parse_options(int argc, char * const argv[]) {
     if (argc < 1) {
         bail("Empty argv");
     }
@@ -510,6 +509,11 @@ int main(int argc, char * const argv[]) {
             exit(1);
         }
     }
+}
+
+int main(int argc, char * const argv[]) {
+    parse_options(argc, argv);
+
 
     char *path = path_for_fd(STDOUT_FILENO);
     if (path != NULL && options.explicit_type == NULL) {
