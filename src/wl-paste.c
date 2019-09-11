@@ -23,6 +23,7 @@ struct {
     char *inferred_type;
     int no_newline;
     int list_types;
+    int primary;
 } options;
 
 struct {
@@ -461,8 +462,6 @@ int main(int argc, char * const argv[]) {
         bail("Empty argv");
     }
 
-    int primary = 0;
-
     static struct option long_options[] = {
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
@@ -491,7 +490,7 @@ int main(int argc, char * const argv[]) {
             print_usage(stdout, argv[0]);
             exit(0);
         case 'p':
-            primary = 1;
+            options.primary = 1;
             break;
         case 'n':
             options.no_newline = 1;
@@ -520,7 +519,7 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
-    if (!primary) {
+    if (!options.primary) {
         init_selection();
     } else {
         init_primary_selection();

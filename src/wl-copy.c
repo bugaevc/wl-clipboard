@@ -18,9 +18,17 @@
 
 #include "boilerplate.h"
 
+struct {
+    int stay_in_foreground;
+    int clear;
+    char *mime_type;
+    int trim_newline;
+    int paste_once;
+    int primary;
+} options;
+
 char * const *data_to_copy = NULL;
 char *temp_file_to_copy = NULL;
-int paste_once = 0;
 
 void do_cancel() {
     /* We're done! */
@@ -65,7 +73,7 @@ void do_send(const char *mime_type, int fd) {
         wait(NULL);
     }
 
-    if (paste_once) {
+    if (options.paste_once) {
         do_cancel();
     }
 }
@@ -379,12 +387,6 @@ int main(int argc, char * const argv[]) {
         bail("Empty argv");
     }
 
-    int stay_in_foreground = 0;
-    int clear = 0;
-    char *mime_type = NULL;
-    int primary = 0;
-    int trim_newline = 0;
-
     static struct option long_options[] = {
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
@@ -415,22 +417,22 @@ int main(int argc, char * const argv[]) {
             print_usage(stdout, argv[0]);
             exit(0);
         case 'p':
-            primary = 1;
+            options.primary = 1;
             break;
         case 'n':
-            trim_newline = 1;
+            options.trim_newline = 1;
             break;
         case 'o':
-            paste_once = 1;
+            options.paste_once = 1;
             break;
         case 'f':
-            stay_in_foreground = 1;
+            options.stay_in_foreground = 1;
             break;
         case 'c':
-            clear = 1;
+            options.clear = 1;
             break;
         case 't':
-            mime_type = strdup(optarg);
+            options.mime_type = strdup(optarg);
             break;
         case 's':
             requested_seat_name = strdup(optarg);
@@ -444,27 +446,28 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
-    if (primary) {
+    if (options.primary) {
         ensure_has_primary_selection();
     }
 
-    if (!clear) {
+    if (!options.clear) {
         if (optind < argc) {
             /* Copy our command-line arguments */
             data_to_copy = &argv[optind];
         } else {
             /* Copy data from our stdin */
             temp_file_to_copy = dump_stdin_into_a_temp_file();
-            if (trim_newline) {
+            if (options.trim_newline) {
                 trim_trailing_newline(temp_file_to_copy);
             }
-            if (mime_type == NULL) {
-                mime_type = infer_mime_type_from_contents(temp_file_to_copy);
+            if (options.mime_type == NULL) {
+                options.mime_type
+                    = infer_mime_type_from_contents(temp_file_to_copy);
             }
         }
     }
 
-    if (!stay_in_foreground && !clear) {
+    if (!options.stay_in_foreground && !options.clear) {
         if (fork() != 0) {
             /* Move to background.
              * We fork our process and leave the
@@ -475,13 +478,13 @@ int main(int argc, char * const argv[]) {
         }
     }
 
-    if (!primary) {
-        init_selection(mime_type);
+    if (!options.primary) {
+        init_selection(options.mime_type);
     } else {
-        init_primary_selection(mime_type);
+        init_primary_selection(options.mime_type);
     }
 
-    if (clear) {
+    if (options.clear) {
         wl_display_roundtrip(display);
         exit(0);
     }
