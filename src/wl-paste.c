@@ -515,6 +515,12 @@ static void parse_options(int argc, char * const argv[]) {
             exit(1);
         }
     }
+
+    if (optind != argc) {
+        fprintf(stderr, "Unexpected argument: %s\n", argv[optind]);
+        print_usage(stderr, argv[0]);
+        exit(1);
+    }
 }
 
 int main(int argc, char * const argv[]) {
