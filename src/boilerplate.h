@@ -86,7 +86,6 @@ struct zwlr_data_control_manager_v1 *data_control_manager;
 struct zwlr_data_control_device_v1 *data_control_device;
 #endif
 
-void process_new_seat(struct wl_seat *new_seat);
 const char *requested_seat_name;
 
 void init_wayland_globals(void);

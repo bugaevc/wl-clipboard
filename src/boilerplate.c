@@ -18,7 +18,9 @@
 
 #include "boilerplate.h"
 
-void registry_global_handler
+static void process_new_seat(struct wl_seat *new_seat);
+
+static void registry_global_handler
 (
     void *data,
     struct wl_registry *registry,
@@ -105,19 +107,19 @@ void registry_global_handler
 #endif
 }
 
-void registry_global_remove_handler
+static void registry_global_remove_handler
 (
     void *data,
     struct wl_registry *registry,
     uint32_t name
 ) {}
 
-const struct wl_registry_listener registry_listener = {
+static const struct wl_registry_listener registry_listener = {
     .global = registry_global_handler,
     .global_remove = registry_global_remove_handler
 };
 
-void keyboard_keymap_handler
+static void keyboard_keymap_handler
 (
     void *data,
     struct wl_keyboard *keyboard,
@@ -128,7 +130,7 @@ void keyboard_keymap_handler
     close(fd);
 }
 
-void keyboard_enter_handler
+static void keyboard_enter_handler
 (
     void *data,
     struct wl_keyboard *keyboard,
@@ -146,7 +148,7 @@ void keyboard_enter_handler
     }
 }
 
-void keyboard_leave_handler
+static void keyboard_leave_handler
 (
     void *data,
     struct wl_keyboard *keyboard,
@@ -154,7 +156,7 @@ void keyboard_leave_handler
     struct wl_surface *surface
 ) {}
 
-void keyboard_key_handler
+static void keyboard_key_handler
 (
     void *data,
     struct wl_keyboard *keyboard,
@@ -164,7 +166,7 @@ void keyboard_key_handler
     uint32_t state
 ) {}
 
-void keyboard_modifiers_handler
+static void keyboard_modifiers_handler
 (
     void *data,
     struct wl_keyboard *keyboard,
@@ -175,7 +177,7 @@ void keyboard_modifiers_handler
     uint32_t group
 ) {}
 
-const struct wl_keyboard_listener keayboard_listener = {
+static const struct wl_keyboard_listener keayboard_listener = {
     .keymap = keyboard_keymap_handler,
     .enter = keyboard_enter_handler,
     .leave = keyboard_leave_handler,
@@ -183,7 +185,7 @@ const struct wl_keyboard_listener keayboard_listener = {
     .modifiers = keyboard_modifiers_handler,
 };
 
-void seat_capabilities_handler
+static void seat_capabilities_handler
 (
     void *data,
     struct wl_seat *this_seat,
@@ -199,7 +201,7 @@ void seat_capabilities_handler
     }
 }
 
-void seat_name_handler
+static void seat_name_handler
 (
     void *data,
     struct wl_seat *this_seat,
@@ -213,14 +215,14 @@ void seat_name_handler
     }
 }
 
-const struct wl_seat_listener seat_listener = {
+static const struct wl_seat_listener seat_listener = {
     .capabilities = seat_capabilities_handler,
     .name = seat_name_handler
 };
 
 #define UNSET_CAPABILITIES ((void *) (uint32_t) 35)
 
-void process_new_seat(struct wl_seat *new_seat) {
+static void process_new_seat(struct wl_seat *new_seat) {
     if (seat != NULL) {
         wl_seat_destroy(new_seat);
         return;
@@ -251,7 +253,7 @@ int ensure_seat_has_keyboard() {
 
 #undef UNSET_CAPABILITIES
 
-void shell_surface_ping
+static void shell_surface_ping
 (
     void *data,
     struct wl_shell_surface *shell_surface,
@@ -260,7 +262,7 @@ void shell_surface_ping
     wl_shell_surface_pong(shell_surface, serial);
 }
 
-void shell_surface_configure
+static void shell_surface_configure
 (
     void *data,
     struct wl_shell_surface *shell_surface,
@@ -269,13 +271,13 @@ void shell_surface_configure
     int32_t height
 ) {}
 
-void shell_surface_popup_done
+static void shell_surface_popup_done
 (
     void *data,
     struct wl_shell_surface *shell_surface
 ) {}
 
-const struct wl_shell_surface_listener shell_surface_listener = {
+static const struct wl_shell_surface_listener shell_surface_listener = {
     .ping = shell_surface_ping,
     .configure = shell_surface_configure,
     .popup_done = shell_surface_popup_done
@@ -283,7 +285,7 @@ const struct wl_shell_surface_listener shell_surface_listener = {
 
 #ifdef HAVE_XDG_SHELL
 
-void xdg_toplevel_configure_handler
+static void xdg_toplevel_configure_handler
 (
     void *data,
     struct xdg_toplevel *xdg_toplevel,
@@ -292,18 +294,18 @@ void xdg_toplevel_configure_handler
     struct wl_array *states
 ) {}
 
-void xdg_toplevel_close_handler
+static void xdg_toplevel_close_handler
 (
     void *data,
     struct xdg_toplevel *xdg_toplevel
 ) {}
 
-const struct xdg_toplevel_listener xdg_toplevel_listener = {
+static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     .configure = xdg_toplevel_configure_handler,
     .close = xdg_toplevel_close_handler
 };
 
-void xdg_surface_configure_handler
+static void xdg_surface_configure_handler
 (
     void *data,
     struct xdg_surface *xdg_surface,
@@ -312,11 +314,11 @@ void xdg_surface_configure_handler
     xdg_surface_ack_configure(xdg_surface, serial);
 }
 
-const struct xdg_surface_listener xdg_surface_listener = {
+static const struct xdg_surface_listener xdg_surface_listener = {
     .configure = xdg_surface_configure_handler
 };
 
-void xdg_wm_base_ping_handler
+static void xdg_wm_base_ping_handler
 (
     void *data,
     struct xdg_wm_base *xdg_wm_base,
@@ -325,7 +327,7 @@ void xdg_wm_base_ping_handler
     xdg_wm_base_pong(xdg_wm_base, serial);
 }
 
-const struct xdg_wm_base_listener xdg_wm_base_listener = {
+static const struct xdg_wm_base_listener xdg_wm_base_listener = {
     .ping = xdg_wm_base_ping_handler
 };
 
@@ -514,7 +516,7 @@ void destroy_popup_surface() {
 
 static uint32_t global_serial;
 
-void callback_done
+static void callback_done
 (
     void *data,
     struct wl_callback *callback,
@@ -523,7 +525,7 @@ void callback_done
     global_serial = serial;
 }
 
-const struct wl_callback_listener callback_listener = {
+static const struct wl_callback_listener callback_listener = {
     .done = callback_done
 };
 
