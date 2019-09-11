@@ -18,7 +18,7 @@
 
 #include "boilerplate.h"
 
-struct {
+static struct {
     int stay_in_foreground;
     int clear;
     char *mime_type;
@@ -27,10 +27,10 @@ struct {
     int primary;
 } options;
 
-char * const *data_to_copy = NULL;
-char *temp_file_to_copy = NULL;
+static char * const *data_to_copy = NULL;
+static char *temp_file_to_copy = NULL;
 
-void do_cancel() {
+static void do_cancel() {
     /* We're done! */
     if (temp_file_to_copy != NULL) {
         execlp("rm", "rm", "-r", dirname(temp_file_to_copy), NULL);
@@ -41,7 +41,7 @@ void do_cancel() {
     }
 }
 
-void do_send(const char *mime_type, int fd) {
+static void do_send(const char *mime_type, int fd) {
     /* Unset O_NONBLOCK */
     fcntl(fd, F_SETFL, 0);
     if (data_to_copy != NULL) {
@@ -78,14 +78,14 @@ void do_send(const char *mime_type, int fd) {
     }
 }
 
-void data_source_target_handler
+static void data_source_target_handler
 (
     void *data,
     struct wl_data_source *data_source,
     const char *mime_type
 ) {}
 
-void data_source_send_handler
+static void data_source_send_handler
 (
     void *data,
     struct wl_data_source *data_source,
@@ -95,7 +95,7 @@ void data_source_send_handler
     do_send(mime_type, fd);
 }
 
-void data_source_cancelled_handler
+static void data_source_cancelled_handler
 (
     void *data,
     struct wl_data_source *data_source
@@ -103,32 +103,32 @@ void data_source_cancelled_handler
     do_cancel();
 }
 
-const struct wl_data_source_listener data_source_listener = {
+static const struct wl_data_source_listener data_source_listener = {
     .target = data_source_target_handler,
     .send = data_source_send_handler,
     .cancelled = data_source_cancelled_handler
 };
 
-struct wl_data_source *data_source;
+static struct wl_data_source *data_source;
 
-void set_data_selection(uint32_t serial) {
+static void set_data_selection(uint32_t serial) {
     wl_data_device_set_selection(data_device, data_source, serial);
     wl_display_roundtrip(display);
     destroy_popup_surface();
 }
 
-void try_setting_data_selection_directly() {
+static void try_setting_data_selection_directly() {
     set_data_selection(get_serial());
 }
 
 
-void complain_about_missing_keyboard() {
+static void complain_about_missing_keyboard() {
     bail("Setting primary selection is not supported without a keyboard");
 }
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
 
-void gtk_primary_selection_source_send_handler
+static void gtk_primary_selection_source_send_handler
 (
     void *data,
     struct gtk_primary_selection_source *gtk_primary_selection_source,
@@ -138,7 +138,7 @@ void gtk_primary_selection_source_send_handler
     do_send(mime_type, fd);
 }
 
-void gtk_primary_selection_source_cancelled_handler
+static void gtk_primary_selection_source_cancelled_handler
 (
     void *data,
     struct gtk_primary_selection_source *gtk_primary_selection_source
@@ -146,15 +146,15 @@ void gtk_primary_selection_source_cancelled_handler
     do_cancel();
 }
 
-const struct gtk_primary_selection_source_listener
+static const struct gtk_primary_selection_source_listener
 gtk_primary_selection_source_listener = {
     .send = gtk_primary_selection_source_send_handler,
     .cancelled = gtk_primary_selection_source_cancelled_handler
 };
 
-struct gtk_primary_selection_source *gtk_primary_selection_source;
+static struct gtk_primary_selection_source *gtk_primary_selection_source;
 
-void set_gtk_primary_selection(uint32_t serial) {
+static void set_gtk_primary_selection(uint32_t serial) {
 
     gtk_primary_selection_device_set_selection(
         gtk_primary_selection_device,
@@ -170,7 +170,7 @@ void set_gtk_primary_selection(uint32_t serial) {
 
 #ifdef HAVE_WP_PRIMARY_SELECTION
 
-void primary_selection_source_send_handler
+static void primary_selection_source_send_handler
 (
     void *data,
     struct zwp_primary_selection_source_v1 *primary_selection_source,
@@ -180,7 +180,7 @@ void primary_selection_source_send_handler
     do_send(mime_type, fd);
 }
 
-void primary_selection_source_cancelled_handler
+static void primary_selection_source_cancelled_handler
 (
     void *data,
     struct zwp_primary_selection_source_v1 *primary_selection_source
@@ -188,15 +188,15 @@ void primary_selection_source_cancelled_handler
     do_cancel();
 }
 
-const struct zwp_primary_selection_source_v1_listener
+static const struct zwp_primary_selection_source_v1_listener
 primary_selection_source_listener = {
     .send = primary_selection_source_send_handler,
     .cancelled = primary_selection_source_cancelled_handler
 };
 
-struct zwp_primary_selection_source_v1 *primary_selection_source;
+static struct zwp_primary_selection_source_v1 *primary_selection_source;
 
-void set_primary_selection(uint32_t serial) {
+static void set_primary_selection(uint32_t serial) {
 
     zwp_primary_selection_device_v1_set_selection(
         primary_selection_device,
@@ -212,7 +212,7 @@ void set_primary_selection(uint32_t serial) {
 
 #ifdef HAVE_WLR_DATA_CONTROL
 
-void data_control_source_send_handler
+static void data_control_source_send_handler
 (
     void *data,
     struct zwlr_data_control_source_v1 *data_control_source,
@@ -222,7 +222,7 @@ void data_control_source_send_handler
     do_send(mime_type, fd);
 }
 
-void data_control_source_cancelled_handler
+static void data_control_source_cancelled_handler
 (
     void *data,
     struct zwlr_data_control_source_v1 *data_source
@@ -230,14 +230,14 @@ void data_control_source_cancelled_handler
     do_cancel();
 }
 
-const struct zwlr_data_control_source_v1_listener
+static const struct zwlr_data_control_source_v1_listener
 data_control_source_listener = {
     .send = data_control_source_send_handler,
     .cancelled = data_control_source_cancelled_handler
 };
 #endif
 
-void do_offer
+static void do_offer
 (
     char *mime_type,
     void *source,
@@ -257,7 +257,7 @@ void do_offer
     free(mime_type);
 }
 
-void init_selection(char *mime_type) {
+static void init_selection(char *mime_type) {
     if (use_wlr_data_control) {
 #ifdef HAVE_WLR_DATA_CONTROL
         struct zwlr_data_control_source_v1 *data_control_source =
@@ -299,7 +299,7 @@ void init_selection(char *mime_type) {
     }
 }
 
-void init_primary_selection(char *mime_type) {
+static void init_primary_selection(char *mime_type) {
     ensure_has_primary_selection();
 
 #ifdef HAVE_WP_PRIMARY_SELECTION
@@ -354,7 +354,7 @@ void init_primary_selection(char *mime_type) {
 #endif
 }
 
-void print_usage(FILE *f, const char *argv0) {
+static void print_usage(FILE *f, const char *argv0) {
     fprintf(
         f,
         "Usage:\n"
@@ -381,7 +381,7 @@ void print_usage(FILE *f, const char *argv0) {
     );
 }
 
-void parse_options(int argc, char * const argv[]) {
+static void parse_options(int argc, char * const argv[]) {
     if (argc < 1) {
         bail("Empty argv");
     }
