@@ -22,15 +22,35 @@
 #include <stdlib.h>
 
 int mime_type_is_text(const char *mime_type) {
-    return str_has_prefix(mime_type, "text/")
+    /* A heuristic to detect plain text mime types */
+
+    /* Types that explicitly declare they're textual */
+    int basic
+        = str_has_prefix(mime_type, "text/")
         || strcmp(mime_type, "TEXT") == 0
         || strcmp(mime_type, "STRING") == 0
-        || strcmp(mime_type, "UTF8_STRING") == 0
+        || strcmp(mime_type, "UTF8_STRING") == 0;
+
+    /* Common script and markup types */
+    int common
+        = strstr(mime_type, "json") != NULL
         || str_has_suffix(mime_type, "script")
         || str_has_suffix(mime_type, "xml")
-        || str_has_suffix(mime_type, "yaml")
-        || str_has_suffix(mime_type, "pgp-keys")
-        || strstr(mime_type, "json") != NULL;
+        || str_has_suffix(mime_type, "yaml");
+
+    /* Special-case PGP and SSH keys.
+     * A public SSH key is typically stored
+     * in a file that has a name similar to
+     * id_rsa.pub, which xdg-mime misidentifies
+     * as being a Publisher file. Note that it
+     * handles private keys, which do not have
+     * a .pub extension, correctly.
+     */
+    int special
+        = strstr(mime_type, "application/vnd.ms-publisher") != NULL
+        || str_has_suffix(mime_type, "pgp-keys");
+
+    return basic || common || special;
 }
 
 int str_has_prefix(const char *string, const char *prefix) {
