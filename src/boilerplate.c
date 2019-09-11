@@ -442,6 +442,11 @@ void popup_tiny_invisible_surface() {
     if (shell != NULL) {
         /* Use wl_shell */
         shell_surface = wl_shell_get_shell_surface(shell, surface);
+        wl_shell_surface_add_listener(
+            shell_surface,
+            &shell_surface_listener,
+            NULL
+        );
         wl_shell_surface_set_toplevel(shell_surface);
         wl_shell_surface_set_title(shell_surface, "wl-clipboard");
     } else {
