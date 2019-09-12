@@ -110,6 +110,8 @@ lib = static_library(
         'types/device-manager.c',
         'types/keyboard.h',
         'types/keyboard.c',
+        'types/shell-surface.h',
+        'types/shell-surface.c',
     ],
     dependencies: wayland,
     link_with: protocol_deps

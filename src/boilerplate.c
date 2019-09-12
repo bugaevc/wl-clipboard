@@ -18,6 +18,9 @@
 
 #include "boilerplate.h"
 #include "types/keyboard.h"
+#include "types/shell-surface.h"
+
+static struct shell_surface *shell_surface = NULL;
 
 static void process_new_seat(struct wl_seat *new_seat);
 
@@ -202,70 +205,7 @@ int ensure_seat_has_keyboard() {
 
 #undef UNSET_CAPABILITIES
 
-static void shell_surface_ping
-(
-    void *data,
-    struct wl_shell_surface *shell_surface,
-    uint32_t serial
-) {
-    wl_shell_surface_pong(shell_surface, serial);
-}
-
-static void shell_surface_configure
-(
-    void *data,
-    struct wl_shell_surface *shell_surface,
-    uint32_t edges,
-    int32_t width,
-    int32_t height
-) {}
-
-static void shell_surface_popup_done
-(
-    void *data,
-    struct wl_shell_surface *shell_surface
-) {}
-
-static const struct wl_shell_surface_listener shell_surface_listener = {
-    .ping = shell_surface_ping,
-    .configure = shell_surface_configure,
-    .popup_done = shell_surface_popup_done
-};
-
 #ifdef HAVE_XDG_SHELL
-
-static void xdg_toplevel_configure_handler
-(
-    void *data,
-    struct xdg_toplevel *xdg_toplevel,
-    int32_t width,
-    int32_t height,
-    struct wl_array *states
-) {}
-
-static void xdg_toplevel_close_handler
-(
-    void *data,
-    struct xdg_toplevel *xdg_toplevel
-) {}
-
-static const struct xdg_toplevel_listener xdg_toplevel_listener = {
-    .configure = xdg_toplevel_configure_handler,
-    .close = xdg_toplevel_close_handler
-};
-
-static void xdg_surface_configure_handler
-(
-    void *data,
-    struct xdg_surface *xdg_surface,
-    uint32_t serial
-) {
-    xdg_surface_ack_configure(xdg_surface, serial);
-}
-
-static const struct xdg_surface_listener xdg_surface_listener = {
-    .configure = xdg_surface_configure_handler
-};
 
 static void xdg_wm_base_ping_handler
 (
@@ -353,35 +293,33 @@ void popup_tiny_invisible_surface() {
      */
     wl_display_dispatch(display);
 
+    shell_surface = calloc(1, sizeof(struct shell_surface));
+
     surface = wl_compositor_create_surface(compositor);
 
     if (shell != NULL) {
         /* Use wl_shell */
-        shell_surface = wl_shell_get_shell_surface(shell, surface);
-        wl_shell_surface_add_listener(
-            shell_surface,
-            &shell_surface_listener,
-            NULL
-        );
-        wl_shell_surface_set_toplevel(shell_surface);
-        wl_shell_surface_set_title(shell_surface, "wl-clipboard");
+        shell_surface->proxy
+            = (struct wl_proxy *) wl_shell_get_shell_surface(shell, surface);
+        shell_surface_init_wl_shell_surface(shell_surface);
     } else {
 #ifdef HAVE_XDG_SHELL
         /* Use xdg-shell */
         xdg_wm_base_add_listener(xdg_wm_base, &xdg_wm_base_listener, NULL);
-        xdg_surface = xdg_wm_base_get_xdg_surface(xdg_wm_base, surface);
-        xdg_surface_add_listener(xdg_surface, &xdg_surface_listener, NULL);
-        xdg_toplevel = xdg_surface_get_toplevel(xdg_surface);
-        xdg_toplevel_add_listener(xdg_toplevel, &xdg_toplevel_listener, NULL);
-        xdg_toplevel_set_title(xdg_toplevel, "wl-clipboard");
-        /* Signal that the surface is ready to be configured */
-        wl_surface_commit(surface);
-        /* Wait for the surface to be configured */
-        wl_display_roundtrip(display);
+        shell_surface->proxy
+            = (struct wl_proxy *) xdg_wm_base_get_xdg_surface(
+                xdg_wm_base,
+                surface
+        );
+        shell_surface_init_xdg_surface(shell_surface);
 #else
         bail("Unreachable: HAVE_XDG_SHELL undefined and no wl_shell");
 #endif
     }
+    /* Signal that the surface is ready to be configured */
+    wl_surface_commit(surface);
+    /* Wait for the surface to be configured */
+    wl_display_roundtrip(display);
 
     if (surface == NULL) {
         /* It's possible that we've been given focus without us
@@ -416,19 +354,9 @@ void popup_tiny_invisible_surface() {
 
 void destroy_popup_surface() {
     if (shell_surface != NULL) {
-        wl_shell_surface_destroy(shell_surface);
+        shell_surface_destroy(shell_surface);
         shell_surface = NULL;
     }
-#ifdef HAVE_XDG_SHELL
-    if (xdg_toplevel != NULL) {
-        xdg_toplevel_destroy(xdg_toplevel);
-        xdg_toplevel = NULL;
-    }
-    if (xdg_surface != NULL) {
-        xdg_surface_destroy(xdg_surface);
-        xdg_surface = NULL;
-    }
-#endif
     if (surface != NULL) {
         wl_surface_destroy(surface);
         surface = NULL;
