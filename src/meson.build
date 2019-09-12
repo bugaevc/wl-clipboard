@@ -85,8 +85,8 @@ foreach protocol : protocols
     protocol_deps += lib
 endforeach
 
-boilerplate = static_library(
-    'wl-clipboard-boilerplate',
+lib = static_library(
+    'wl-clipboard',
     [
         'boilerplate.c',
 
@@ -104,5 +104,5 @@ boilerplate = static_library(
     link_with: protocol_deps
 )
 
-executable('wl-copy', 'wl-copy.c', dependencies: wayland, link_with: boilerplate, install: true)
-executable('wl-paste', 'wl-paste.c', dependencies: wayland, link_with: boilerplate, install: true)
+executable('wl-copy', 'wl-copy.c', dependencies: wayland, link_with: lib, install: true)
+executable('wl-paste', 'wl-paste.c', dependencies: wayland, link_with: lib, install: true)
