@@ -37,22 +37,8 @@
 #include <sys/wait.h>
 #include <limits.h> // PATH_MAX
 
-
-#ifdef HAVE_XDG_SHELL
-#    include "xdg-shell.h"
-#endif
-
-#ifdef HAVE_WP_PRIMARY_SELECTION
-#    include "wp-primary-selection.h"
-#endif
-
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-#    include "gtk-primary-selection.h"
-#endif
-
-#ifdef HAVE_WLR_DATA_CONTROL
-#    include "wlr-data-control.h"
-#endif
+#include "includes/shell-protocols.h"
+#include "includes/selection-protocols.h"
 
 struct wl_display *display;
 struct wl_data_device_manager *data_device_manager;
