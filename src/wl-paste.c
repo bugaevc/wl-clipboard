@@ -19,6 +19,7 @@
 #include "boilerplate.h"
 #include "types/offer.h"
 #include "types/device.h"
+#include "types/device-manager.h"
 
 static struct {
     char *explicit_type;
@@ -38,7 +39,7 @@ struct types {
     const char *any;
 };
 
-static struct device *device = NULL;
+static struct device_manager *device_manager = NULL;
 
 static struct types classify_offer_types(struct offer *offer) {
     struct types types = { 0 };
@@ -239,51 +240,40 @@ static void print_usage(FILE *f, const char *argv0) {
     );
 }
 
-static void init_selection() {
+static void init_device_manager() {
 #ifdef HAVE_WLR_DATA_CONTROL
     if (data_control_manager != NULL) {
-        struct zwlr_data_control_device_v1 *data_control_device
-            = zwlr_data_control_manager_v1_get_data_device(
-                data_control_manager,
-                seat
-            );
-        device->proxy = (struct wl_proxy *) data_control_device;
-        device_init_zwlr_data_control_device_v1(device);
+        device_manager->proxy = (struct wl_proxy *) data_control_manager;
+        device_manager_init_zwlr_data_control_manager_v1(device_manager);
         return;
     }
 #endif
 
-    struct wl_data_device *data_device
-        = wl_data_device_manager_get_data_device(data_device_manager, seat);
-    device->proxy = (struct wl_proxy *) data_device;
-    device_init_wl_data_device(device);
+    device_manager->proxy = (struct wl_proxy *) data_device_manager;
+    device_manager_init_wl_data_device_manager(device_manager);
 }
 
-static void init_primary_selection() {
+static void init_primary_device_manager() {
     ensure_has_primary_selection();
 
 #ifdef HAVE_WP_PRIMARY_SELECTION
     if (primary_selection_device_manager != NULL) {
-        struct zwp_primary_selection_device_v1 *primary_selection_device
-            = zwp_primary_selection_device_manager_v1_get_device(
-                primary_selection_device_manager,
-                seat
-            );
-        device->proxy = (struct wl_proxy *) primary_selection_device;
-        device_init_zwp_primary_selection_device_v1(device);
+        device_manager->proxy
+            = (struct wl_proxy *) primary_selection_device_manager;
+        device_manager_init_zwp_primary_selection_device_manager_v1(
+            device_manager
+        );
         return;
     }
 #endif
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
     if (gtk_primary_selection_device_manager != NULL) {
-        struct gtk_primary_selection_device *gtk_primary_selection_device
-            = gtk_primary_selection_device_manager_get_device(
-                gtk_primary_selection_device_manager,
-                seat
-            );
-        device->proxy = (struct wl_proxy *) gtk_primary_selection_device;
-        device_init_gtk_primary_selection_device(device);
+        device_manager->proxy
+            = (struct wl_proxy *) gtk_primary_selection_device_manager;
+        device_manager_init_gtk_primary_selection_device_manager(
+            device_manager
+        );
         return;
     }
 #endif
@@ -362,14 +352,15 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
-    device = calloc(1, sizeof(struct device));
-    device->selection_callback = selection_callback;
-
+    device_manager = calloc(1, sizeof(struct device_manager));
     if (!options.primary) {
-        init_selection();
+        init_device_manager();
     } else {
-        init_primary_selection();
+        init_primary_device_manager();
     }
+
+    struct device *device = device_manager_get_device(device_manager, seat);
+    device->selection_callback = selection_callback;
 
     if (device->needs_popup_surface) {
         popup_tiny_invisible_surface();

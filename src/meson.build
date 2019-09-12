@@ -106,6 +106,8 @@ lib = static_library(
         'types/offer.c',
         'types/device.h',
         'types/device.c',
+        'types/device-manager.h',
+        'types/device-manager.c',
     ],
     dependencies: wayland,
     link_with: protocol_deps
