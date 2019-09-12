@@ -99,6 +99,9 @@ lib = static_library(
 
         'includes/shell-protocols.h',
         'includes/selection-protocols.h',
+
+        'types/source.h',
+        'types/source.c',
     ],
     dependencies: wayland,
     link_with: protocol_deps
