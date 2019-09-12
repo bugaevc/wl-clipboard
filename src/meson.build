@@ -114,6 +114,8 @@ lib = static_library(
         'types/shell.c',
         'types/shell-surface.h',
         'types/shell-surface.c',
+        'types/popup-surface.h',
+        'types/popup-surface.c',
     ],
     dependencies: wayland,
     link_with: protocol_deps

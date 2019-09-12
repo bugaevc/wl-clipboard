@@ -20,9 +20,10 @@
 #include "types/keyboard.h"
 #include "types/shell-surface.h"
 #include "types/shell.h"
+#include "types/popup-surface.h"
 
-static struct shell_surface *shell_surface = NULL;
 static struct shell *shell = NULL;
+static struct popup_surface *popup_surface = NULL;
 
 static void process_new_seat(struct wl_seat *new_seat);
 
@@ -293,52 +294,19 @@ void popup_tiny_invisible_surface() {
      */
     wl_display_dispatch(display);
 
-    surface = wl_compositor_create_surface(compositor);
-    shell_surface = shell_create_shell_surface(shell, surface);
-    /* Signal that the surface is ready to be configured */
-    wl_surface_commit(surface);
-    /* Wait for the surface to be configured */
-    wl_display_roundtrip(display);
+    popup_surface = calloc(1, sizeof(struct popup_surface));
+    popup_surface->wl_display = display;
+    popup_surface->wl_compositor = compositor;
+    popup_surface->wl_shm = shm;
+    popup_surface->shell = shell;
 
-    if (surface == NULL) {
-        /* It's possible that we've been given focus without us
-         * ever commiting a buffer, in which case the handlers
-         * may have already destroyed the surface; there's no
-         * way or need for us to commit a buffer in that case.
-         */
-        return;
-    }
-
-    int width = 1;
-    int height = 1;
-    int stride = width * 4;
-    int size = stride * height;  // bytes
-
-    /* Open an anonymous file and write some zero bytes to it */
-    int fd = create_anonymous_file();
-    ftruncate(fd, size);
-
-    /* Turn it into a shared memory pool */
-    struct wl_shm_pool *pool = wl_shm_create_pool(shm, fd, size);
-
-    /* Allocate the buffer in that pool */
-    struct wl_buffer *buffer = wl_shm_pool_create_buffer(pool,
-        0, width, height, stride, WL_SHM_FORMAT_ARGB8888);
-    /* Zeros in ARGB8888 mean fully transparent */
-
-    wl_surface_attach(surface, buffer, 0, 0);
-    wl_surface_damage(surface, 0, 0, width, height);
-    wl_surface_commit(surface);
+    popup_surface_init(popup_surface);
 }
 
 void destroy_popup_surface() {
-    if (shell_surface != NULL) {
-        shell_surface_destroy(shell_surface);
-        shell_surface = NULL;
-    }
-    if (surface != NULL) {
-        wl_surface_destroy(surface);
-        surface = NULL;
+    if (popup_surface != NULL) {
+        popup_surface_destroy(popup_surface);
+        popup_surface = NULL;
     }
 }
 
