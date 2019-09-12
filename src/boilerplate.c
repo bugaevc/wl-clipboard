@@ -17,6 +17,7 @@
  */
 
 #include "boilerplate.h"
+#include "types/keyboard.h"
 
 static void process_new_seat(struct wl_seat *new_seat);
 
@@ -119,26 +120,8 @@ static const struct wl_registry_listener registry_listener = {
     .global_remove = registry_global_remove_handler
 };
 
-static void keyboard_keymap_handler
-(
-    void *data,
-    struct wl_keyboard *keyboard,
-    uint32_t format,
-    int fd,
-    uint32_t size
-) {
-    close(fd);
-}
-
-static void keyboard_enter_handler
-(
-    void *data,
-    struct wl_keyboard *keyboard,
-    uint32_t serial,
-    struct wl_surface *surface,
-    struct wl_array *keys
-) {
-    struct wl_seat *this_seat = (struct wl_seat *) data;
+static void forward_on_focus(struct keyboard *keyboard, uint32_t serial) {
+    struct wl_seat *this_seat = (struct wl_seat *) keyboard->data;
     /* When we get to here, global seat is already initialized */
     if (this_seat != seat) {
         return;
@@ -147,43 +130,6 @@ static void keyboard_enter_handler
         action_on_popup_surface_getting_focus(serial);
     }
 }
-
-static void keyboard_leave_handler
-(
-    void *data,
-    struct wl_keyboard *keyboard,
-    uint32_t serial,
-    struct wl_surface *surface
-) {}
-
-static void keyboard_key_handler
-(
-    void *data,
-    struct wl_keyboard *keyboard,
-    uint32_t serial,
-    uint32_t time,
-    uint32_t key,
-    uint32_t state
-) {}
-
-static void keyboard_modifiers_handler
-(
-    void *data,
-    struct wl_keyboard *keyboard,
-    uint32_t serial,
-    uint32_t mods_depressed,
-    uint32_t mods_latched,
-    uint32_t mods_locked,
-    uint32_t group
-) {}
-
-static const struct wl_keyboard_listener keayboard_listener = {
-    .keymap = keyboard_keymap_handler,
-    .enter = keyboard_enter_handler,
-    .leave = keyboard_leave_handler,
-    .key = keyboard_key_handler,
-    .modifiers = keyboard_modifiers_handler,
-};
 
 static void seat_capabilities_handler
 (
@@ -196,8 +142,11 @@ static void seat_capabilities_handler
     wl_seat_set_user_data(this_seat, user_data);
 
     if (capabilities & WL_SEAT_CAPABILITY_KEYBOARD) {
-        struct wl_keyboard *keyboard = wl_seat_get_keyboard(this_seat);
-        wl_keyboard_add_listener(keyboard, &keayboard_listener, this_seat);
+        struct keyboard *keyboard = calloc(1, sizeof(struct keyboard));
+        keyboard->proxy = wl_seat_get_keyboard(this_seat);
+        keyboard->data = (void *) this_seat;
+        keyboard->on_focus = forward_on_focus;
+        keyboard_init(keyboard);
     }
 }
 
