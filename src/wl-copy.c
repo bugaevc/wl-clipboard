@@ -18,6 +18,7 @@
 
 #include "boilerplate.h"
 #include "types/source.h"
+#include "types/device.h"
 
 static struct {
     int stay_in_foreground;
@@ -31,6 +32,7 @@ static struct {
 static char * const *data_to_copy = NULL;
 static char *temp_file_to_copy = NULL;
 
+static struct device *device = NULL;
 static struct source *source = NULL;
 
 static void cancelled_callback(struct source *source) {
@@ -91,57 +93,15 @@ static void send_callback(
     }
 }
 
-static void set_data_selection(uint32_t serial) {
-    struct wl_data_source *data_source
-        = (struct wl_data_source *) source->proxy;
-    wl_data_device_set_selection(data_device, data_source, serial);
+static void set_selection(uint32_t serial) {
+    device_set_selection(device, source, serial, options.primary);
     wl_display_roundtrip(display);
     destroy_popup_surface();
-}
-
-static void try_setting_data_selection_directly() {
-    set_data_selection(get_serial());
 }
 
 static void complain_about_missing_keyboard() {
     bail("Setting primary selection is not supported without a keyboard");
 }
-
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-
-static void set_gtk_primary_selection(uint32_t serial) {
-    struct gtk_primary_selection_source *gtk_primary_selection_source
-        = (struct gtk_primary_selection_source *) source->proxy;
-
-    gtk_primary_selection_device_set_selection(
-        gtk_primary_selection_device,
-        gtk_primary_selection_source,
-        serial
-    );
-
-    wl_display_roundtrip(display);
-    destroy_popup_surface();
-}
-
-#endif
-
-#ifdef HAVE_WP_PRIMARY_SELECTION
-
-static void set_primary_selection(uint32_t serial) {
-    struct zwp_primary_selection_source_v1 *zwp_primary_selection_source_v1
-        = (struct zwp_primary_selection_source_v1 *) source->proxy;
-
-    zwp_primary_selection_device_v1_set_selection(
-        primary_selection_device,
-        zwp_primary_selection_source_v1,
-        serial
-    );
-
-    wl_display_roundtrip(display);
-    destroy_popup_surface();
-}
-
-#endif
 
 static void do_offer(char *mime_type, struct source *source) {
     if (mime_type == NULL || mime_type_is_text(mime_type)) {
@@ -159,8 +119,8 @@ static void do_offer(char *mime_type, struct source *source) {
 }
 
 static void init_selection(char *mime_type) {
-    if (use_wlr_data_control) {
 #ifdef HAVE_WLR_DATA_CONTROL
+    if (data_control_manager != NULL) {
         struct zwlr_data_control_source_v1 *data_control_source
             = zwlr_data_control_manager_v1_create_data_source(
                 data_control_manager
@@ -171,26 +131,30 @@ static void init_selection(char *mime_type) {
 
         do_offer(mime_type, source);
 
-        zwlr_data_control_device_v1_set_selection(
-            data_control_device,
-            data_control_source
-        );
-#endif
-    } else {
-        struct wl_data_source *data_source
-            = wl_data_device_manager_create_data_source(
-                data_device_manager
+        struct zwlr_data_control_device_v1 *data_control_device
+            = zwlr_data_control_manager_v1_get_data_device(
+                data_control_manager,
+                seat
             );
-
-        source->proxy = (struct wl_proxy *) data_source;
-        source_init_wl_data_source(source);
-
-        do_offer(mime_type, source);
-
-        action_on_popup_surface_getting_focus = set_data_selection;
-        action_on_no_keyboard = try_setting_data_selection_directly;
-        popup_tiny_invisible_surface();
+        device->proxy = (struct wl_proxy *) data_control_device;
+        device_init_zwlr_data_control_device_v1(device);
     }
+#endif
+
+    struct wl_data_source *data_source
+        = wl_data_device_manager_create_data_source(
+            data_device_manager
+        );
+
+    source->proxy = (struct wl_proxy *) data_source;
+    source_init_wl_data_source(source);
+
+    do_offer(mime_type, source);
+
+    struct wl_data_device *data_device
+        = wl_data_device_manager_get_data_device(data_device_manager, seat);
+    device->proxy = (struct wl_proxy *) data_device;
+    device_init_wl_data_device(device);
 }
 
 static void init_primary_selection(char *mime_type) {
@@ -208,16 +172,19 @@ static void init_primary_selection(char *mime_type) {
 
         do_offer(mime_type, source);
 
-        action_on_popup_surface_getting_focus = set_primary_selection;
-        action_on_no_keyboard = complain_about_missing_keyboard;
-        popup_tiny_invisible_surface();
-        return;
+        struct zwp_primary_selection_device_v1 *primary_selection_device
+            = zwp_primary_selection_device_manager_v1_get_device(
+                primary_selection_device_manager,
+                seat
+            );
+        device->proxy = (struct wl_proxy *) primary_selection_device;
+        device_init_zwp_primary_selection_device_v1(device);
     }
 #endif
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
     if (gtk_primary_selection_device_manager != NULL) {
-        struct gtk_primary_selection_source* gtk_primary_selection_source
+        struct gtk_primary_selection_source *gtk_primary_selection_source
             = gtk_primary_selection_device_manager_create_source(
                 gtk_primary_selection_device_manager
             );
@@ -227,10 +194,13 @@ static void init_primary_selection(char *mime_type) {
 
         do_offer(mime_type, source);
 
-        action_on_popup_surface_getting_focus = set_gtk_primary_selection;
-        action_on_no_keyboard = complain_about_missing_keyboard;
-        popup_tiny_invisible_surface();
-        return;
+        struct gtk_primary_selection_device *gtk_primary_selection_device
+            = gtk_primary_selection_device_manager_get_device(
+                gtk_primary_selection_device_manager,
+                seat
+            );
+        device->proxy = (struct wl_proxy *) gtk_primary_selection_device;
+        device_init_gtk_primary_selection_device(device);
     }
 #endif
 }
@@ -367,6 +337,8 @@ int main(int argc, char * const argv[]) {
         }
     }
 
+    device = calloc(1, sizeof(struct device));
+
     source = calloc(1, sizeof(struct source));
     source->send_callback = send_callback;
     source->cancelled_callback = cancelled_callback;
@@ -375,6 +347,21 @@ int main(int argc, char * const argv[]) {
         init_selection(options.mime_type);
     } else {
         init_primary_selection(options.mime_type);
+    }
+
+    /* See if we can just set the selection directly */
+    if (!device->needs_popup_surface) {
+        /* If we can, it doesn't actually require
+         * a serial, so passing zero will do.
+         */
+        device_set_selection(device, source, 0, options.primary);
+    } else {
+        /* If we cannot, schedule to do it later,
+         * when our popup surface gains keyboard focus.
+         */
+        action_on_popup_surface_getting_focus = set_selection;
+        action_on_no_keyboard = complain_about_missing_keyboard;
+        popup_tiny_invisible_surface();
     }
 
     if (options.clear) {

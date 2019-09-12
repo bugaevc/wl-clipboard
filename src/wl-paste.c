@@ -18,6 +18,7 @@
 
 #include "boilerplate.h"
 #include "types/offer.h"
+#include "types/device.h"
 
 static struct {
     char *explicit_type;
@@ -36,6 +37,8 @@ struct types {
     const char *any_text;
     const char *any;
 };
+
+static struct device *device = NULL;
 
 static struct types classify_offer_types(struct offer *offer) {
     struct types types = { 0 };
@@ -149,7 +152,15 @@ static const char *mime_type_to_request(struct types types) {
 #undef try_any_text
 #undef try_any
 
-static void do_paste(struct offer *offer) {
+static void selection_callback(struct offer *offer, int primary) {
+    /* Ignore events we're not interested in */
+    if (primary != options.primary) {
+        if (offer != NULL) {
+            offer_destroy(offer);
+        };
+        return;
+    }
+
     if (offer == NULL) {
         bail("No selection");
     }
@@ -205,134 +216,6 @@ static void do_paste(struct offer *offer) {
     exit(0);
 }
 
-static void data_device_data_offer(
-    void *data,
-    struct wl_data_device *data_device,
-    struct wl_data_offer *data_offer
-) {
-    struct offer *offer = calloc(1, sizeof(struct offer));
-    offer->proxy = (struct wl_proxy *) data_offer;
-    offer_init_wl_data_offer(offer);
-}
-
-static void data_device_selection(
-    void *data,
-    struct wl_data_device *data_device,
-    struct wl_data_offer *data_offer
-) {
-    struct offer *offer = NULL;
-    if (data_offer != NULL) {
-        offer = (struct offer *) wl_data_offer_get_user_data(data_offer);
-    }
-    do_paste(offer);
-}
-
-static const struct wl_data_device_listener data_device_listener = {
-    .data_offer = data_device_data_offer,
-    .selection = data_device_selection
-};
-
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-
-static void gtk_primary_selection_device_data_offer(
-    void *data,
-    struct gtk_primary_selection_device *gtk_primary_selection_device,
-    struct gtk_primary_selection_offer *gtk_primary_selection_offer
-) {
-    struct offer *offer = calloc(1, sizeof(struct offer));
-    offer->proxy = (struct wl_proxy *) gtk_primary_selection_offer;
-    offer_init_gtk_primary_selection_offer(offer);
-}
-
-static void gtk_primary_selection_device_selection(
-    void *data,
-    struct gtk_primary_selection_device *gtk_primary_selection_device,
-    struct gtk_primary_selection_offer *gtk_primary_selection_offer
-) {
-    struct offer *offer = NULL;
-    if (gtk_primary_selection_offer != NULL) {
-        offer = (struct offer *) gtk_primary_selection_offer_get_user_data(
-            gtk_primary_selection_offer
-        );
-    }
-    do_paste(offer);
-}
-
-static const struct gtk_primary_selection_device_listener
-gtk_primary_selection_device_listener = {
-    .data_offer = gtk_primary_selection_device_data_offer,
-    .selection = gtk_primary_selection_device_selection
-};
-
-#endif
-
-#ifdef HAVE_WP_PRIMARY_SELECTION
-
-static void primary_selection_device_data_offer(
-    void *data,
-    struct zwp_primary_selection_device_v1 *primary_selection_device,
-    struct zwp_primary_selection_offer_v1 *primary_selection_offer
-) {
-    struct offer *offer = calloc(1, sizeof(struct offer));
-    offer->proxy = (struct wl_proxy *) primary_selection_offer;
-    offer_init_zwp_primary_selection_offer_v1(offer);
-}
-
-static void primary_selection_device_selection(
-    void *data,
-    struct zwp_primary_selection_device_v1 *primary_selection_device,
-    struct zwp_primary_selection_offer_v1 *primary_selection_offer
-) {
-    struct offer *offer = NULL;
-    if (primary_selection_offer != NULL) {
-        offer = (struct offer *) zwp_primary_selection_offer_v1_get_user_data(
-            primary_selection_offer
-        );
-    }
-    do_paste(offer);
-}
-
-static const struct zwp_primary_selection_device_v1_listener
-primary_selection_device_listener = {
-    .data_offer = primary_selection_device_data_offer,
-    .selection = primary_selection_device_selection
-};
-
-#endif
-
-#ifdef HAVE_WLR_DATA_CONTROL
-
-static void data_control_device_data_offer(
-    void *data,
-    struct zwlr_data_control_device_v1 *data_control_device,
-    struct zwlr_data_control_offer_v1 *data_control_offer
-) {
-    struct offer *offer = calloc(1, sizeof(struct offer));
-    offer->proxy = (struct wl_proxy *) data_control_offer;
-    offer_init_zwlr_data_control_offer_v1(offer);
-}
-
-static void data_control_device_selection(
-    void *data,
-    struct zwlr_data_control_device_v1 *data_control_device,
-    struct zwlr_data_control_offer_v1 *data_control_offer
-) {
-    struct offer *offer = NULL;
-    if (data_control_offer != NULL) {
-        offer = (struct offer *) zwlr_data_control_offer_v1_get_user_data(
-            data_control_offer
-        );
-    }
-    do_paste(offer);
-}
-
-static const struct zwlr_data_control_device_v1_listener
-data_control_device_listener = {
-    .data_offer = data_control_device_data_offer,
-    .selection = data_control_device_selection
-};
-#endif
-
 static void print_usage(FILE *f, const char *argv0) {
     fprintf(
         f,
@@ -357,43 +240,50 @@ static void print_usage(FILE *f, const char *argv0) {
 }
 
 static void init_selection() {
-    if (use_wlr_data_control) {
 #ifdef HAVE_WLR_DATA_CONTROL
-        zwlr_data_control_device_v1_add_listener(
-            data_control_device,
-            &data_control_device_listener,
-            NULL
-        );
-#endif
-    } else {
-        wl_data_device_add_listener(data_device, &data_device_listener, NULL);
-        popup_tiny_invisible_surface();
+    if (data_control_manager != NULL) {
+        struct zwlr_data_control_device_v1 *data_control_device
+            = zwlr_data_control_manager_v1_get_data_device(
+                data_control_manager,
+                seat
+            );
+        device->proxy = (struct wl_proxy *) data_control_device;
+        device_init_zwlr_data_control_device_v1(device);
+        return;
     }
+#endif
+
+    struct wl_data_device *data_device
+        = wl_data_device_manager_get_data_device(data_device_manager, seat);
+    device->proxy = (struct wl_proxy *) data_device;
+    device_init_wl_data_device(device);
 }
 
 static void init_primary_selection() {
     ensure_has_primary_selection();
 
 #ifdef HAVE_WP_PRIMARY_SELECTION
-    if (primary_selection_device != NULL) {
-        zwp_primary_selection_device_v1_add_listener(
-            primary_selection_device,
-            &primary_selection_device_listener,
-            NULL
-        );
-        popup_tiny_invisible_surface();
+    if (primary_selection_device_manager != NULL) {
+        struct zwp_primary_selection_device_v1 *primary_selection_device
+            = zwp_primary_selection_device_manager_v1_get_device(
+                primary_selection_device_manager,
+                seat
+            );
+        device->proxy = (struct wl_proxy *) primary_selection_device;
+        device_init_zwp_primary_selection_device_v1(device);
         return;
     }
 #endif
 
 #ifdef HAVE_GTK_PRIMARY_SELECTION
-    if (gtk_primary_selection_device != NULL) {
-        gtk_primary_selection_device_add_listener(
-            gtk_primary_selection_device,
-            &gtk_primary_selection_device_listener,
-            NULL
-        );
-        popup_tiny_invisible_surface();
+    if (gtk_primary_selection_device_manager != NULL) {
+        struct gtk_primary_selection_device *gtk_primary_selection_device
+            = gtk_primary_selection_device_manager_get_device(
+                gtk_primary_selection_device_manager,
+                seat
+            );
+        device->proxy = (struct wl_proxy *) gtk_primary_selection_device;
+        device_init_gtk_primary_selection_device(device);
         return;
     }
 #endif
@@ -472,10 +362,17 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
+    device = calloc(1, sizeof(struct device));
+    device->selection_callback = selection_callback;
+
     if (!options.primary) {
         init_selection();
     } else {
         init_primary_selection();
+    }
+
+    if (device->needs_popup_surface) {
+        popup_tiny_invisible_surface();
     }
 
     while (wl_display_dispatch(display) >= 0);
