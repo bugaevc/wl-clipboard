@@ -19,8 +19,10 @@
 #include "boilerplate.h"
 #include "types/keyboard.h"
 #include "types/shell-surface.h"
+#include "types/shell.h"
 
 static struct shell_surface *shell_surface = NULL;
+static struct shell *shell = NULL;
 
 static void process_new_seat(struct wl_seat *new_seat);
 
@@ -62,7 +64,7 @@ static void registry_global_handler
             1
         );
     } else if (strcmp(interface, "wl_shell") == 0) {
-        shell = wl_registry_bind(
+        wl_shell = wl_registry_bind(
             registry,
             name,
             &wl_shell_interface,
@@ -205,23 +207,6 @@ int ensure_seat_has_keyboard() {
 
 #undef UNSET_CAPABILITIES
 
-#ifdef HAVE_XDG_SHELL
-
-static void xdg_wm_base_ping_handler
-(
-    void *data,
-    struct xdg_wm_base *xdg_wm_base,
-    uint32_t serial
-) {
-    xdg_wm_base_pong(xdg_wm_base, serial);
-}
-
-static const struct xdg_wm_base_listener xdg_wm_base_listener = {
-    .ping = xdg_wm_base_ping_handler
-};
-
-#endif
-
 void init_wayland_globals() {
     display = wl_display_connect(NULL);
     if (display == NULL) {
@@ -245,6 +230,21 @@ void init_wayland_globals() {
         )
     ) {
         bail("Missing a required global object");
+    }
+
+    shell = calloc(1, sizeof(struct shell));
+    if (wl_shell != NULL) {
+        /* Use wl_shell */
+        shell->proxy = (struct wl_proxy *) wl_shell;
+        shell_init_wl_shell(shell);
+    } else {
+#ifdef HAVE_XDG_SHELL
+        /* Use xdg-shell */
+        shell->proxy = (struct wl_proxy *) xdg_wm_base;
+        shell_init_xdg_shell(shell);
+#else
+        bail("Unreachable: HAVE_XDG_SHELL undefined and no wl_shell");
+#endif
     }
 
     if (seat == NULL && requested_seat_name != NULL) {
@@ -293,29 +293,8 @@ void popup_tiny_invisible_surface() {
      */
     wl_display_dispatch(display);
 
-    shell_surface = calloc(1, sizeof(struct shell_surface));
-
     surface = wl_compositor_create_surface(compositor);
-
-    if (shell != NULL) {
-        /* Use wl_shell */
-        shell_surface->proxy
-            = (struct wl_proxy *) wl_shell_get_shell_surface(shell, surface);
-        shell_surface_init_wl_shell_surface(shell_surface);
-    } else {
-#ifdef HAVE_XDG_SHELL
-        /* Use xdg-shell */
-        xdg_wm_base_add_listener(xdg_wm_base, &xdg_wm_base_listener, NULL);
-        shell_surface->proxy
-            = (struct wl_proxy *) xdg_wm_base_get_xdg_surface(
-                xdg_wm_base,
-                surface
-        );
-        shell_surface_init_xdg_surface(shell_surface);
-#else
-        bail("Unreachable: HAVE_XDG_SHELL undefined and no wl_shell");
-#endif
-    }
+    shell_surface = shell_create_shell_surface(shell, surface);
     /* Signal that the surface is ready to be configured */
     wl_surface_commit(surface);
     /* Wait for the surface to be configured */

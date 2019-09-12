@@ -45,7 +45,7 @@ struct wl_data_device_manager *data_device_manager;
 struct wl_seat *seat;
 struct wl_compositor *compositor;
 struct wl_shm *shm;
-struct wl_shell *shell;
+struct wl_shell *wl_shell;
 struct wl_surface *surface;
 
 #ifdef HAVE_XDG_SHELL
