@@ -102,6 +102,8 @@ lib = static_library(
 
         'types/source.h',
         'types/source.c',
+        'types/offer.h',
+        'types/offer.c',
     ],
     dependencies: wayland,
     link_with: protocol_deps
