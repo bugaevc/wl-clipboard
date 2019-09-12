@@ -367,39 +367,6 @@ void init_wayland_globals() {
         }
         bail("Cannot find the requested seat");
     }
-
-    data_device = wl_data_device_manager_get_data_device(
-        data_device_manager,
-        seat
-    );
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-    if (gtk_primary_selection_device_manager != NULL) {
-        gtk_primary_selection_device =
-            gtk_primary_selection_device_manager_get_device(
-                gtk_primary_selection_device_manager,
-                seat
-            );
-    }
-#endif
-#ifdef HAVE_WP_PRIMARY_SELECTION
-    if (primary_selection_device_manager != NULL) {
-        primary_selection_device =
-            zwp_primary_selection_device_manager_v1_get_device(
-                primary_selection_device_manager,
-                seat
-            );
-    }
-#endif
-#ifdef HAVE_WLR_DATA_CONTROL
-    if (data_control_manager != NULL) {
-        data_control_device =
-            zwlr_data_control_manager_v1_get_data_device(
-                data_control_manager,
-                seat
-            );
-        use_wlr_data_control = 1;
-    }
-#endif
 }
 
 void ensure_has_primary_selection() {
