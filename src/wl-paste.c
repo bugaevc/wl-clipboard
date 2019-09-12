@@ -27,88 +27,86 @@ static struct {
     int primary;
 } options;
 
-static struct {
+struct types {
     int explicit_available;
     int inferred_available;
     int plain_text_utf8_available;
     int plain_text_available;
-    char *having_explicit_as_prefix;
-    char *any_text;
-    char *any;
-} available_types;
+    const char *having_explicit_as_prefix;
+    const char *any_text;
+    const char *any;
+};
 
-static void offer_callback(struct offer *offer, const char *offered_type) {
-    if (options.list_types) {
-        printf("%s\n", offered_type);
-    } else {
+static struct types classify_offer_types(struct offer *offer) {
+    struct types types = { 0 };
+    offer_for_each_mime_type(offer, mime_type) {
         if (
             options.explicit_type != NULL &&
-            strcmp(offered_type, options.explicit_type) == 0
+            strcmp(mime_type, options.explicit_type) == 0
         ) {
-            available_types.explicit_available = 1;
+            types.explicit_available = 1;
         }
         if (
             options.inferred_type != NULL &&
-            strcmp(offered_type, options.inferred_type) == 0
+            strcmp(mime_type, options.inferred_type) == 0
         ) {
-            available_types.inferred_available = 1;
+            types.inferred_available = 1;
+        }
+        if (strcmp(mime_type, text_plain_utf8) == 0) {
+            types.plain_text_utf8_available = 1;
+        }
+        if (strcmp(mime_type, text_plain) == 0) {
+            types.plain_text_available = 1;
         }
         if (
-            strcmp(offered_type, text_plain_utf8) == 0) {
-            available_types.plain_text_utf8_available = 1;
-        }
-        if (
-            strcmp(offered_type, text_plain) == 0) {
-            available_types.plain_text_available = 1;
-        }
-        if (
-            available_types.any_text == NULL &&
-            mime_type_is_text(offered_type)
+            types.any_text == NULL &&
+            mime_type_is_text(mime_type)
         ) {
-            available_types.any_text = strdup(offered_type);
+            types.any_text = mime_type;
         }
-        if (available_types.any == NULL) {
-            available_types.any = strdup(offered_type);
+        if (types.any == NULL) {
+            types.any = mime_type;
         }
         if (
             options.explicit_type != NULL &&
-            available_types.having_explicit_as_prefix == NULL &&
-            str_has_prefix(offered_type, options.explicit_type)
+            types.having_explicit_as_prefix == NULL &&
+            str_has_prefix(mime_type, options.explicit_type)
         ) {
-            available_types.having_explicit_as_prefix = strdup(offered_type);
+            types.having_explicit_as_prefix = mime_type;
         }
     }
+    return types;
 }
 
 #define try_explicit \
-if (available_types.explicit_available) \
+if (types.explicit_available) \
     return options.explicit_type
 
 #define try_inferred \
-if (available_types.inferred_available) \
+if (types.inferred_available) \
     return options.inferred_type
 
 #define try_text_plain_utf8 \
-if (available_types.plain_text_utf8_available) \
+if (types.plain_text_utf8_available) \
     return text_plain_utf8
 
 #define try_text_plain \
-if (available_types.plain_text_available) \
+if (types.plain_text_available) \
     return text_plain
 
 #define try_prefixed \
-if (available_types.having_explicit_as_prefix != NULL) \
-    return available_types.having_explicit_as_prefix
+if (types.having_explicit_as_prefix != NULL) \
+    return types.having_explicit_as_prefix
 
 #define try_any_text \
-if (available_types.any_text != NULL) \
-    return available_types.any_text
+if (types.any_text != NULL) \
+    return types.any_text
 
 #define try_any \
-if (available_types.any != NULL) \
-    return available_types.any
+if (types.any != NULL) \
+    return types.any
 
-static const char *mime_type_to_request() {
+static const char *mime_type_to_request(struct types types) {
     if (options.explicit_type != NULL) {
         if (strcmp(options.explicit_type, "text") == 0) {
             try_text_plain_utf8;
@@ -151,24 +149,21 @@ static const char *mime_type_to_request() {
 #undef try_any_text
 #undef try_any
 
-static void free_types() {
-    free(available_types.having_explicit_as_prefix);
-    free(available_types.any_text);
-    free(available_types.any);
-    free(options.explicit_type);
-    free(options.inferred_type);
-}
-
 static void do_paste(struct offer *offer) {
     if (offer == NULL) {
         bail("No selection");
     }
 
     if (options.list_types) {
+        offer_for_each_mime_type(offer, mime_type) {
+            printf("%s\n", mime_type);
+        }
         exit(0);
     }
 
-    const char *mime_type = mime_type_to_request();
+    struct types types = classify_offer_types(offer);
+    const char *mime_type = mime_type_to_request(types);
+
     /* Never append a newline character to binary content */
     if (!mime_type_is_text(mime_type)) {
         options.no_newline = 1;
@@ -179,9 +174,7 @@ static void do_paste(struct offer *offer) {
 
     offer_receive(offer, mime_type, pipefd[1]);
 
-    free_types();
     destroy_popup_surface();
-
     wl_display_roundtrip(display);
 
     /* Spawn a cat to perform the copy */
@@ -204,6 +197,11 @@ static void do_paste(struct offer *offer) {
     if (!options.no_newline) {
         write(STDOUT_FILENO, "\n", 1);
     }
+
+    offer_destroy(offer);
+
+    free(options.explicit_type);
+    free(options.inferred_type);
     exit(0);
 }
 
@@ -214,7 +212,6 @@ static void data_device_data_offer(
 ) {
     struct offer *offer = calloc(1, sizeof(struct offer));
     offer->proxy = (struct wl_proxy *) data_offer;
-    offer->offer_callback = offer_callback;
     offer_init_wl_data_offer(offer);
 }
 
@@ -244,7 +241,6 @@ static void gtk_primary_selection_device_data_offer(
 ) {
     struct offer *offer = calloc(1, sizeof(struct offer));
     offer->proxy = (struct wl_proxy *) gtk_primary_selection_offer;
-    offer->offer_callback = offer_callback;
     offer_init_gtk_primary_selection_offer(offer);
 }
 
@@ -279,7 +275,6 @@ static void primary_selection_device_data_offer(
 ) {
     struct offer *offer = calloc(1, sizeof(struct offer));
     offer->proxy = (struct wl_proxy *) primary_selection_offer;
-    offer->offer_callback = offer_callback;
     offer_init_zwp_primary_selection_offer_v1(offer);
 }
 
@@ -314,7 +309,6 @@ static void data_control_device_data_offer(
 ) {
     struct offer *offer = calloc(1, sizeof(struct offer));
     offer->proxy = (struct wl_proxy *) data_control_offer;
-    offer->offer_callback = offer_callback;
     offer_init_zwlr_data_control_offer_v1(offer);
 }
 

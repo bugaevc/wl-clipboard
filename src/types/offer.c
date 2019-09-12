@@ -19,7 +19,9 @@
 #include "types/offer.h"
 #include "includes/selection-protocols.h"
 
+#include <wayland-util.h>
 #include <stdlib.h>
+#include <string.h>
 
 void offer_receive(struct offer *self, const char *mime_type, int fd) {
     self->do_receive(self->proxy, mime_type, fd);
@@ -27,6 +29,7 @@ void offer_receive(struct offer *self, const char *mime_type, int fd) {
 
 void offer_destroy(struct offer *self) {
     self->do_destroy(self->proxy);
+    wl_array_release(&self->offered_mime_types);
     free(self);
 }
 
@@ -40,9 +43,11 @@ static void type ## _offer_handler( \
     const char *mime_type \
 ) { \
     struct offer *self = data; \
-    if (self->offer_callback != NULL) { \
-        self->offer_callback(self, mime_type); \
-    } \
+    char *ptr = wl_array_add( \
+        &self->offered_mime_types, \
+        strlen(mime_type) + 1 \
+    ); \
+    strcpy(ptr, mime_type); \
 }
 
 #define LISTENER(type) \
@@ -55,6 +60,7 @@ void offer_init_ ## type(struct offer *self) { \
     self->do_receive = \
         (void (*)(struct wl_proxy *, const char *, int)) type ## _receive; \
     self->do_destroy = (void (*)(struct wl_proxy *)) type ## _destroy; \
+    wl_array_init(&self->offered_mime_types); \
     struct type *proxy = (struct type *) self->proxy; \
     type ## _add_listener(proxy, &type ## _listener, self); \
 }

@@ -21,17 +21,27 @@
 
 #include "includes/selection-protocols.h"
 
-struct offer {
-    /* These fields are initialized by the creator */
-    void (*offer_callback)(struct offer *self, const char *mime_type);
-    void *data;
+#include <wayland-util.h>
+#include <string.h>
 
+struct offer {
+    /* This field is initialized by the creator */
     struct wl_proxy *proxy;
 
     /* These fields are initialized by the implementation */
     void (*do_receive)(struct wl_proxy *proxy, const char *mime_type, int fd);
     void (*do_destroy)(struct wl_proxy *proxy);
+    struct wl_array offered_mime_types;
 };
+
+#define offer_for_each_mime_type(offer, mime_type) \
+for ( \
+    const char *mime_type = offer->offered_mime_types.data; \
+    mime_type != offer->offered_mime_types.data + \
+                 offer->offered_mime_types.size; \
+    mime_type += strlen(mime_type) + 1 \
+)
+
 
 void offer_receive(struct offer *self, const char *mime_type, int fd);
 void offer_destroy(struct offer *self);
