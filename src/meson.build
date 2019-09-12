@@ -96,6 +96,9 @@ boilerplate = static_library(
         'util/files.c',
         'util/misc.h',
         'util/misc.c',
+
+        'includes/shell-protocols.h',
+        'includes/selection-protocols.h',
     ],
     dependencies: wayland,
     link_with: protocol_deps
