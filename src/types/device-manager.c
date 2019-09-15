@@ -19,6 +19,7 @@
 #include "types/device-manager.h"
 #include "types/device.h"
 #include "types/source.h"
+#include "types/seat.h"
 #include "includes/selection-protocols.h"
 
 #include <stdlib.h>
@@ -30,7 +31,7 @@ struct source *device_manager_create_source(struct device_manager *self) {
 
 struct device *device_manager_get_device(
     struct device_manager *self,
-    struct wl_seat *seat
+    struct seat *seat
 ) {
     return self->do_get_device(self, seat);
 }
@@ -51,9 +52,10 @@ static struct source *device_manager_ ## type ## _do_create_source( \
 #define GET_DEVICE(type, device_type, method_name) \
 static struct device *device_manager_ ## type ## _do_get_device( \
     struct device_manager *self, \
-    struct wl_seat *seat \
+    struct seat *seat_wrapper \
 ) { \
     struct type *proxy = (struct type *) self->proxy; \
+    struct wl_seat *seat = (struct wl_seat *) seat_wrapper->proxy; \
     struct device *device = calloc(1, sizeof(struct device)); \
     device->proxy = (struct wl_proxy *) type ## _ ## method_name(proxy, seat); \
     device_init_ ## device_type(device); \

@@ -41,11 +41,12 @@
 #include "includes/selection-protocols.h"
 
 #include "types/registry.h"
+#include "types/seat.h"
 
 struct wl_display *display;
 struct registry *registry;
 
-struct wl_seat *seat;
+struct seat *seat;
 const char *requested_seat_name;
 
 void init_wayland_globals(void);
