@@ -24,15 +24,21 @@
 struct registry;
 struct shell;
 struct shell_surface;
+struct seat;
+struct keyboard;
 
 struct popup_surface {
-    /* This field is initialized by the creator */
+    /* These fields are initialized by the creator */
     struct registry *registry;
+    struct seat *seat;
+    void (*on_focus)(struct popup_surface *self, uint32_t serial);
+    void *data;
 
     /* These fields are initialized by the implementation */
     struct shell *shell;
     struct shell_surface *shell_surface;
     struct wl_surface *wl_surface;
+    struct keyboard *keyboard;
     int should_free_self;
 };
 

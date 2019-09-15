@@ -18,6 +18,8 @@
 
 #include "types/popup-surface.h"
 #include "types/registry.h"
+#include "types/seat.h"
+#include "types/keyboard.h"
 #include "types/shell.h"
 #include "types/shell-surface.h"
 #include "util/files.h"
@@ -27,11 +29,35 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+static void forward_on_focus(
+    struct keyboard *keyboard,
+    uint32_t serial
+) {
+    struct popup_surface *self = (struct popup_surface *) keyboard->data;
+    if (self->on_focus != NULL) {
+        self->on_focus(self, serial);
+    }
+}
+
 void popup_surface_init(struct popup_surface *self) {
     self->shell = registry_find_shell(self->registry);
     if (self->shell == NULL) {
         bail("Missing a shell");
     }
+
+    self->keyboard = seat_get_keyboard(self->seat);
+    if (self->keyboard == NULL) {
+        bail("This seat has no keyboard");
+    }
+    self->keyboard->on_focus = forward_on_focus;
+    self->keyboard->data = self;
+
+    /* Make sure that we get the keyboard
+     * object before we create the surface,
+     * so that we get the enter event.
+     */
+    wl_display_dispatch(self->registry->wl_display);
+
 
     struct wl_compositor *wl_compositor = self->registry->wl_compositor;
     if (wl_compositor == NULL) {
@@ -50,10 +76,10 @@ void popup_surface_init(struct popup_surface *self) {
     if (self->wl_surface == NULL) {
         /* It's possible that we were given focus
          * (without ever commiting a buffer) during
-         * the above roundtrip, in which case the
-         * handlers may have already destroyed the
-         * surface. No need to do anything further in
-         * that case.
+         * the above roundtrip, in which case we have
+         * already fired the callback and have likely
+         * already destroyed the surface. No need to
+         * do anything further in that case.
          */
         free(self);
         return;

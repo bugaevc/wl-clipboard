@@ -17,7 +17,6 @@
  */
 
 #include "boilerplate.h"
-#include "types/keyboard.h"
 #include "types/shell-surface.h"
 #include "types/shell.h"
 #include "types/popup-surface.h"
@@ -25,7 +24,7 @@
 
 static struct popup_surface *popup_surface = NULL;
 
-static void forward_on_focus(struct keyboard *keyboard, uint32_t serial) {
+static void forward_on_focus(struct popup_surface *popup_surface, uint32_t serial) {
     if (action_on_popup_surface_getting_focus != NULL) {
         action_on_popup_surface_getting_focus(serial);
     }
@@ -60,19 +59,10 @@ void popup_tiny_invisible_surface() {
      * otherwise we won't be notified of the selection.
      */
 
-    struct keyboard *keyboard = seat_get_keyboard(seat);
-    if (keyboard == NULL) {
-        bail("This seat has no keyboard");
-    }
-    keyboard->on_focus = forward_on_focus;
-    /* Make sure that we get the keyboard
-     * object before creating the surface,
-     * so that we get the enter event.
-     */
-    wl_display_dispatch(display);
-
     popup_surface = calloc(1, sizeof(struct popup_surface));
     popup_surface->registry = registry;
+    popup_surface->seat = seat;
+    popup_surface->on_focus = forward_on_focus;
 
     popup_surface_init(popup_surface);
 }
