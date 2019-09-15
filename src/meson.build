@@ -110,6 +110,8 @@ lib = static_library(
         'types/device-manager.c',
         'types/keyboard.h',
         'types/keyboard.c',
+        'types/seat.h',
+        'types/seat.c',
         'types/shell.h',
         'types/shell.c',
         'types/shell-surface.h',

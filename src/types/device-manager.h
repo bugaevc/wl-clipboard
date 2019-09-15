@@ -23,6 +23,7 @@
 
 #include <wayland-client.h>
 
+struct seat;
 struct device;
 struct source;
 
@@ -34,7 +35,7 @@ struct device_manager {
     struct source *(*do_create_source)(struct device_manager *self);
     struct device *(*do_get_device)(
         struct device_manager *self,
-        struct wl_seat *seat
+        struct seat *seat
     );
 };
 
@@ -42,7 +43,7 @@ struct source *device_manager_create_source(struct device_manager *self);
 
 struct device *device_manager_get_device(
     struct device_manager *self,
-    struct wl_seat *seat
+    struct seat *seat
 );
 
 /* Initializers */

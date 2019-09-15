@@ -26,6 +26,7 @@
 
 struct shell;
 struct device_manager;
+struct seat;
 
 struct registry {
     /* This field is initialized by the creator */
@@ -34,6 +35,8 @@ struct registry {
     /* These fields are initialized by the implementation */
 
     struct wl_registry *proxy;
+    struct wl_array seats;
+
     struct wl_compositor *wl_compositor;
     struct wl_shm *wl_shm;
 
@@ -68,6 +71,11 @@ struct shell *registry_find_shell(struct registry *self);
 struct device_manager *registry_find_device_manager(
     struct registry *self,
     int primary
+);
+
+struct seat *registry_find_seat(
+    struct registry *self,
+    const char *name
 );
 
 #endif /* TYPES_REGISTRY_H */

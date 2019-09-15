@@ -17,6 +17,7 @@
  */
 
 #include "types/registry.h"
+#include "types/seat.h"
 #include "types/shell.h"
 #include "types/device-manager.h"
 #include "includes/shell-protocols.h"
@@ -25,8 +26,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-
-void process_new_seat(struct wl_seat *new_seat);
 
 #define BIND(interface_name, known_version) \
 if (strcmp(interface, #interface_name) == 0) { \
@@ -75,13 +74,16 @@ static void wl_registry_global_handler(
 #endif
 
     if (strcmp(interface, "wl_seat") == 0) {
-        struct wl_seat *seat = wl_registry_bind(
+        struct seat *seat = calloc(1, sizeof(struct seat));
+        seat->proxy = wl_registry_bind(
             wl_registry,
             name,
             &wl_seat_interface,
             2
         );
-        process_new_seat(seat);
+        seat_init(seat);
+        struct seat **ptr = wl_array_add(&self->seats, sizeof(struct seat *));
+        *ptr = seat;
     }
 }
 
@@ -159,5 +161,22 @@ struct device_manager *registry_find_device_manager(
 #endif
 
     free(device_manager);
+    return NULL;
+}
+
+struct seat *registry_find_seat(
+    struct registry *self,
+    const char *name
+) {
+    /* Ensure we get all the seat info */
+    wl_display_roundtrip(self->wl_display);
+
+    struct seat **ptr;
+    wl_array_for_each(ptr, &self->seats) {
+        struct seat *seat = *ptr;
+        if (name == NULL || strcmp(seat->name, name) == 0) {
+            return seat;
+        }
+    }
     return NULL;
 }
