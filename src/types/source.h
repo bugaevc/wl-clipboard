@@ -30,11 +30,13 @@ struct source {
 
     struct wl_proxy *proxy;
 
-    /* This field is initialized by the implementation */
+    /* These fields are initialized by the implementation */
     void (*do_offer)(struct wl_proxy *proxy, const char *mime_type);
+    void (*do_destroy)(struct wl_proxy *proxy);
 };
 
 void source_offer(struct source *self, char *mime_type);
+void source_destroy(struct source *self);
 
 /* Initializers */
 

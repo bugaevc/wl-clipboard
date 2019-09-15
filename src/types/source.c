@@ -21,10 +21,16 @@
 #include "types/source.h"
 #include "util/string.h"
 
-#include "unistd.h"
+#include <unistd.h>
+#include <stdlib.h>
 
 void source_offer(struct source *self, char *mime_type) {
     self->do_offer(self->proxy, mime_type);
+}
+
+void source_destroy(struct source *self) {
+    self->do_destroy(self->proxy);
+    free(self);
 }
 
 
@@ -66,6 +72,7 @@ static const struct type ## _listener type ## _listener = { \
 void source_init_ ## type(struct source *self) { \
     self->do_offer = \
         (void (*)(struct wl_proxy *, const char *)) type ## _offer; \
+    self->do_destroy = (void (*)(struct wl_proxy *)) type ## _destroy; \
     struct type *proxy = (struct type *) self->proxy; \
     type ## _add_listener(proxy, &type ## _listener, self); \
 }

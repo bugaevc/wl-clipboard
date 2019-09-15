@@ -28,6 +28,7 @@
 #include "util/misc.h"
 
 #include <wayland-client.h>
+#include <wayland-util.h>
 #include <unistd.h>
 #include <string.h>
 #include <libgen.h>
@@ -40,15 +41,26 @@ static struct {
     int trim_newline;
     int paste_once;
     int primary;
-    const char *seat_name;
+    int regular;
+    struct wl_array seat_names;
 } options;
 
+static struct {
+    int unset;
+    int live;
+} copy_actions_cnt;
+
 static void did_set_selection_callback(struct copy_action *copy_action) {
+    copy_actions_cnt.unset--;
+
     if (options.clear) {
-        exit(0);
+        copy_actions_cnt.live--;
+        if (copy_actions_cnt.live == 0) {
+            exit(0);
+        }
     }
 
-    if (!options.stay_in_foreground) {
+    if (!options.stay_in_foreground && copy_actions_cnt.unset == 0) {
         /* Move to background.
          * We fork our process and leave the
          * child running in the background,
@@ -69,7 +81,7 @@ static void cleanup_and_exit(struct copy_action *copy_action) {
     /* We're done copying!
      * All that's left to do now is to
      * clean up after ourselves and exit.*/
-    char *temp_file = (char *) copy_action->file_to_copy;
+    char *temp_file = (char *) copy_action->copy_source.file_path;
     if (temp_file != NULL) {
         /* Clean up our temporary file */
         execlp("rm", "rm", "-r", dirname(temp_file), NULL);
@@ -81,12 +93,118 @@ static void cleanup_and_exit(struct copy_action *copy_action) {
 }
 
 static void cancelled_callback(struct copy_action *copy_action) {
-    cleanup_and_exit(copy_action);
+    copy_actions_cnt.live--;
+    if (copy_actions_cnt.live == 0) {
+        cleanup_and_exit(copy_action);
+    }
 }
 
 static void pasted_callback(struct copy_action *copy_action) {
     if (options.paste_once) {
         cleanup_and_exit(copy_action);
+    }
+}
+
+static void set_up_selection_for_seat(
+    struct wl_display *wl_display,
+    struct registry *registry,
+    struct seat *seat,
+    struct copy_source copy_source,
+    int primary
+) {
+    /* Create the device */
+    struct device_manager *device_manager
+        = registry_find_device_manager(registry, primary);
+    if (device_manager == NULL) {
+        complain_about_selection_support(primary);
+    }
+
+    struct device *device = device_manager_get_device(device_manager, seat);
+
+    if (!device_supports_selection(device, primary)) {
+        complain_about_selection_support(primary);
+    }
+
+    copy_actions_cnt.live++;
+    copy_actions_cnt.unset++;
+
+    /* Create and initialize the copy action */
+    struct copy_action *copy_action = calloc(1, sizeof(struct copy_action));
+    copy_action->device = device;
+    copy_action->primary = primary;
+    copy_action->copy_source = copy_source;
+
+    /* Create the source */
+    if (!options.clear) {
+        copy_action->source = device_manager_create_source(device_manager);
+        if (options.mime_type != NULL) {
+            source_offer(copy_action->source, options.mime_type);
+        }
+        if (options.mime_type == NULL || mime_type_is_text(options.mime_type)) {
+            /* Offer a few generic plain text formats */
+            source_offer(copy_action->source, text_plain);
+            source_offer(copy_action->source, text_plain_utf8);
+            source_offer(copy_action->source, "TEXT");
+            source_offer(copy_action->source, "STRING");
+            source_offer(copy_action->source, "UTF8_STRING");
+        }
+    }
+
+    if (device->needs_popup_surface) {
+        copy_action->popup_surface = calloc(1, sizeof(struct popup_surface));
+        copy_action->popup_surface->registry = registry;
+        copy_action->popup_surface->seat = seat;
+    }
+
+    copy_action->did_set_selection_callback = did_set_selection_callback;
+    copy_action->pasted_callback = pasted_callback;
+    copy_action->cancelled_callback = cancelled_callback;
+    copy_action_init(copy_action);
+}
+
+static void set_up_selection(
+    struct wl_display *wl_display,
+    struct registry *registry,
+    struct copy_source copy_source,
+    int primary
+) {
+    struct seat *seat = NULL;
+
+    /* Go over the requested seat names */
+    for (
+        const char *seat_name = options.seat_names.data;
+        seat_name != options.seat_names.data + options.seat_names.size;
+        seat_name += strlen(seat_name) + 1
+    ) {
+        seat = registry_find_seat(registry, seat_name);
+        if (seat == NULL) {
+            bail("No such seat");
+        }
+        set_up_selection_for_seat(
+            wl_display,
+            registry,
+            seat,
+            copy_source,
+            primary
+        );
+    }
+
+    /* See if any seat was requested at all */
+    if (seat == NULL) {
+        /* No seat was explicitly requested.
+         * Try to find any seat.
+         */
+        seat = registry_find_seat(registry, NULL);
+        if (seat == NULL) {
+            bail("Missing a seat");
+        }
+        set_up_selection_for_seat(
+            wl_display,
+            registry,
+            seat,
+            copy_source,
+            primary
+        );
     }
 }
 
@@ -101,6 +219,7 @@ static void print_usage(FILE *f, const char *argv0) {
         "\t-o, --paste-once\tOnly serve one paste request and then exit.\n"
         "\t-f, --foreground\tStay in the foreground instead of forking.\n"
         "\t-c, --clear\t\tInstead of copying anything, clear the clipboard.\n"
+        "\t-r, --regular\t\tUse the regular clipboard.\n"
         "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
         "\t-n, --trim-newline\tDo not copy the trailing newline character.\n"
         "\t-t, --type mime/type\t"
@@ -122,6 +241,8 @@ static void parse_options(int argc, argv_t argv) {
         bail("Empty argv");
     }
 
+    wl_array_init(&options.seat_names);
+
     static struct option long_options[] = {
         {"version", no_argument, 0, 'v'},
         {"help", no_argument, 0, 'h'},
@@ -130,13 +251,14 @@ static void parse_options(int argc, argv_t argv) {
         {"paste-once", no_argument, 0, 'o'},
         {"foreground", no_argument, 0, 'f'},
         {"clear", no_argument, 0, 'c'},
+        {"regular", no_argument, 0, 'r'},
         {"type", required_argument, 0, 't'},
         {"seat", required_argument, 0, 's'},
         {0, 0, 0, 0}
     };
     while (1) {
         int option_index;
-        const char *opts = "vhpnofct:s:";
+        const char *opts = "vhpnofcrt:s:";
         int c = getopt_long(argc, argv, opts, long_options, &option_index);
         if (c == -1) {
             break;
@@ -166,11 +288,15 @@ static void parse_options(int argc, argv_t argv) {
         case 'c':
             options.clear = 1;
             break;
+        case 'r':
+            options.regular = 1;
+            break;
         case 't':
             options.mime_type = strdup(optarg);
             break;
-        case 's':
-            options.seat_name = strdup(optarg);
+        case 's':;
+            char *ptr = wl_array_add(&options.seat_names, strlen(optarg) + 1);
+            strcpy(ptr, optarg);
             break;
         default:
             /* getopt has already printed an error message */
@@ -195,37 +321,12 @@ int main(int argc, argv_t argv) {
     /* Wait for the initial set of globals to appear */
     wl_display_roundtrip(wl_display);
 
-    struct seat *seat = registry_find_seat(registry, options.seat_name);
-    if (seat == NULL) {
-        if (options.seat_name != NULL) {
-            bail("No such seat");
-        } else {
-            bail("Missing a seat");
-        }
-    }
-
-    /* Create the device */
-    struct device_manager *device_manager
-        = registry_find_device_manager(registry, options.primary);
-    if (device_manager == NULL) {
-        complain_about_selection_support(options.primary);
-    }
-
-    struct device *device = device_manager_get_device(device_manager, seat);
-
-    if (!device_supports_selection(device, options.primary)) {
-        complain_about_selection_support(options.primary);
-    }
-
-    /* Create and initialize the copy action */
-    struct copy_action *copy_action = calloc(1, sizeof(struct copy_action));
-    copy_action->device = device;
-    copy_action->primary = options.primary;
+    struct copy_source copy_source = { 0 };
 
     if (!options.clear) {
         if (optind < argc) {
             /* Copy our command-line arguments */
-            copy_action->argv_to_copy = &argv[optind];
+            copy_source.argv = &argv[optind];
         } else {
             /* Copy data from our stdin */
             char *temp_file = dump_stdin_into_a_temp_file();
@@ -235,36 +336,20 @@ int main(int argc, argv_t argv) {
             if (options.mime_type == NULL) {
                 options.mime_type = infer_mime_type_from_contents(temp_file);
             }
-            copy_action->file_to_copy = temp_file;
+            copy_source.file_path = temp_file;
         }
-
-        /* Create the source */
-        copy_action->source = device_manager_create_source(device_manager);
-        if (options.mime_type != NULL) {
-            source_offer(copy_action->source, options.mime_type);
-        }
-        if (options.mime_type == NULL || mime_type_is_text(options.mime_type)) {
-            /* Offer a few generic plain text formats */
-            source_offer(copy_action->source, text_plain);
-            source_offer(copy_action->source, text_plain_utf8);
-            source_offer(copy_action->source, "TEXT");
-            source_offer(copy_action->source, "STRING");
-            source_offer(copy_action->source, "UTF8_STRING");
-        }
-        free(options.mime_type);
-        options.mime_type = NULL;
     }
 
-    if (device->needs_popup_surface) {
-        copy_action->popup_surface = calloc(1, sizeof(struct popup_surface));
-        copy_action->popup_surface->registry = registry;
-        copy_action->popup_surface->seat = seat;
+    /* By default, or if the regular clipboard
+     * is explicitly requested, use the regular
+     * clipboard.
+     */
+    if (!options.primary || options.regular) {
+        set_up_selection(wl_display, registry, copy_source, 0);
     }
-
-    copy_action->did_set_selection_callback = did_set_selection_callback;
-    copy_action->pasted_callback = pasted_callback;
-    copy_action->cancelled_callback = cancelled_callback;
-    copy_action_init(copy_action);
+    if (options.primary) {
+        set_up_selection(wl_display, registry, copy_source, 1);
+    }
 
     while (wl_display_dispatch(wl_display) >= 0);
 

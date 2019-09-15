@@ -31,32 +31,42 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 
-static void do_set_selection(struct copy_action *self, uint32_t serial) {
-    /* Set the selection and make sure it reaches
-     * the display before we do anything else,
-     * such as destroying the surface or exiting.
-     */
-    device_set_selection(self->device, self->source, serial, self->primary);
-    wl_display_roundtrip(self->device->wl_display);
-
-    /* Now, if we have used a popup surface, destroy it */
-    if (self->device->needs_popup_surface) {
-        popup_surface_destroy(self->popup_surface);
-        self->popup_surface = NULL;
-    }
-
-    /* And invoke the callback */
-    if (self->did_set_selection_callback != NULL) {
-        self->did_set_selection_callback(self);
-    }
-}
+static struct popup_surface *current_popup_surface = NULL;
+static struct wl_array pending_selections;
 
 static void on_focus(
     struct popup_surface *popup_surface,
     uint32_t serial
 ) {
-    struct copy_action *self = (struct copy_action *) popup_surface->data;
-    do_set_selection(self, serial);
+    /* Set the pending selections */
+    struct wl_display *wl_display = NULL;
+    struct copy_action **ptr;
+    wl_array_for_each(ptr, &pending_selections) {
+        struct copy_action *self = *ptr;
+        wl_display = self->device->wl_display;
+        device_set_selection(self->device, self->source, serial, self->primary);
+    }
+
+    /* Make sure they reach the display
+     * before we do anything else, such
+     * as destroying the surface or exiting.
+     */
+    wl_display_roundtrip(wl_display);
+
+    /* Destroy the surface */
+    popup_surface_destroy(current_popup_surface);
+    current_popup_surface = NULL;
+
+    /* Invoke the callbacks */
+    wl_array_for_each(ptr, &pending_selections) {
+        struct copy_action *self = *ptr;
+        if (self->did_set_selection_callback != NULL) {
+            self->did_set_selection_callback(self);
+        }
+    }
+
+    /* Finally, destroy the array */
+    wl_array_release(&pending_selections);
 }
 
 static void do_send(struct source *source, const char *mime_type, int fd) {
@@ -65,7 +75,7 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
      /* Unset O_NONBLOCK */
     fcntl(fd, F_SETFL, 0);
 
-    if (self->file_to_copy != NULL) {
+    if (self->copy_source.file_path != NULL) {
         /* Copy the file to the given file descriptor
          * by spawning an appropriate cat process.
          */
@@ -78,7 +88,7 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
         if (pid == 0) {
             dup2(fd, STDOUT_FILENO);
             close(fd);
-            execlp("cat", "cat", self->file_to_copy, NULL);
+            execlp("cat", "cat", self->copy_source.file_path, NULL);
             perror("exec cat");
             exit(1);
         }
@@ -100,15 +110,20 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
             return;
         }
 
-        if (self->data_to_copy.ptr != NULL) {
+        if (self->copy_source.data.ptr != NULL) {
             /* Just copy the given chunk of data */
-            fwrite(self->data_to_copy.ptr, 1, self->data_to_copy.len, f);
-        } else if (self->argv_to_copy != NULL) {
+            fwrite(
+                self->copy_source.data.ptr,
+                1,
+                self->copy_source.data.len,
+                f
+            );
+        } else if (self->copy_source.argv != NULL) {
             /* Copy an argv-style string array,
              * inserting spaces between items.
              */
             int is_first = 1;
-            for (argv_t word = self->argv_to_copy; *word != NULL; word++) {
+            for (argv_t word = self->copy_source.argv; *word != NULL; word++) {
                 if (!is_first) {
                     fwrite(" ", 1, 1, f);
                 }
@@ -141,18 +156,49 @@ void copy_action_init(struct copy_action *self) {
         self->source->cancelled_callback = forward_cancel;
         self->source->data = self;
     }
+
     /* See if we can just set the selection directly */
     if (!self->device->needs_popup_surface) {
-        /* If we can, it doesn't actually require
-         * a serial, so passing zero will do.
+        /* The simple case.
+         * In this case, setting the selection
+         * doesn't actually require a serial,
+         * so passing zero will do.
          */
-        do_set_selection(self, 0);
-    } else {
-        /* If we cannot, schedule to do it later,
-         * when our popup surface gains keyboard focus.
+        device_set_selection(self->device, self->source, 0, self->primary);
+        /* Make sure it reaches the display
+         * before we do anything else.
          */
-        self->popup_surface->on_focus = on_focus;
-        self->popup_surface->data = self;
-        popup_surface_init(self->popup_surface);
+        wl_display_roundtrip(self->device->wl_display);
+        /* And invoke the callback */
+        if (self->did_set_selection_callback != NULL) {
+            self->did_set_selection_callback(self);
+        }
+        return;
+    }
+
+    /* The complicated case.
+     * Add our action to the list of the pending
+     * actions to be done when the popup surface
+     * gets foces, and initialize both the surface
+     * and the array if needed.
+     */
+    if (current_popup_surface == NULL) {
+        wl_array_init(&pending_selections);
+    }
+    struct copy_action **ptr = (struct copy_action **) wl_array_add(
+        &pending_selections,
+        sizeof(struct copy_action *)
+    );
+    *ptr = self;
+
+    /* Only initialize the surface after
+     * we've initialized the array, because
+     * it might get keyboard focus immediately.
+     */
+    if (current_popup_surface == NULL) {
+        current_popup_surface = self->popup_surface;
+        current_popup_surface->on_focus = on_focus;
+        current_popup_surface->data = self;
+        popup_surface_init(current_popup_surface);
     }
 }

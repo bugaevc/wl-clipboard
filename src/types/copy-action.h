@@ -27,6 +27,18 @@ struct device;
 struct source;
 struct popup_surface;
 
+struct copy_source {
+    /* Exactly one of these fields must be non-null if the source
+     * is non-null, otherwise all these fields must be null.
+     */
+    const char *file_path;
+    argv_t argv;
+    struct {
+        const char *ptr;
+        size_t len;
+    } data;
+};
+
 struct copy_action {
     /* These fields are initialized by the creator */
     struct device *device;
@@ -38,15 +50,7 @@ struct copy_action {
     void (*pasted_callback)(struct copy_action *self);
     void (*cancelled_callback)(struct copy_action *self);
 
-    /* Exactly one of these fields must be non-null if the source
-     * is non-null, otherwise all these fields must be null.
-     */
-    const char *file_to_copy;
-    argv_t argv_to_copy;
-    struct {
-        const char *ptr;
-        size_t len;
-    } data_to_copy;
+    struct copy_source copy_source;
 };
 
 void copy_action_init(struct copy_action *self);
