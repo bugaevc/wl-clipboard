@@ -88,8 +88,6 @@ endforeach
 lib = static_library(
     'wl-clipboard',
     [
-        'boilerplate.c',
-
         'util/string.h',
         'util/string.c',
         'util/files.h',

@@ -16,12 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "boilerplate.h"
 #include "types/offer.h"
 #include "types/device.h"
 #include "types/device-manager.h"
 #include "types/registry.h"
 #include "types/popup-surface.h"
+
+#include "util/files.h"
+#include "util/string.h"
+#include "util/misc.h"
+
+#include <wayland-client.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#include <getopt.h>
+#include <ctype.h>
+#include <sys/wait.h>
+#include <wayland-util.h>
 
 static struct {
     char *explicit_type;
@@ -29,6 +41,7 @@ static struct {
     int no_newline;
     int list_types;
     int primary;
+    const char *seat_name;
 } options;
 
 struct types {
@@ -41,6 +54,7 @@ struct types {
     const char *any;
 };
 
+static struct wl_display *wl_display = NULL;
 static struct popup_surface *popup_surface = NULL;
 
 static struct types classify_offer_types(struct offer *offer) {
@@ -192,7 +206,7 @@ static void selection_callback(struct offer *offer, int primary) {
         popup_surface_destroy(popup_surface);
         popup_surface = NULL;
     }
-    wl_display_roundtrip(display);
+    wl_display_roundtrip(wl_display);
 
     /* Spawn a cat to perform the copy */
     pid_t pid = fork();
@@ -290,7 +304,7 @@ static void parse_options(int argc, argv_t argv) {
             options.explicit_type = strdup(optarg);
             break;
         case 's':
-            requested_seat_name = strdup(optarg);
+            options.seat_name = strdup(optarg);
             break;
         default:
             /* getopt has already printed an error message */
@@ -315,7 +329,26 @@ int main(int argc, argv_t argv) {
     }
     free(path);
 
-    init_wayland_globals();
+    wl_display = wl_display_connect(NULL);
+    if (wl_display == NULL) {
+        bail("Failed to connect to a Wayland server");
+    }
+
+    struct registry *registry = calloc(1, sizeof(struct registry));
+    registry->wl_display = wl_display;
+    registry_init(registry);
+
+    /* Wait for the initial set of globals to appear */
+    wl_display_roundtrip(wl_display);
+
+    struct seat *seat = registry_find_seat(registry, options.seat_name);
+    if (seat == NULL) {
+        if (options.seat_name != NULL) {
+            bail("No such seat");
+        } else {
+            bail("Missing a seat");
+        }
+    }
 
     /* Create the device */
     struct device_manager *device_manager
@@ -343,7 +376,7 @@ int main(int argc, argv_t argv) {
         popup_surface_init(popup_surface);
     }
 
-    while (wl_display_dispatch(display) >= 0);
+    while (wl_display_dispatch(wl_display) >= 0);
 
     perror("wl_display_dispatch");
     return 1;
