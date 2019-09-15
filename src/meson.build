@@ -118,6 +118,8 @@ lib = static_library(
         'types/popup-surface.c',
         'types/registry.h',
         'types/registry.c',
+        'types/copy-action.h',
+        'types/copy-action.c',
     ],
     dependencies: wayland,
     link_with: protocol_deps

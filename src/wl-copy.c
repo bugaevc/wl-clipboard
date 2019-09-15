@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "types/copy-action.h"
 #include "types/source.h"
 #include "types/device.h"
 #include "types/device-manager.h"
@@ -28,11 +29,9 @@
 
 #include <wayland-client.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <string.h>
 #include <libgen.h>
 #include <getopt.h>
-#include <sys/wait.h>
 
 static struct {
     int stay_in_foreground;
@@ -44,18 +43,20 @@ static struct {
     const char *seat_name;
 } options;
 
-static argv_t data_to_copy = NULL;
-static char *temp_file_to_copy = NULL;
+static void did_set_selection_callback(struct copy_action *copy_action) {
+    if (options.clear) {
+        exit(0);
+    }
+}
 
-static struct wl_display *wl_display = NULL;
-static struct device *device = NULL;
-static struct source *source = NULL;
-static struct popup_surface *popup_surface = NULL;
-
-static void cancelled_callback(struct source *source) {
-    /* We're done! */
-    if (temp_file_to_copy != NULL) {
-        execlp("rm", "rm", "-r", dirname(temp_file_to_copy), NULL);
+static void cleanup_and_exit(struct copy_action *copy_action) {
+    /* We're done copying!
+     * All that's left to do now is to
+     * clean up after ourselves and exit.*/
+    char *temp_file = (char *) copy_action->file_to_copy;
+    if (temp_file != NULL) {
+        /* Clean up our temporary file */
+        execlp("rm", "rm", "-r", dirname(temp_file), NULL);
         perror("exec rm");
         exit(1);
     } else {
@@ -63,65 +64,13 @@ static void cancelled_callback(struct source *source) {
     }
 }
 
-static void send_callback(
-    struct source *source,
-    const char *mime_type,
-    int fd
-) {
-    /* Unset O_NONBLOCK */
-    fcntl(fd, F_SETFL, 0);
-    if (data_to_copy != NULL) {
-        /* Copy the specified data, separated by spaces */
-        FILE *f = fdopen(fd, "w");
-        if (f == NULL) {
-            perror("fdopen");
-            exit(1);
-        }
-        char * const *dataptr = data_to_copy;
-        for (int is_first = 1; *dataptr != NULL; dataptr++, is_first = 0) {
-            if (!is_first) {
-                fwrite(" ", 1, 1, f);
-            }
-            fwrite(*dataptr, 1, strlen(*dataptr), f);
-        }
-        fclose(f);
-    } else {
-        /* Copy from the temp file; for that, we delegate to a
-         * (hopefully) highly optimized implementation of copying.
-         */
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            close(fd);
-            return;
-        }
-        if (pid == 0) {
-            dup2(fd, STDOUT_FILENO);
-            execlp("cat", "cat", temp_file_to_copy, NULL);
-            perror("exec cat");
-            exit(1);
-        }
-        close(fd);
-        wait(NULL);
-    }
-
-    if (options.paste_once) {
-        cancelled_callback(source);
-    }
+static void cancelled_callback(struct copy_action *copy_action) {
+    cleanup_and_exit(copy_action);
 }
 
-static void set_selection(
-    struct popup_surface *popup_surface,
-    uint32_t serial
-) {
-    device_set_selection(device, source, serial, options.primary);
-    wl_display_roundtrip(wl_display);
-    if (popup_surface != NULL) {
-        popup_surface_destroy(popup_surface);
-        popup_surface = NULL;
-    }
-    if (options.clear) {
-        exit(0);
+static void pasted_callback(struct copy_action *copy_action) {
+    if (options.paste_once) {
+        cleanup_and_exit(copy_action);
     }
 }
 
@@ -218,7 +167,7 @@ static void parse_options(int argc, argv_t argv) {
 int main(int argc, argv_t argv) {
     parse_options(argc, argv);
 
-    wl_display = wl_display_connect(NULL);
+    struct wl_display *wl_display = wl_display_connect(NULL);
     if (wl_display == NULL) {
         bail("Failed to connect to a Wayland server");
     }
@@ -246,26 +195,31 @@ int main(int argc, argv_t argv) {
         complain_about_selection_support(options.primary);
     }
 
-    device = device_manager_get_device(device_manager, seat);
+    struct device *device = device_manager_get_device(device_manager, seat);
 
     if (!device_supports_selection(device, options.primary)) {
         complain_about_selection_support(options.primary);
     }
 
+    /* Create and initialize the copy action */
+    struct copy_action *copy_action = calloc(1, sizeof(struct copy_action));
+    copy_action->device = device;
+    copy_action->primary = options.primary;
+
     if (!options.clear) {
         if (optind < argc) {
             /* Copy our command-line arguments */
-            data_to_copy = &argv[optind];
+            copy_action->argv_to_copy = &argv[optind];
         } else {
             /* Copy data from our stdin */
-            temp_file_to_copy = dump_stdin_into_a_temp_file();
+            char *temp_file = dump_stdin_into_a_temp_file();
             if (options.trim_newline) {
-                trim_trailing_newline(temp_file_to_copy);
+                trim_trailing_newline(temp_file);
             }
             if (options.mime_type == NULL) {
-                options.mime_type
-                    = infer_mime_type_from_contents(temp_file_to_copy);
+                options.mime_type = infer_mime_type_from_contents(temp_file);
             }
+            copy_action->file_to_copy = temp_file;
         }
 
         if (!options.stay_in_foreground) {
@@ -285,40 +239,32 @@ int main(int argc, argv_t argv) {
         }
 
         /* Create the source */
-        source = device_manager_create_source(device_manager);
-        source->send_callback = send_callback;
-        source->cancelled_callback = cancelled_callback;
+        copy_action->source = device_manager_create_source(device_manager);
         if (options.mime_type != NULL) {
-            source_offer(source, options.mime_type);
+            source_offer(copy_action->source, options.mime_type);
         }
         if (options.mime_type == NULL || mime_type_is_text(options.mime_type)) {
             /* Offer a few generic plain text formats */
-            source_offer(source, text_plain);
-            source_offer(source, text_plain_utf8);
-            source_offer(source, "TEXT");
-            source_offer(source, "STRING");
-            source_offer(source, "UTF8_STRING");
+            source_offer(copy_action->source, text_plain);
+            source_offer(copy_action->source, text_plain_utf8);
+            source_offer(copy_action->source, "TEXT");
+            source_offer(copy_action->source, "STRING");
+            source_offer(copy_action->source, "UTF8_STRING");
         }
         free(options.mime_type);
         options.mime_type = NULL;
     }
 
-    /* See if we can just set the selection directly */
-    if (!device->needs_popup_surface) {
-        /* If we can, it doesn't actually require
-         * a serial, so passing zero will do.
-         */
-        device_set_selection(device, source, 0, options.primary);
-    } else {
-        /* If we cannot, schedule to do it later,
-         * when our popup surface gains keyboard focus.
-         */
-        popup_surface = calloc(1, sizeof(struct popup_surface));
-        popup_surface->registry = registry;
-        popup_surface->seat = seat;
-        popup_surface->on_focus = set_selection;
-        popup_surface_init(popup_surface);
+    if (device->needs_popup_surface) {
+        copy_action->popup_surface = calloc(1, sizeof(struct popup_surface));
+        copy_action->popup_surface->registry = registry;
+        copy_action->popup_surface->seat = seat;
     }
+
+    copy_action->did_set_selection_callback = did_set_selection_callback;
+    copy_action->pasted_callback = pasted_callback;
+    copy_action->cancelled_callback = cancelled_callback;
+    copy_action_init(copy_action);
 
     while (wl_display_dispatch(wl_display) >= 0);
 
