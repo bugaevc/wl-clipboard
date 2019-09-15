@@ -1,4 +1,4 @@
-.TH WL-CLIPBOARD 1 2019-04-15 wl-clipboard
+.TH WL-CLIPBOARD 1 2019-09-15 wl-clipboard
 .SH NAME
 wl-clipboard \- Wayland copy and paste command line utilities
 .SH SYNOPSIS
@@ -16,6 +16,7 @@ wl-clipboard \- Wayland copy and paste command line utilities
 [\fB--primary\fR]
 [\fB--no-newline\fR]
 [\fB--list-types\fR]
+[\fB--watch \fIcommand...\fR]
 [\fB--type \fImime/type\fR]
 [\fB--seat \fIseat-name\fR]
 .SH DESCRIPTION
@@ -84,6 +85,12 @@ system, there is little reason to use this option.
 \fB-l\fR, \fB--list-types
 Instead of pasting the selection, output the list of MIME types it is offered
 in.
+.TP
+\fB-w\fI command...\fR, \fB--watch \fIcommand...
+Instead of pasting once and exiting, continuously watch the clipboard for
+changes, and run the specified \fIcommand\fR each time a new selection appears.
+The spawned process can read the clipboard contents from its standard input.
+This mode requires a compositor that supports the wlroots data-control protocol.
 .TP
 \fB-v\fR, \fB--version
 Display the version of wl-clipboard and some short info about its license.
