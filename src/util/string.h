@@ -22,6 +22,8 @@
 #define text_plain "text/plain"
 #define text_plain_utf8 "text/plain;charset=utf-8"
 
+typedef char * const *argv_t;
+
 int mime_type_is_text(const char *mime_type);
 
 int str_has_prefix(const char *string, const char *prefix);
