@@ -70,7 +70,7 @@ static void wl_registry_global_handler(
 #endif
 
 #ifdef HAVE_WLR_DATA_CONTROL
-    BIND(zwlr_data_control_manager_v1, 1)
+    BIND(zwlr_data_control_manager_v1, version > 2 ? 2 : version)
 #endif
 
     if (strcmp(interface, "wl_seat") == 0) {
@@ -137,8 +137,10 @@ struct device_manager *registry_find_device_manager(
 ) {
     struct device_manager *device_manager
         = calloc(1, sizeof(struct device_manager));
+    device_manager->wl_display = self->wl_display;
 
-    /* We prefer wlr-data-control, as it doesn't require
+    /* For regular selection, we just look at the two supported
+     * protocols. We prefer wlr-data-control, as it doesn't require
      * us to use the popup surface hack.
      */
 
@@ -151,6 +153,28 @@ struct device_manager *registry_find_device_manager(
         free(device_manager);
         return NULL;
     }
+
+    /* For primary selection, it's a bit more complicated. We also
+     * prefer wlr-data-control, but we don't know in advance whether
+     * the compositor supports primary selection, as unlike with
+     * other protocols here, the mere presence of wlr-data-control
+     * does not imply primary selection support. However, we assume
+     * that if a compositor supports primary selection at all, then
+     * if it supports wlr-data-control v2 it also supports primary
+     * selection over wlr-data-control; which is only reasonable.
+     */
+
+#ifdef HAVE_WLR_DATA_CONTROL
+    if (self->zwlr_data_control_manager_v1 != NULL) {
+        struct wl_proxy *proxy
+            = (struct wl_proxy *) self->zwlr_data_control_manager_v1;
+        if (wl_proxy_get_version(proxy) >= 2) {
+            device_manager->proxy = proxy;
+            device_manager_init_zwlr_data_control_manager_v1(device_manager);
+            return device_manager;
+        }
+    }
+#endif
 
 #ifdef HAVE_WP_PRIMARY_SELECTION
     TRY(zwp_primary_selection_device_manager_v1)

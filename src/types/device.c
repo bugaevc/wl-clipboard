@@ -22,6 +22,7 @@
 #include "types/source.h"
 #include "includes/selection-protocols.h"
 
+#include <wayland-client.h>
 #include <stdlib.h>
 
 int device_supports_selection(struct device *self, int primary) {
@@ -191,10 +192,46 @@ INIT(zwp_primary_selection_device_v1, 1)
 
 #ifdef HAVE_WLR_DATA_CONTROL
 
-SUPPORTS_SELECTION(zwlr_data_control_device_v1, !primary)
+enum TriState {
+    Unknown,
+    Yes,
+    No
+};
+
+/* Whether wlr-data-control supports primary selection */
+static enum TriState device_wlr_supports_primary_selection = Unknown;
+static int device_get_wlr_supports_selection(struct device *self, int primary) {
+    if (!primary) {
+        return 1;
+    }
+
+    if (device_wlr_supports_primary_selection == Yes) {
+        return 1;
+    } else if (device_wlr_supports_primary_selection == No) {
+        return 0;
+    }
+
+    wl_display_roundtrip(self->wl_display);
+
+    if (device_wlr_supports_primary_selection == Yes) {
+        return 1;
+    } else {
+        device_wlr_supports_primary_selection = No;
+        return 0;
+    }
+}
+
+SUPPORTS_SELECTION(
+    zwlr_data_control_device_v1,
+    device_get_wlr_supports_selection(self, primary)
+)
 
 SET_SELECTION_IMPL(zwlr_data_control_device_v1, zwlr_data_control_source_v1, {
-    zwlr_data_control_device_v1_set_selection(device, source);
+    if (!primary) {
+        zwlr_data_control_device_v1_set_selection(device, source);
+    } else {
+        zwlr_data_control_device_v1_set_primary_selection(device, source);
+    }
 })
 
 DATA_OFFER_HANDLER(zwlr_data_control_device_v1, zwlr_data_control_offer_v1)
@@ -206,10 +243,27 @@ SELECTION_HANDLER(
     0
 )
 
+static void zwlr_data_control_device_v1_primary_selection_handler(
+    void *data,
+    struct zwlr_data_control_device_v1 *device,
+    struct zwlr_data_control_offer_v1 *offer_proxy
+) {
+    device_wlr_supports_primary_selection = Yes;
+    struct device *self = data;
+    struct offer *offer = NULL;
+    if (offer_proxy != NULL) {
+        offer = wl_proxy_get_user_data((struct wl_proxy *) offer_proxy);
+    }
+    if (self->selection_callback != NULL) {
+        self->selection_callback(offer, 1);
+    }
+}
+
 static const struct zwlr_data_control_device_v1_listener
 zwlr_data_control_device_v1_listener = {
     .data_offer = zwlr_data_control_device_v1_data_offer_handler,
     .selection = zwlr_data_control_device_v1_selection_handler,
+    .primary_selection = zwlr_data_control_device_v1_primary_selection_handler
 };
 
 INIT(zwlr_data_control_device_v1, 0)

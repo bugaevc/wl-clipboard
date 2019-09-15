@@ -358,11 +358,15 @@ int main(int argc, argv_t argv) {
     }
 
     struct device *device = device_manager_get_device(device_manager, seat);
+    /* Set up the callback before checking whether the device
+     * actually supports the kind of selection we need, because
+     * checking for the support might roundtrip.
+     */
+    device->selection_callback = selection_callback;
 
     if (!device_supports_selection(device, options.primary)) {
         complain_about_selection_support(options.primary);
     }
-    device->selection_callback = selection_callback;
 
     if (device->needs_popup_surface) {
         /* If we cannot get the selection directly, pop up

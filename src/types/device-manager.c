@@ -58,6 +58,7 @@ static struct device *device_manager_ ## type ## _do_get_device( \
     struct wl_seat *seat = (struct wl_seat *) seat_wrapper->proxy; \
     struct device *device = calloc(1, sizeof(struct device)); \
     device->proxy = (struct wl_proxy *) type ## _ ## method_name(proxy, seat); \
+    device->wl_display = self->wl_display; \
     device_init_ ## device_type(device); \
     return device; \
 }

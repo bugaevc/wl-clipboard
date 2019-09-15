@@ -33,6 +33,7 @@ struct device {
     void *data;
 
     struct wl_proxy *proxy;
+    struct wl_display *wl_display;
 
     /* These fields are initialized by the implementation */
     int (*supports_selection)(struct device *self, int primary);

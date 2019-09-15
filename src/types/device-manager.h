@@ -28,8 +28,9 @@ struct device;
 struct source;
 
 struct device_manager {
-    /* This field is initialized by the creator */
+    /* These fields are initialized by the creator */
     struct wl_proxy *proxy;
+    struct wl_display *wl_display;
 
     /* These fields are initialized by the implementation */
     struct source *(*do_create_source)(struct device_manager *self);
