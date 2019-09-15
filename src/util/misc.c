@@ -31,3 +31,16 @@ void print_version_info() {
         "There is NO WARRANTY, to the extent permitted by law.\n"
     );
 }
+
+void complain_about_selection_support(int primary) {
+    if (!primary) {
+        /* We always expect to find at least wl_data_device_manager */
+        bail("Missing a required global object");
+    }
+
+#if !defined(HAVE_WP_PRIMARY_SELECTION) && !defined(HAVE_GTK_PRIMARY_SELECTION)
+    bail("wl-clipboard was built without primary selection support");
+#endif
+
+    bail("The compositor does not seem to support primary selection");
+}

@@ -20,6 +20,7 @@
 #include "types/source.h"
 #include "types/device.h"
 #include "types/device-manager.h"
+#include "types/registry.h"
 
 static struct {
     int stay_in_foreground;
@@ -33,7 +34,6 @@ static struct {
 static char * const *data_to_copy = NULL;
 static char *temp_file_to_copy = NULL;
 
-static struct device_manager *device_manager = NULL;
 static struct device *device = NULL;
 static struct source *source = NULL;
 
@@ -118,45 +118,6 @@ static void do_offer(char *mime_type, struct source *source) {
         source_offer(source, mime_type);
     }
     free(mime_type);
-}
-
-static void init_device_manager() {
-#ifdef HAVE_WLR_DATA_CONTROL
-    if (data_control_manager != NULL) {
-        device_manager->proxy = (struct wl_proxy *) data_control_manager;
-        device_manager_init_zwlr_data_control_manager_v1(device_manager);
-        return;
-    }
-#endif
-
-    device_manager->proxy = (struct wl_proxy *) data_device_manager;
-    device_manager_init_wl_data_device_manager(device_manager);
-}
-
-static void init_primary_device_manager() {
-    ensure_has_primary_selection();
-
-#ifdef HAVE_WP_PRIMARY_SELECTION
-    if (primary_selection_device_manager != NULL) {
-        device_manager->proxy
-            = (struct wl_proxy *) primary_selection_device_manager;
-        device_manager_init_zwp_primary_selection_device_manager_v1(
-            device_manager
-        );
-        return;
-    }
-#endif
-
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-    if (gtk_primary_selection_device_manager != NULL) {
-        device_manager->proxy
-            = (struct wl_proxy *) gtk_primary_selection_device_manager;
-        device_manager_init_gtk_primary_selection_device_manager(
-            device_manager
-        );
-        return;
-    }
-#endif
 }
 
 static void print_usage(FILE *f, const char *argv0) {
@@ -254,10 +215,6 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
-    if (options.primary) {
-        ensure_has_primary_selection();
-    }
-
     if (!options.clear) {
         if (optind < argc) {
             /* Copy our command-line arguments */
@@ -291,15 +248,20 @@ int main(int argc, char * const argv[]) {
         }
     }
 
-    device_manager = calloc(1, sizeof(struct device_manager));
-    if (!options.primary) {
-        init_device_manager();
-    } else {
-        init_primary_device_manager();
+    /* Create the device */
+    struct device_manager *device_manager
+        = registry_find_device_manager(registry, options.primary);
+    if (device_manager == NULL) {
+        complain_about_selection_support(options.primary);
     }
 
     device = device_manager_get_device(device_manager, seat);
 
+    if (!device_supports_selection(device, options.primary)) {
+        complain_about_selection_support(options.primary);
+    }
+
+    /* Create and initialize the source */
     source = device_manager_create_source(device_manager);
     source->send_callback = send_callback;
     source->cancelled_callback = cancelled_callback;

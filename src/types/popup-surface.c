@@ -17,16 +17,27 @@
  */
 
 #include "types/popup-surface.h"
+#include "types/registry.h"
 #include "types/shell.h"
 #include "types/shell-surface.h"
 #include "util/files.h"
+#include "util/misc.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 void popup_surface_init(struct popup_surface *self) {
-    self->wl_surface = wl_compositor_create_surface(self->wl_compositor);
+    self->shell = registry_find_shell(self->registry);
+    if (self->shell == NULL) {
+        bail("Missing a shell");
+    }
+
+    struct wl_compositor *wl_compositor = self->registry->wl_compositor;
+    if (wl_compositor == NULL) {
+        bail("Missing the compositor");
+    }
+    self->wl_surface = wl_compositor_create_surface(wl_compositor);
     self->shell_surface = shell_create_shell_surface(
         self->shell,
         self->wl_surface
@@ -34,7 +45,7 @@ void popup_surface_init(struct popup_surface *self) {
 
     /* Signal that the surface is ready to be configured */
     wl_surface_commit(self->wl_surface);
-    wl_display_roundtrip(self->wl_display);
+    wl_display_roundtrip(self->registry->wl_display);
 
     if (self->wl_surface == NULL) {
         /* It's possible that we were given focus
@@ -63,7 +74,10 @@ void popup_surface_init(struct popup_surface *self) {
     ftruncate(fd, size);
 
     /* Create a shared memory pool */
-    struct wl_shm *wl_shm = self->wl_shm;
+    struct wl_shm *wl_shm = self->registry->wl_shm;
+    if (wl_shm == NULL) {
+        bail("Missing the shm");
+    }
     struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, fd, size);
 
     /* Allocate the buffer in that pool */
@@ -88,6 +102,7 @@ void popup_surface_init(struct popup_surface *self) {
 void popup_surface_destroy(struct popup_surface *self) {
     shell_surface_destroy(self->shell_surface);
     wl_surface_destroy(self->wl_surface);
+    free(self->shell);
 
     if (self->should_free_self) {
         free(self);

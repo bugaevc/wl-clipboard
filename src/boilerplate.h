@@ -40,29 +40,12 @@
 #include "includes/shell-protocols.h"
 #include "includes/selection-protocols.h"
 
+#include "types/registry.h"
+
 struct wl_display *display;
-struct wl_data_device_manager *data_device_manager;
+struct registry *registry;
+
 struct wl_seat *seat;
-struct wl_compositor *compositor;
-struct wl_shm *shm;
-struct wl_shell *wl_shell;
-
-#ifdef HAVE_XDG_SHELL
-struct xdg_wm_base *xdg_wm_base;
-#endif
-
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-struct gtk_primary_selection_device_manager *gtk_primary_selection_device_manager;
-#endif
-
-#ifdef HAVE_WP_PRIMARY_SELECTION
-struct zwp_primary_selection_device_manager_v1 *primary_selection_device_manager;
-#endif
-
-#ifdef HAVE_WLR_DATA_CONTROL
-struct zwlr_data_control_manager_v1 *data_control_manager;
-#endif
-
 const char *requested_seat_name;
 
 void init_wayland_globals(void);
@@ -72,7 +55,5 @@ void destroy_popup_surface(void);
 
 void (*action_on_popup_surface_getting_focus)(uint32_t serial);
 void (*action_on_no_keyboard)(void);
-
-void ensure_has_primary_selection(void);
 
 uint32_t get_serial(void);
