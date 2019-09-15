@@ -120,21 +120,9 @@ static void set_selection(
         popup_surface_destroy(popup_surface);
         popup_surface = NULL;
     }
-}
-
-static void do_offer(char *mime_type, struct source *source) {
-    if (mime_type == NULL || mime_type_is_text(mime_type)) {
-        /* Offer a few generic plain text formats */
-        source_offer(source, text_plain);
-        source_offer(source, text_plain_utf8);
-        source_offer(source, "TEXT");
-        source_offer(source, "STRING");
-        source_offer(source, "UTF8_STRING");
+    if (options.clear) {
+        exit(0);
     }
-    if (mime_type != NULL) {
-        source_offer(source, mime_type);
-    }
-    free(mime_type);
 }
 
 static void print_usage(FILE *f, const char *argv0) {
@@ -251,6 +239,19 @@ int main(int argc, argv_t argv) {
         }
     }
 
+    /* Create the device */
+    struct device_manager *device_manager
+        = registry_find_device_manager(registry, options.primary);
+    if (device_manager == NULL) {
+        complain_about_selection_support(options.primary);
+    }
+
+    device = device_manager_get_device(device_manager, seat);
+
+    if (!device_supports_selection(device, options.primary)) {
+        complain_about_selection_support(options.primary);
+    }
+
     if (!options.clear) {
         if (optind < argc) {
             /* Copy our command-line arguments */
@@ -266,43 +267,41 @@ int main(int argc, argv_t argv) {
                     = infer_mime_type_from_contents(temp_file_to_copy);
             }
         }
-    }
 
-    if (!options.stay_in_foreground && !options.clear) {
-        /* Move to background.
-         * We fork our process and leave the
-         * child running in the background,
-         * while exiting in the parent.
-         */
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            /* Proceed without forking */
+        if (!options.stay_in_foreground) {
+            /* Move to background.
+             * We fork our process and leave the
+             * child running in the background,
+             * while exiting in the parent.
+             */
+            pid_t pid = fork();
+            if (pid < 0) {
+                perror("fork");
+                /* Proceed without forking */
+            }
+            if (pid > 0) {
+                exit(0);
+            }
         }
-        if (pid > 0) {
-            exit(0);
+
+        /* Create the source */
+        source = device_manager_create_source(device_manager);
+        source->send_callback = send_callback;
+        source->cancelled_callback = cancelled_callback;
+        if (options.mime_type != NULL) {
+            source_offer(source, options.mime_type);
         }
+        if (options.mime_type == NULL || mime_type_is_text(options.mime_type)) {
+            /* Offer a few generic plain text formats */
+            source_offer(source, text_plain);
+            source_offer(source, text_plain_utf8);
+            source_offer(source, "TEXT");
+            source_offer(source, "STRING");
+            source_offer(source, "UTF8_STRING");
+        }
+        free(options.mime_type);
+        options.mime_type = NULL;
     }
-
-    /* Create the device */
-    struct device_manager *device_manager
-        = registry_find_device_manager(registry, options.primary);
-    if (device_manager == NULL) {
-        complain_about_selection_support(options.primary);
-    }
-
-    device = device_manager_get_device(device_manager, seat);
-
-    if (!device_supports_selection(device, options.primary)) {
-        complain_about_selection_support(options.primary);
-    }
-
-    /* Create and initialize the source */
-    source = device_manager_create_source(device_manager);
-    source->send_callback = send_callback;
-    source->cancelled_callback = cancelled_callback;
-
-    do_offer(options.mime_type, source);
 
     /* See if we can just set the selection directly */
     if (!device->needs_popup_surface) {
@@ -319,11 +318,6 @@ int main(int argc, argv_t argv) {
         popup_surface->seat = seat;
         popup_surface->on_focus = set_selection;
         popup_surface_init(popup_surface);
-    }
-
-    if (options.clear) {
-        wl_display_roundtrip(wl_display);
-        exit(0);
     }
 
     while (wl_display_dispatch(wl_display) >= 0);
