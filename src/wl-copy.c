@@ -47,6 +47,22 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
     if (options.clear) {
         exit(0);
     }
+
+    if (!options.stay_in_foreground) {
+        /* Move to background.
+         * We fork our process and leave the
+         * child running in the background,
+         * while exiting in the parent.
+         */
+        pid_t pid = fork();
+        if (pid < 0) {
+            perror("fork");
+            /* Proceed without forking */
+        }
+        if (pid > 0) {
+            exit(0);
+        }
+    }
 }
 
 static void cleanup_and_exit(struct copy_action *copy_action) {
@@ -220,22 +236,6 @@ int main(int argc, argv_t argv) {
                 options.mime_type = infer_mime_type_from_contents(temp_file);
             }
             copy_action->file_to_copy = temp_file;
-        }
-
-        if (!options.stay_in_foreground) {
-            /* Move to background.
-             * We fork our process and leave the
-             * child running in the background,
-             * while exiting in the parent.
-             */
-            pid_t pid = fork();
-            if (pid < 0) {
-                perror("fork");
-                /* Proceed without forking */
-            }
-            if (pid > 0) {
-                exit(0);
-            }
         }
 
         /* Create the source */
