@@ -50,11 +50,3 @@ struct seat *seat;
 const char *requested_seat_name;
 
 void init_wayland_globals(void);
-
-void popup_tiny_invisible_surface(void);
-void destroy_popup_surface(void);
-
-void (*action_on_popup_surface_getting_focus)(uint32_t serial);
-void (*action_on_no_keyboard)(void);
-
-uint32_t get_serial(void);

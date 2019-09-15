@@ -21,6 +21,7 @@
 #include "types/device.h"
 #include "types/device-manager.h"
 #include "types/registry.h"
+#include "types/popup-surface.h"
 
 static struct {
     int stay_in_foreground;
@@ -36,6 +37,7 @@ static char *temp_file_to_copy = NULL;
 
 static struct device *device = NULL;
 static struct source *source = NULL;
+static struct popup_surface *popup_surface = NULL;
 
 static void cancelled_callback(struct source *source) {
     /* We're done! */
@@ -95,14 +97,16 @@ static void send_callback(
     }
 }
 
-static void set_selection(uint32_t serial) {
+static void set_selection(
+    struct popup_surface *popup_surface,
+    uint32_t serial
+) {
     device_set_selection(device, source, serial, options.primary);
     wl_display_roundtrip(display);
-    destroy_popup_surface();
-}
-
-static void complain_about_missing_keyboard() {
-    bail("Setting primary selection is not supported without a keyboard");
+    if (popup_surface != NULL) {
+        popup_surface_destroy(popup_surface);
+        popup_surface = NULL;
+    }
 }
 
 static void do_offer(char *mime_type, struct source *source) {
@@ -278,9 +282,11 @@ int main(int argc, argv_t argv) {
         /* If we cannot, schedule to do it later,
          * when our popup surface gains keyboard focus.
          */
-        action_on_popup_surface_getting_focus = set_selection;
-        action_on_no_keyboard = complain_about_missing_keyboard;
-        popup_tiny_invisible_surface();
+        popup_surface = calloc(1, sizeof(struct popup_surface));
+        popup_surface->registry = registry;
+        popup_surface->seat = seat;
+        popup_surface->on_focus = set_selection;
+        popup_surface_init(popup_surface);
     }
 
     if (options.clear) {
