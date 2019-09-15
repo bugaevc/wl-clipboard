@@ -49,10 +49,19 @@ _wl_clipboard_complete_paste_types() {
 
 _wl_paste_completion() {
     compopt +o default
-    local cur prev opts types seats
+    local cur prev opts types seats offset
+
+    for (( offset=1; offset < COMP_CWORD; offset++ )); do
+        cur="${COMP_WORDS[offset]}"
+        if [ \( "x${cur:0:1}" = "x-" -a "x${cur:1:2}" != "x-" -a "${cur: -1}" = "w" \) -o "$cur" = "--watch" ]; then
+            _command_offset $(($offset+1))
+            return
+        fi
+    done
+
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="-n --no-newline -l --list-types -p --primary -t --type -s --seat -v --version -h --help"
+    opts="-n --no-newline -l --list-types -w --watch -p --primary -t --type -s --seat -v --version -h --help"
     if [ "$prev" = ">" ]; then
         compopt -o default
         COMPREPLY=()
