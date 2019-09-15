@@ -31,7 +31,7 @@ static struct {
     int primary;
 } options;
 
-static char * const *data_to_copy = NULL;
+static argv_t data_to_copy = NULL;
 static char *temp_file_to_copy = NULL;
 
 static struct device *device = NULL;
@@ -147,7 +147,7 @@ static void print_usage(FILE *f, const char *argv0) {
     );
 }
 
-static void parse_options(int argc, char * const argv[]) {
+static void parse_options(int argc, argv_t argv) {
     if (argc < 1) {
         bail("Empty argv");
     }
@@ -210,7 +210,7 @@ static void parse_options(int argc, char * const argv[]) {
     }
 }
 
-int main(int argc, char * const argv[]) {
+int main(int argc, argv_t argv) {
     parse_options(argc, argv);
 
     init_wayland_globals();
