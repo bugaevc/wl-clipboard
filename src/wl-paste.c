@@ -20,6 +20,7 @@
 #include "types/offer.h"
 #include "types/device.h"
 #include "types/device-manager.h"
+#include "types/registry.h"
 
 static struct {
     char *explicit_type;
@@ -38,8 +39,6 @@ struct types {
     const char *any_text;
     const char *any;
 };
-
-static struct device_manager *device_manager = NULL;
 
 static struct types classify_offer_types(struct offer *offer) {
     struct types types = { 0 };
@@ -240,45 +239,6 @@ static void print_usage(FILE *f, const char *argv0) {
     );
 }
 
-static void init_device_manager() {
-#ifdef HAVE_WLR_DATA_CONTROL
-    if (data_control_manager != NULL) {
-        device_manager->proxy = (struct wl_proxy *) data_control_manager;
-        device_manager_init_zwlr_data_control_manager_v1(device_manager);
-        return;
-    }
-#endif
-
-    device_manager->proxy = (struct wl_proxy *) data_device_manager;
-    device_manager_init_wl_data_device_manager(device_manager);
-}
-
-static void init_primary_device_manager() {
-    ensure_has_primary_selection();
-
-#ifdef HAVE_WP_PRIMARY_SELECTION
-    if (primary_selection_device_manager != NULL) {
-        device_manager->proxy
-            = (struct wl_proxy *) primary_selection_device_manager;
-        device_manager_init_zwp_primary_selection_device_manager_v1(
-            device_manager
-        );
-        return;
-    }
-#endif
-
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-    if (gtk_primary_selection_device_manager != NULL) {
-        device_manager->proxy
-            = (struct wl_proxy *) gtk_primary_selection_device_manager;
-        device_manager_init_gtk_primary_selection_device_manager(
-            device_manager
-        );
-        return;
-    }
-#endif
-}
-
 static void parse_options(int argc, char * const argv[]) {
     if (argc < 1) {
         bail("Empty argv");
@@ -343,7 +303,6 @@ static void parse_options(int argc, char * const argv[]) {
 int main(int argc, char * const argv[]) {
     parse_options(argc, argv);
 
-
     char *path = path_for_fd(STDOUT_FILENO);
     if (path != NULL && options.explicit_type == NULL) {
         options.inferred_type = infer_mime_type_from_name(path);
@@ -352,14 +311,18 @@ int main(int argc, char * const argv[]) {
 
     init_wayland_globals();
 
-    device_manager = calloc(1, sizeof(struct device_manager));
-    if (!options.primary) {
-        init_device_manager();
-    } else {
-        init_primary_device_manager();
+    /* Create the device */
+    struct device_manager *device_manager
+        = registry_find_device_manager(registry, options.primary);
+    if (device_manager == NULL) {
+        complain_about_selection_support(options.primary);
     }
 
     struct device *device = device_manager_get_device(device_manager, seat);
+
+    if (!device_supports_selection(device, options.primary)) {
+        complain_about_selection_support(options.primary);
+    }
     device->selection_callback = selection_callback;
 
     if (device->needs_popup_surface) {

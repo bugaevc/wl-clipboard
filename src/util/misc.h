@@ -26,4 +26,6 @@
 
 void print_version_info(void);
 
+void complain_about_selection_support(int primary);
+
 #endif /* UTIL_MISC_H */

@@ -21,17 +21,16 @@
 
 #include <wayland-client.h>
 
+struct registry;
 struct shell;
 struct shell_surface;
 
 struct popup_surface {
-    /* These fields are initialized by the creator */
-    struct wl_display *wl_display;
-    struct wl_compositor *wl_compositor;
-    struct wl_shm *wl_shm;
-    struct shell *shell;
+    /* This field is initialized by the creator */
+    struct registry *registry;
 
     /* These fields are initialized by the implementation */
+    struct shell *shell;
     struct shell_surface *shell_surface;
     struct wl_surface *wl_surface;
     int should_free_self;

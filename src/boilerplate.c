@@ -21,110 +21,9 @@
 #include "types/shell-surface.h"
 #include "types/shell.h"
 #include "types/popup-surface.h"
+#include "types/registry.h"
 
-static struct shell *shell = NULL;
 static struct popup_surface *popup_surface = NULL;
-
-static void process_new_seat(struct wl_seat *new_seat);
-
-static void registry_global_handler
-(
-    void *data,
-    struct wl_registry *registry,
-    uint32_t name,
-    const char *interface,
-    uint32_t version
-) {
-    if (strcmp(interface, "wl_data_device_manager") == 0) {
-        data_device_manager = wl_registry_bind(
-            registry,
-            name,
-            &wl_data_device_manager_interface,
-            1
-        );
-    } else if (strcmp(interface, "wl_seat") == 0) {
-        struct wl_seat *new_seat = wl_registry_bind(
-            registry,
-            name,
-            &wl_seat_interface,
-            2
-        );
-        process_new_seat(new_seat);
-    } else if (strcmp(interface, "wl_compositor") == 0) {
-        compositor = wl_registry_bind(
-            registry,
-            name,
-            &wl_compositor_interface,
-            3
-        );
-    } else if (strcmp(interface, "wl_shm") == 0) {
-        shm = wl_registry_bind(
-            registry,
-            name,
-            &wl_shm_interface,
-            1
-        );
-    } else if (strcmp(interface, "wl_shell") == 0) {
-        wl_shell = wl_registry_bind(
-            registry,
-            name,
-            &wl_shell_interface,
-            1
-        );
-    }
-#ifdef HAVE_XDG_SHELL
-    else if (strcmp(interface, "xdg_wm_base") == 0) {
-        xdg_wm_base = wl_registry_bind(
-            registry,
-            name,
-            &xdg_wm_base_interface,
-            1
-        );
-    }
-#endif
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-    else if (strcmp(interface, "gtk_primary_selection_device_manager") == 0) {
-        gtk_primary_selection_device_manager = wl_registry_bind(
-            registry,
-            name,
-            &gtk_primary_selection_device_manager_interface,
-            1
-        );
-    }
-#endif
-#ifdef HAVE_WP_PRIMARY_SELECTION
-    else if (strcmp(interface, "zwp_primary_selection_device_manager_v1") == 0) {
-        primary_selection_device_manager = wl_registry_bind(
-            registry,
-            name,
-            &zwp_primary_selection_device_manager_v1_interface,
-            1
-        );
-    }
-#endif
-#ifdef HAVE_WLR_DATA_CONTROL
-    else if (strcmp(interface, "zwlr_data_control_manager_v1") == 0) {
-        data_control_manager = wl_registry_bind(
-            registry,
-            name,
-            &zwlr_data_control_manager_v1_interface,
-            1
-        );
-    }
-#endif
-}
-
-static void registry_global_remove_handler
-(
-    void *data,
-    struct wl_registry *registry,
-    uint32_t name
-) {}
-
-static const struct wl_registry_listener registry_listener = {
-    .global = registry_global_handler,
-    .global_remove = registry_global_remove_handler
-};
 
 static void forward_on_focus(struct keyboard *keyboard, uint32_t serial) {
     struct wl_seat *this_seat = (struct wl_seat *) keyboard->data;
@@ -177,7 +76,7 @@ static const struct wl_seat_listener seat_listener = {
 
 #define UNSET_CAPABILITIES ((void *) (uint32_t) 35)
 
-static void process_new_seat(struct wl_seat *new_seat) {
+void process_new_seat(struct wl_seat *new_seat) {
     if (seat != NULL) {
         wl_seat_destroy(new_seat);
         return;
@@ -214,39 +113,12 @@ void init_wayland_globals() {
         bail("Failed to connect to a Wayland server");
     }
 
-    struct wl_registry *registry = wl_display_get_registry(display);
-    wl_registry_add_listener(registry, &registry_listener, NULL);
+    registry = calloc(1, sizeof(struct registry));
+    registry->wl_display = display;
+    registry_init(registry);
 
     /* Wait for the "initial" set of globals to appear */
     wl_display_roundtrip(display);
-
-    if (
-        data_device_manager == NULL ||
-        compositor == NULL ||
-        shm == NULL ||
-        (shell == NULL
-#ifdef HAVE_XDG_SHELL
-         && xdg_wm_base == NULL
-#endif
-        )
-    ) {
-        bail("Missing a required global object");
-    }
-
-    shell = calloc(1, sizeof(struct shell));
-    if (wl_shell != NULL) {
-        /* Use wl_shell */
-        shell->proxy = (struct wl_proxy *) wl_shell;
-        shell_init_wl_shell(shell);
-    } else {
-#ifdef HAVE_XDG_SHELL
-        /* Use xdg-shell */
-        shell->proxy = (struct wl_proxy *) xdg_wm_base;
-        shell_init_xdg_shell(shell);
-#else
-        bail("Unreachable: HAVE_XDG_SHELL undefined and no wl_shell");
-#endif
-    }
 
     if (seat == NULL && requested_seat_name != NULL) {
         wl_display_roundtrip(display);
@@ -257,25 +129,6 @@ void init_wayland_globals() {
         }
         bail("Cannot find the requested seat");
     }
-}
-
-void ensure_has_primary_selection() {
-#ifdef HAVE_GTK_PRIMARY_SELECTION
-    if (gtk_primary_selection_device_manager != NULL) {
-        return;
-    }
-#endif
-#ifdef HAVE_WP_PRIMARY_SELECTION
-    if (primary_selection_device_manager != NULL) {
-        return;
-    }
-#endif
-
-#if defined(HAVE_GTK_PRIMARY_SELECTION) || defined(HAVE_WP_PRIMARY_SELECTION)
-    bail("Primary selection is not supported on this compositor");
-#else
-    bail("wl-clipboard was built without primary selection support");
-#endif
 }
 
 void popup_tiny_invisible_surface() {
@@ -295,10 +148,7 @@ void popup_tiny_invisible_surface() {
     wl_display_dispatch(display);
 
     popup_surface = calloc(1, sizeof(struct popup_surface));
-    popup_surface->wl_display = display;
-    popup_surface->wl_compositor = compositor;
-    popup_surface->wl_shm = shm;
-    popup_surface->shell = shell;
+    popup_surface->registry = registry;
 
     popup_surface_init(popup_surface);
 }
