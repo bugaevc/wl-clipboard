@@ -21,6 +21,7 @@
 #include "types/device.h"
 #include "types/device-manager.h"
 #include "types/registry.h"
+#include "types/popup-surface.h"
 
 static struct {
     char *explicit_type;
@@ -39,6 +40,8 @@ struct types {
     const char *any_text;
     const char *any;
 };
+
+static struct popup_surface *popup_surface = NULL;
 
 static struct types classify_offer_types(struct offer *offer) {
     struct types types = { 0 };
@@ -185,7 +188,10 @@ static void selection_callback(struct offer *offer, int primary) {
 
     offer_receive(offer, mime_type, pipefd[1]);
 
-    destroy_popup_surface();
+    if (popup_surface != NULL) {
+        popup_surface_destroy(popup_surface);
+        popup_surface = NULL;
+    }
     wl_display_roundtrip(display);
 
     /* Spawn a cat to perform the copy */
@@ -326,7 +332,15 @@ int main(int argc, argv_t argv) {
     device->selection_callback = selection_callback;
 
     if (device->needs_popup_surface) {
-        popup_tiny_invisible_surface();
+        /* If we cannot get the selection directly, pop up
+         * a surface. When it gets focus, we'll immediately
+         * get the selection events, se we don't need to do
+         * anything special on the surface getting focus.
+         */
+        popup_surface = calloc(1, sizeof(struct popup_surface));
+        popup_surface->registry = registry;
+        popup_surface->seat = seat;
+        popup_surface_init(popup_surface);
     }
 
     while (wl_display_dispatch(display) >= 0);
