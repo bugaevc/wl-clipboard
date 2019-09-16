@@ -49,7 +49,7 @@ For `wl-copy`:
 
 For `wl-paste`:
 
-* `-n`, `--no-newline` Do not append a newline character after the pasted clipboard content. This option is automatically enabled for non-text content types.
+* `-n`, `--no-newline` Do not append a newline character after the pasted clipboard content. This option is automatically enabled for non-text content types and when using the `--watch` mode.
 * `-l`, `--list-types` Instead of pasting the selection, output the list of MIME types it is offered in.
 * `-w command...`, `--watch command...` Instead of pasting once and exiting, continuously watch the clipboard for changes, and run the specified command each time a new selection appears. The spawned process can read the clipboard contents from its standard input. This mode requires a compositor that supports the [wlroots data-control protocol](https://github.com/swaywm/wlr-protocols/blob/master/unstable/wlr-data-control-unstable-v1.xml).
 
