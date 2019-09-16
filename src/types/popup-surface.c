@@ -126,6 +126,14 @@ void popup_surface_init(struct popup_surface *self) {
 }
 
 void popup_surface_destroy(struct popup_surface *self) {
+    /* We cannot destroy the keyboard
+     * because it acts as a listener,
+     * and there's no way to reset that.
+     * So just unreference ourselves.
+     */
+    self->keyboard->on_focus = NULL;
+    self->keyboard->data = NULL;
+
     shell_surface_destroy(self->shell_surface);
     wl_surface_destroy(self->wl_surface);
     free(self->shell);
