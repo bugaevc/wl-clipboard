@@ -340,7 +340,34 @@ static void parse_options(int argc, argv_t argv) {
             break;
         case 'w':
             options.watch = 1;
+            /* We tell getopt that --watch requires an argument,
+             * but it's more nuanced than that. We actually take
+             * that argument and everything that follows it as a
+             * subcommand to spawn. When we get here, getopt sets
+             * the optind variable to point to the *next* option
+             * to be processed, after both the current option and
+             * its argument, if any. So if we're invoked like this:
+             * $ wl-paste --primary --watch foo bar baz
+             * then optind will point to bar, as it considers foo
+             * to be the argument that --watch requires. However,
+             * if we get invoked like this:
+             * $ wl-paste --watch=foo bar baz
+             * or like this:
+             * $ wl-paste -wfoo bar baz
+             * then getopt will not consider it an error, and optind
+             * will also point to bar. We do consider that an error,
+             * so detect this case and print an error message.
+             */
             options.watch_command = (argv_t) &argv[optind - 1];
+            if (options.watch_command[0][0] == '-') {
+                fprintf(
+                    stderr,
+                    "Expected a subcommand instead of an argument"
+                    " after --watch\n"
+                );
+                print_usage(stderr, argv[0]);
+                exit(1);
+            }
             /* We're going to forward the rest of our
              * arguments to the command we spawn, so stop
              * trying to process further options.
