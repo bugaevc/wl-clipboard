@@ -79,13 +79,17 @@ $ ninja
 $ sudo ninja install
 ```
 
-wl-clipboard supports Linux and BSD systems. The only mandatory dependency is
-the `wayland-client` library (try package named `wayland-devel` or
-`libwayland-dev`).
+wl-clipboard supports Linux and BSD systems, and is also known to work on
+Mac OS X and GNU Hurd. The only mandatory dependency is the `wayland-client`
+library (try package named `wayland-devel` or `libwayland-dev`).
 
 Optional dependencies for building:
-* `wayland-scanner` for primary selection support using the bundled [gtk-primary-selection protocol](src/protocol/gtk-primary-selection.xml)
-* `wayland-protocols` (version 1.12 or later) for xdg-shell support (otherwise it won't run under compositors lacking `wl_shell` support, see [the issue #2](https://github.com/bugaevc/wl-clipboard/issues/2))
+* `wayland-scanner`
+* `wayland-protocols` (version 1.12 or later)
+
+If these are found during configuration, wl-clipboard gets built with
+additional protocols support, which enables features such as primary selection
+support and `--watch` mode.
 
 Optional dependencies for running:
 * `xdg-mime` for content type inference in `wl-copy` (try package named `xdg-utils`)
