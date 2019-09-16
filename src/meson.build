@@ -69,6 +69,7 @@ if have_wlr_data_control
 endif
 
 protocol_deps = []
+protocol_headers = []
 
 foreach protocol : protocols
     name = protocol[0]
@@ -81,6 +82,7 @@ foreach protocol : protocols
         input: xml, output: name + '.c',
         command: [wayland_scanner, scanner_code_command, '@INPUT@', '@OUTPUT@']
     )
+    protocol_headers += header
     lib = static_library(name, impl, header, dependencies: wayland)
     protocol_deps += lib
 endforeach
@@ -88,15 +90,17 @@ endforeach
 lib = static_library(
     'wl-clipboard',
     [
+        protocol_headers,
+
+        'includes/shell-protocols.h',
+        'includes/selection-protocols.h',
+
         'util/string.h',
         'util/string.c',
         'util/files.h',
         'util/files.c',
         'util/misc.h',
         'util/misc.c',
-
-        'includes/shell-protocols.h',
-        'includes/selection-protocols.h',
 
         'types/source.h',
         'types/source.c',
