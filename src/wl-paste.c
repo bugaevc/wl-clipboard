@@ -443,10 +443,7 @@ int main(int argc, argv_t argv) {
 
     if (device->needs_popup_surface) {
         if (options.watch) {
-            bail(
-                "Watch mode requires a compositor that supports "
-                "wlroots data-control protocol"
-            );
+            complain_about_watch_mode_support();
         }
         /* If we cannot get the selection directly, pop up
          * a surface. When it gets focus, we'll immediately

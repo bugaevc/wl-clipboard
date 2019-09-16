@@ -27,5 +27,6 @@
 void print_version_info(void);
 
 void complain_about_selection_support(int primary);
+void complain_about_watch_mode_support(void);
 
 #endif /* UTIL_MISC_H */

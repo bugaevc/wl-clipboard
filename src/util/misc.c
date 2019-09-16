@@ -44,3 +44,16 @@ void complain_about_selection_support(int primary) {
 
     bail("The compositor does not seem to support primary selection");
 }
+
+void complain_about_watch_mode_support() {
+#ifdef HAVE_WLR_DATA_CONTROL
+    bail(
+        "Watch mode requires a compositor that supports "
+        "wlroots data-control protocol"
+    );
+#else
+    bail(
+        "wl-clipboard was built without wlroots data-control protocol support"
+    );
+#endif
+}
