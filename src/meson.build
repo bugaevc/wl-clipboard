@@ -129,5 +129,17 @@ lib = static_library(
     link_with: protocol_deps
 )
 
-executable('wl-copy', 'wl-copy.c', dependencies: wayland, link_with: lib, install: true)
-executable('wl-paste', 'wl-paste.c', dependencies: wayland, link_with: lib, install: true)
+executable(
+    'wl-copy',
+    ['wl-copy.c', protocol_headers],
+    dependencies: wayland,
+    link_with: lib,
+    install: true
+)
+executable(
+    'wl-paste',
+    ['wl-paste.c', protocol_headers],
+    dependencies: wayland,
+    link_with: lib,
+    install: true
+)
