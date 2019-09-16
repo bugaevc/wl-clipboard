@@ -88,7 +88,10 @@ void trim_trailing_newline(const char *file_path) {
         goto out;
     }
 
-    ftruncate(fd, seek_res);
+    int rc = ftruncate(fd, seek_res);
+    if (rc < 0) {
+        perror("ftruncate");
+    }
 out:
     close(fd);
 }
@@ -102,7 +105,11 @@ char *path_for_fd(int fd) {
 char *infer_mime_type_from_contents(const char *file_path) {
     /* Spawn xdg-mime query filetype */
     int pipefd[2];
-    pipe(pipefd);
+    int rc = pipe(pipefd);
+    if (rc < 0) {
+        perror("pipe");
+        return NULL;
+    }
 
     pid_t pid = fork();
     if (pid < 0) {

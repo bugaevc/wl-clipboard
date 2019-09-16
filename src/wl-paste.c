@@ -210,8 +210,19 @@ static void selection_callback(struct offer *offer, int primary) {
         options.no_newline = 1;
     }
 
+    /* Create a pipe which we'll
+     * use to receive the data.
+     */
     int pipefd[2];
-    pipe(pipefd);
+    int rc = pipe(pipefd);
+    if (rc < 0) {
+        perror("pipe");
+        offer_destroy(offer);
+        if (options.watch) {
+            return;
+        }
+        exit(1);
+    }
 
     offer_receive(offer, mime_type, pipefd[1]);
 
@@ -259,7 +270,10 @@ static void selection_callback(struct offer *offer, int primary) {
     close(pipefd[1]);
     wait(NULL);
     if (!options.no_newline && !options.watch) {
-        write(STDOUT_FILENO, "\n", 1);
+        rc = write(STDOUT_FILENO, "\n", 1);
+        if (rc != 1) {
+            perror("write");
+        }
     }
 
     offer_destroy(offer);
