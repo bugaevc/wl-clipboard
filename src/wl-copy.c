@@ -227,7 +227,13 @@ int main(int argc, argv_t argv) {
             /* Copy our command-line arguments */
             copy_action->argv_to_copy = &argv[optind];
         } else {
-            /* Copy data from our stdin */
+            /* Copy data from our stdin.
+             * It's important that we only do this
+             * after going through the initial stages
+             * that are likely to result in errors,
+             * so that we don't forget to clean up
+             * the temp file.
+             */
             char *temp_file = dump_stdin_into_a_temp_file();
             if (options.trim_newline) {
                 trim_trailing_newline(temp_file);
