@@ -1,0 +1,42 @@
+#compdef wl-copy
+
+__xdg_mimetypes() {
+	local expl SEARCH=${XDG_DATA_HOME:-$HOME/.local/share}
+	SEARCH+=:${XDG_DATA_DIRS:-/usr/share:/usr/local/share}
+
+	local -a _all_mimetypes
+	for dir in ${(s.:.)SEARCH}; do
+		[[ -f "${dir}/mime/types" ]] &&
+		_all_mimetypes+=(${(f)"$(<"${dir}/mime/types")"})
+	done
+
+	_wanted mimetypes expl 'mimetypes' _multi_parts / _all_mimetypes
+}
+
+__all_seats() {
+	local -a seats
+	if (( $+commands[weston-info] && $+commands[sed] )); then
+		seats=( ${(@f)"$(weston-info 2>/dev/null | sed -n '/wl_seat/{n;s/\s*name: //;p}')"} )
+	elif (( $+commands[loginctl] )); then
+		seats=( ${(@f)"$(loginctl --no-legend --no-pager list-seats 2>/dev/null)"} )
+	fi
+
+	if [[ -z $seats ]]; then
+		# seat0 is always a vaild seat and covers most cases, so its a good fallback.
+		compadd "$@" - seat0
+	else
+		compadd "$@" -a seats
+	fi
+}
+
+_arguments -S -s \
+	{-o,--paste-once}'[Only serve one paste request and then exit]' \
+	{-f,--foreground}'[Stay in the foreground instead of forking]' \
+	{-c,--clear}'[Instead of copying anything, clear the clipboard]' \
+	{-p,--primary}'[Use the "primary" clipboard]' \
+	{-n,--trim-newline}'[Do not copy the trailing newline character]' \
+	{-t+,--type=}'[Override the inferred MIME type for the content]:mimetype:__xdg_mimetypes' \
+	{-s+,--seat=}'[Pick the seat to work with]:seat:__all_seats' \
+	{-v,--version}'[Display version info]' \
+	{-h,--help}'[Display a help message]' \
+	'*::text'
