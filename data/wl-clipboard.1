@@ -74,7 +74,7 @@ Specify which seat \fBwl-copy\fR and \fBwl-paste\fR should work with. Wayland
 natively supports multi-seat configurations where each seat gets its own mouse
 pointer, keyboard focus, and among other things its own separate clipboard. The
 name of the default seat is likely \fIdefault\fR or \fIseat0\fR, and additional
-seat names normally come form
+seat names normally come from the
 .BR udev (7)
 property \fBENV{WL_SEAT}\fR. You can view the list of the currently available
 seats as advertised by the compositor using the
@@ -103,7 +103,7 @@ Display a short help message listing the available options.
 WAYLAND_DISPLAY
 Specifies what Wayland server \fBwl-copy\fR and \fBwl-paste\fR should connect
 to. This is the same environment variable that you pass to other Wayland
-clients, such as graphical aplications, that connect to this Wayland server. It
+clients, such as graphical applications, that connect to this Wayland server. It
 is normally set up automatically by the graphical session and the Wayland
 compositor. See
 .BR wl_display_connect (3)
