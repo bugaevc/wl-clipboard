@@ -20,20 +20,19 @@ _wl_clipboard_complete_paste_types() {
     local i cur primary seat cmd types
     for (( i = 0; i < "${#COMP_WORDS[@]}"; ++i )); do
         cur="${COMP_WORDS[i]}"
-        if [ "x${cur:0:1}" = "x-" -a "x${cur:1:2}" != "x-" ]; then
-            case "$cur" in
-              *p*)
+        case "$cur" in
+            -p* | -[a-z]*p* | --primary)
                 primary="yes"
                 ;;
-              *s)
+        esac
+        case "$cur" in
+            -s | -[a-z]*s | --seat)
                 seat="${COMP_WORDS[i+1]}"
                 ;;
-            esac
-        elif [ "$cur" = "--primary" ]; then
-            primary="yes"
-        elif [ "$cur" = "--seat" ]; then
-            seat="${COMP_WORDS[i+1]}"
-        fi
+            -s* | -[a-z]s*)
+                seat=$(echo "$cur" | sed 's/-[^s]*s//')
+                ;;
+        esac
     done
     cmd="${COMP_WORDS[0]}"
     if [ -n "$primary" ]; then
@@ -53,7 +52,7 @@ _wl_paste_completion() {
 
     for (( offset=1; offset < COMP_CWORD; offset++ )); do
         cur="${COMP_WORDS[offset]}"
-        if [ \( "x${cur:0:1}" = "x-" -a "x${cur:1:2}" != "x-" -a "${cur: -1}" = "w" \) -o "$cur" = "--watch" ]; then
+        if [ "$cur" = "-w" -o "$cur" = "--watch" ]; then
             _command_offset $(($offset+1))
             return
         fi
@@ -61,21 +60,39 @@ _wl_paste_completion() {
 
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="-n --no-newline -l --list-types -w --watch -p --primary -t --type -s --seat -v --version -h --help"
-    if [ "$prev" = ">" ]; then
-        compopt -o default
-        COMPREPLY=()
-    elif [ \( "x${prev:0:1}" = "x-" -a "x${prev:1:2}" != "x-" -a "${prev: -1}" = "t" \) -o "$prev" = "--type" ]; then
-        _wl_clipboard_complete_paste_types
-    elif [ \( "x${prev:0:1}" = "x-" -a "x${prev:1:2}" != "x-" -a "${prev: -1}" = "s" \) -o "$prev" = "--seat" ]; then
-        seats="$(_wl_clipboard_list_seats)"
-        COMPREPLY=($(compgen -W "$seats" -- "$cur"))
-    elif [ "${cur:0:1}" = ">" ]; then
-        compopt -o default
-        COMPREPLY=()
-    else
-        COMPREPLY=($(compgen -W "$opts" -- "$cur"))
-    fi
+
+    case "$cur" in
+        ">"*)
+            compopt -o default
+            COMPREPLY=()
+            return
+            ;;
+    esac
+
+    case "$prev" in
+        ">"*)
+            compopt -o default
+            COMPREPLY=()
+            ;;
+        -t | -[a-z]*t | --type)
+            _wl_clipboard_complete_paste_types
+            ;;
+        -s | -[a-z]*s | --seat)
+            seats="$(_wl_clipboard_list_seats)"
+            COMPREPLY=($(compgen -W "$seats" -- "$cur"))
+            ;;
+        *)
+            opts="-n --no-newline "
+            opts+="-l --list-types "
+            opts+="-p --primary "
+            opts+="-w --watch "
+            opts+="-t --type "
+            opts+="-s --seat "
+            opts+="-v --version "
+            opts+="-h --help "
+            COMPREPLY=($(compgen -W "$opts" -- "$cur"))
+            ;;
+    esac
 }
 
 complete -o default -F _wl_paste_completion wl-paste
