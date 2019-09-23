@@ -1,0 +1,5 @@
+option('zshcompletiondir',
+    type: 'string',
+    value: '',
+    description: 'Directory for zsh completions. Set "no" to disable.'
+)
