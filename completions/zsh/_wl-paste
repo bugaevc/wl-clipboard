@@ -1,12 +1,13 @@
 #compdef wl-paste
 
+local expl
+typeset -A opt_args
+
 _wl-paste_types() {
 	local -a types args
 	args=(
-		${(k)opt_args[-p]}
-		${(k)opt_args[--primary]}
-		${(k)opt_args[-s]} ${(v)opt_args[-s]}
-		${(k)opt_args[--seat]} ${(v)opt_args[--seat]}
+		${(kv)opt_args[(I)-p|--primary]}
+		${(kv)opt_args[(I)-s|--seat]}
 	)
 	types=( ${(@f)"$(wl-paste $args -l 2>/dev/null)"} )
 
@@ -23,19 +24,18 @@ __all_seats() {
 	fi
 
 	if [[ -z $seats ]]; then
-		# seat0 is always a vaild seat and covers most cases, so its a good fallback.
+		# seat0 covers most cases, so its a good fallback.
 		compadd "$@" - seat0
 	else
 		compadd "$@" -a seats
 	fi
 }
 
-typeset -A opt_args
 _arguments -S -s \
 	{-n,--no-newline}'[Do not append a newline character]' \
 	{-l,--list-types}'[Instead of pasting, list the offered types]' \
 	{-p,--primary}'[Use the "primary" clipboard]' \
-	{-w+,--watch=}'[Run a command wach time the selection changes]:*::command:_normal' \
+	{-w,--watch}'[Run a command wach time the selection changes]:*::command:_normal' \
 	{-t+,--type=}'[Override the inferred MIME type for the content]:mimetype:_wl-paste_types' \
 	{-s+,--seat=}'[Pick the seat to work with]:seat:__all_seats' \
 	{-v,--version}'[Display version info]' \
