@@ -65,7 +65,7 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
     }
 }
 
-static void cleanup_and_exit(struct copy_action *copy_action) {
+static void cleanup_and_exit(struct copy_action *copy_action, int code) {
     /* We're done copying!
      * All that's left to do now is to
      * clean up after ourselves and exit.*/
@@ -76,17 +76,17 @@ static void cleanup_and_exit(struct copy_action *copy_action) {
         perror("exec rm");
         exit(1);
     } else {
-        exit(0);
+        exit(code);
     }
 }
 
 static void cancelled_callback(struct copy_action *copy_action) {
-    cleanup_and_exit(copy_action);
+    cleanup_and_exit(copy_action, 0);
 }
 
 static void pasted_callback(struct copy_action *copy_action) {
     if (options.paste_once) {
-        cleanup_and_exit(copy_action);
+        cleanup_and_exit(copy_action, 0);
     }
 }
 
@@ -275,5 +275,6 @@ int main(int argc, argv_t argv) {
     while (wl_display_dispatch(wl_display) >= 0);
 
     perror("wl_display_dispatch");
+    cleanup_and_exit(copy_action, 1);
     return 1;
 }
