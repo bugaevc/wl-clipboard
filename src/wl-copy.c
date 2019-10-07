@@ -181,6 +181,7 @@ static void parse_options(int argc, argv_t argv) {
 }
 
 int main(int argc, argv_t argv) {
+    memset(&options, 0, sizeof(options));
     parse_options(argc, argv);
 
     struct wl_display *wl_display = wl_display_connect(NULL);
