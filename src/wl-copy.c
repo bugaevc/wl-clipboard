@@ -38,7 +38,7 @@ static struct {
     int clear;
     char *mime_type;
     int trim_newline;
-    int paste_once;
+    int num_pastes;
     int primary;
     const char *seat_name;
 } options;
@@ -85,7 +85,12 @@ static void cancelled_callback(struct copy_action *copy_action) {
 }
 
 static void pasted_callback(struct copy_action *copy_action) {
-    if (options.paste_once) {
+    if (options.num_pastes > 1) {
+        options.num_pastes -= 1;
+        return;
+    }
+
+    if (1 == options.num_pastes) {
         cleanup_and_exit(copy_action, 0);
     }
 }
@@ -107,6 +112,8 @@ static void print_usage(FILE *f, const char *argv0) {
         "Override the inferred MIME type for the content.\n"
         "\t-s, --seat seat-name\t"
         "Pick the seat to work with.\n"
+        "\t-l, --loops num_loops\t"
+        "Like '-o', but serve paste num_loops times before exiting.\n"
         "\t-v, --version\t\tDisplay version info.\n"
         "\t-h, --help\t\tDisplay this message.\n"
         "Mandatory arguments to long options are mandatory"
@@ -132,11 +139,12 @@ static void parse_options(int argc, argv_t argv) {
         {"clear", no_argument, 0, 'c'},
         {"type", required_argument, 0, 't'},
         {"seat", required_argument, 0, 's'},
+        {"loops", required_argument, 0, 'l'},
         {0, 0, 0, 0}
     };
     while (1) {
         int option_index;
-        const char *opts = "vhpnofct:s:";
+        const char *opts = "vhpnofct:s:l:";
         int c = getopt_long(argc, argv, opts, long_options, &option_index);
         if (c == -1) {
             break;
@@ -158,7 +166,7 @@ static void parse_options(int argc, argv_t argv) {
             options.trim_newline = 1;
             break;
         case 'o':
-            options.paste_once = 1;
+            options.num_pastes = 1;
             break;
         case 'f':
             options.stay_in_foreground = 1;
@@ -171,6 +179,9 @@ static void parse_options(int argc, argv_t argv) {
             break;
         case 's':
             options.seat_name = strdup(optarg);
+            break;
+        case 'l':
+            options.num_pastes = atoi(optarg);
             break;
         default:
             /* getopt has already printed an error message */
