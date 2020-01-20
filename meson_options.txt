@@ -3,3 +3,8 @@ option('zshcompletiondir',
     value: '',
     description: 'Directory for zsh completions. Set "no" to disable.'
 )
+option('fishcompletiondir',
+    type: 'string',
+    value: '',
+    description: 'Directory for fish completions. Set "no" to disable.'
+)
