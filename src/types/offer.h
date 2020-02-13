@@ -37,11 +37,10 @@ struct offer {
 #define offer_for_each_mime_type(offer, mime_type) \
 for ( \
     const char *mime_type = offer->offered_mime_types.data; \
-    mime_type != offer->offered_mime_types.data + \
-                 offer->offered_mime_types.size; \
+    mime_type != (const char *) offer->offered_mime_types.data + \
+                                offer->offered_mime_types.size; \
     mime_type += strlen(mime_type) + 1 \
 )
-
 
 void offer_receive(struct offer *self, const char *mime_type, int fd);
 void offer_destroy(struct offer *self);
