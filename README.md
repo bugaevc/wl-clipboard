@@ -104,4 +104,4 @@ version 3 or later.
 
 * [wl-clipboard-x11](https://github.com/brunelli/wl-clipboard-x11): A wrapper to use wl-clipboard as a drop-in replacement to X11 clipboard tools.
 * [wl-clipboard-rs](https://github.com/YaLTeR/wl-clipboard-rs): A Rust crate (library) for working with the Wayland clipboard which includes a reimplementation of `wl-copy` and `wl-paste`.
-* [vlipboard](Clipboard wrapper for V with Wayland support using wl-clipboard).
+* [vlipboard](https://github.com/asvvvad/vlipboard): Clipboard wrapper for V with Wayland support using wl-clipboard.
