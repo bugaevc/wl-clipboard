@@ -30,6 +30,7 @@
 #include <wayland-client.h>
 #include <unistd.h>
 #include <string.h>
+#include <fcntl.h> // open
 #include <libgen.h>
 #include <getopt.h>
 
@@ -53,7 +54,20 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
          * We fork our process and leave the
          * child running in the background,
          * while exiting in the parent.
+         * Also replace stdin/stdout with
+         * /dev/null so the stdout file
+         * descriptor isn't kept alive.
          */
+        int devnull = open("/dev/null", O_RDWR);
+        if (devnull >= 0) {
+            dup2(devnull, STDOUT_FILENO);
+            dup2(devnull, STDIN_FILENO);
+            close(devnull);
+        } else {
+            /* If we cannot open /dev/null, just close stdin/stdout */
+            close(STDIN_FILENO);
+            close(STDOUT_FILENO);
+        }
         pid_t pid = fork();
         if (pid < 0) {
             perror("fork");

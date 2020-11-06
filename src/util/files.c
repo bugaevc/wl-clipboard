@@ -123,8 +123,13 @@ char *infer_mime_type_from_contents(const char *file_path) {
         close(pipefd[0]);
         close(pipefd[1]);
         int devnull = open("/dev/null", O_RDONLY);
-        dup2(devnull, STDIN_FILENO);
-        close(devnull);
+        if (devnull >= 0) {
+            dup2(devnull, STDIN_FILENO);
+            close(devnull);
+        } else {
+            /* If we cannot open /dev/null, just close stdin */
+            close(STDIN_FILENO);
+        }
         execlp("xdg-mime", "xdg-mime", "query", "filetype", file_path, NULL);
         exit(1);
     }
