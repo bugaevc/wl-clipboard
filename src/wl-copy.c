@@ -33,6 +33,7 @@
 #include <fcntl.h> // open
 #include <libgen.h>
 #include <getopt.h>
+#include <signal.h>
 
 static struct {
     int stay_in_foreground;
@@ -68,6 +69,7 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
         }
+        signal(SIGHUP, SIG_IGN);
         pid_t pid = fork();
         if (pid < 0) {
             perror("fork");
