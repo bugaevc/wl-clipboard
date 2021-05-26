@@ -41,6 +41,7 @@ static struct {
     int no_newline;
     int list_types;
     int primary;
+    int print_null;
     int watch;
     argv_t watch_command;
     const char *seat_name;
@@ -171,6 +172,46 @@ static const char *mime_type_to_request(struct types types) {
 #undef try_any_text
 #undef try_any
 
+
+static int fork_and_cat_output(int pipefd[]) {
+    /* Spawn a cat to perform the copy.
+     * If watch mode is active, we spawn
+     * a custom command instead.
+     */
+    pid_t pid = fork();
+    if (pid < 0) {
+        return pid;
+    }
+    if (pid == 0) {
+        dup2(pipefd[0], STDIN_FILENO);
+        close(pipefd[0]);
+        close(pipefd[1]);
+        if (options.watch) {
+            execvp(options.watch_command[0], options.watch_command);
+            fprintf(
+                stderr,
+                "Failed to spawn %s: %s",
+                options.watch_command[0],
+                strerror(errno)
+            );
+        } else {
+            execlp("cat", "cat", NULL);
+            perror("exec cat");
+        }
+        exit(1);
+    }
+    close(pipefd[0]);
+    close(pipefd[1]);
+    wait(NULL);
+    if (!options.no_newline && !options.watch) {
+        int rc = write(STDOUT_FILENO, "\n", 1);
+        if (rc != 1) {
+            perror("write");
+        }
+    }
+    return pid;
+}
+
 static void selection_callback(struct offer *offer, int primary) {
     /* Ignore events we're not interested in */
     if (primary != options.primary) {
@@ -181,8 +222,23 @@ static void selection_callback(struct offer *offer, int primary) {
     }
 
     if (offer == NULL) {
-        if (options.watch) {
-            return;
+        if (options.print_null) {
+            int pipefd[2];
+            int rc = pipe(pipefd);
+            if (rc < 0) {
+                perror("pipe");
+            }
+            write(pipefd[1], "\0", 1);
+            rc = fork_and_cat_output(pipefd);
+            if (rc < 0) {
+                perror("fork");
+            }
+            if (options.watch) {
+                return;
+            }
+            else {
+                exit(0);
+            }
         }
         bail("No selection");
     }
@@ -232,12 +288,8 @@ static void selection_callback(struct offer *offer, int primary) {
     }
     wl_display_roundtrip(wl_display);
 
-    /* Spawn a cat to perform the copy.
-     * If watch mode is active, we spawn
-     * a custom command instead.
-     */
-    pid_t pid = fork();
-    if (pid < 0) {
+    rc = fork_and_cat_output(pipefd);
+    if (rc < 0) {
         perror("fork");
         if (options.watch) {
             /* Try to cope without exiting completely */
@@ -247,33 +299,6 @@ static void selection_callback(struct offer *offer, int primary) {
             return;
         }
         exit(1);
-    }
-    if (pid == 0) {
-        dup2(pipefd[0], STDIN_FILENO);
-        close(pipefd[0]);
-        close(pipefd[1]);
-        if (options.watch) {
-            execvp(options.watch_command[0], options.watch_command);
-            fprintf(
-                stderr,
-                "Failed to spawn %s: %s",
-                options.watch_command[0],
-                strerror(errno)
-            );
-        } else {
-            execlp("cat", "cat", NULL);
-            perror("exec cat");
-        }
-        exit(1);
-    }
-    close(pipefd[0]);
-    close(pipefd[1]);
-    wait(NULL);
-    if (!options.no_newline && !options.watch) {
-        rc = write(STDOUT_FILENO, "\n", 1);
-        if (rc != 1) {
-            perror("write");
-        }
     }
 
     offer_destroy(offer);
@@ -295,6 +320,8 @@ static void print_usage(FILE *f, const char *argv0) {
         "\t-n, --no-newline\tDo not append a newline character.\n"
         "\t-l, --list-types\tInstead of pasting, list the offered types.\n"
         "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
+        "\t-0, --print0\t\tPrint a null character when the clipboard is clear(ed). "
+        "Useful for clipboard managers.\n"
         "\t-w, --watch command\t"
         "Run a command each time the selection changes.\n"
         "\t-t, --type mime/type\t"
@@ -321,6 +348,7 @@ static void parse_options(int argc, argv_t argv) {
         {"primary", no_argument, 0, 'p'},
         {"no-newline", no_argument, 0, 'n'},
         {"list-types", no_argument, 0, 'l'},
+        {"print0", no_argument, 0, '0'},
         {"watch", required_argument, 0, 'w'},
         {"type", required_argument, 0, 't'},
         {"seat", required_argument, 0, 's'},
@@ -328,7 +356,7 @@ static void parse_options(int argc, argv_t argv) {
     };
     while (1) {
         int option_index;
-        const char *opts = "vhpnlw:t:s:";
+        const char *opts = "vhpnl0w:t:s:";
         int c = getopt_long(argc, argv, opts, long_options, &option_index);
         if (c == -1) {
             break;
@@ -351,6 +379,9 @@ static void parse_options(int argc, argv_t argv) {
             break;
         case 'l':
             options.list_types = 1;
+            break;
+        case '0':
+            options.print_null = 1;
             break;
         case 'w':
             options.watch = 1;
