@@ -20,6 +20,7 @@
 #define UTIL_FILES_H
 
 int create_anonymous_file(void);
+int infer_is_text_plain_utf8(const char *file_path);
 
 void trim_trailing_newline(const char *file_path);
 
