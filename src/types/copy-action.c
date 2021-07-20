@@ -35,12 +35,18 @@ static void do_set_selection(struct copy_action *self, uint32_t serial) {
     /* Set the selection and make sure it reaches
      * the display before we do anything else,
      * such as destroying the surface or exiting.
+     * Make sure to unset the callback to prevent
+     * reentrancy issues.
      */
+    if (self->popup_surface != NULL) {
+        self->popup_surface->on_focus = NULL;
+        self->popup_surface->data = NULL;
+    }
     device_set_selection(self->device, self->source, serial, self->primary);
     wl_display_roundtrip(self->device->wl_display);
 
     /* Now, if we have used a popup surface, destroy it */
-    if (self->device->needs_popup_surface) {
+    if (self->popup_surface != NULL) {
         popup_surface_destroy(self->popup_surface);
         self->popup_surface = NULL;
     }
