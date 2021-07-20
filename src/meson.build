@@ -143,3 +143,10 @@ executable(
     link_with: lib,
     install: true
 )
+executable(
+    'wl-clipboard-x11',
+    ['wl-clipboard-x11.c', protocol_headers],
+    dependencies: wayland,
+    link_with: lib,
+    install: true
+)

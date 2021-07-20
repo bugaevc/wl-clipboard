@@ -79,3 +79,11 @@ const char *get_file_extension(const char *file_path) {
     }
     return ext + 1;
 }
+
+const char *get_file_basename(const char *file_path) {
+    const char *last_slash = strrchr(file_path, '/');
+    if (last_slash == NULL) {
+        return file_path;
+    }
+    return last_slash + 1;
+}

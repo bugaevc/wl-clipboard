@@ -34,7 +34,7 @@ struct source {
     void (*do_offer)(struct wl_proxy *proxy, const char *mime_type);
 };
 
-void source_offer(struct source *self, char *mime_type);
+void source_offer(struct source *self, const char *mime_type);
 
 /* Initializers */
 
