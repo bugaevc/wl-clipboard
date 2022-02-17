@@ -183,10 +183,10 @@ static void parse_options(int argc, argv_t argv) {
             options.clear = 1;
             break;
         case 't':
-            options.mime_type = strdup(optarg);
+            options.mime_type = optarg;
             break;
         case 's':
-            options.seat_name = strdup(optarg);
+            options.seat_name = optarg;
             break;
         default:
             /* getopt has already printed an error message */
@@ -273,8 +273,6 @@ int main(int argc, argv_t argv) {
             source_offer(copy_action->source, "STRING");
             source_offer(copy_action->source, "UTF8_STRING");
         }
-        free(options.mime_type);
-        options.mime_type = NULL;
     }
 
     if (device->needs_popup_surface) {

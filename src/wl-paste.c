@@ -279,8 +279,6 @@ static void selection_callback(struct offer *offer, int primary) {
     offer_destroy(offer);
 
     if (!options.watch) {
-        free(options.explicit_type);
-        free(options.inferred_type);
         exit(0);
     }
 }
@@ -388,10 +386,10 @@ static void parse_options(int argc, argv_t argv) {
              */
             return;
         case 't':
-            options.explicit_type = strdup(optarg);
+            options.explicit_type = optarg;
             break;
         case 's':
-            options.seat_name = strdup(optarg);
+            options.seat_name = optarg;
             break;
         default:
             /* getopt has already printed an error message */
