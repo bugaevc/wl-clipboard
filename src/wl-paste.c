@@ -58,6 +58,7 @@ struct types {
 
 static struct wl_display *wl_display = NULL;
 static struct popup_surface *popup_surface = NULL;
+static int offer_received = 0;
 
 static struct types classify_offer_types(struct offer *offer) {
     struct types types = { 0 };
@@ -172,6 +173,11 @@ static const char *mime_type_to_request(struct types types) {
 #undef try_any
 
 static void selection_callback(struct offer *offer, int primary) {
+    /* Ignore all but the first non-NULL offer */
+    if (offer_received && !options.watch) {
+        return;
+    }
+
     /* Ignore events we're not interested in */
     if (primary != options.primary) {
         if (offer != NULL) {
@@ -186,6 +192,8 @@ static void selection_callback(struct offer *offer, int primary) {
         }
         bail("No selection");
     }
+
+    offer_received = 1;
 
     if (options.list_types) {
         offer_for_each_mime_type(offer, mime_type) {
