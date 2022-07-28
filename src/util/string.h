@@ -21,6 +21,7 @@
 
 #define text_plain "text/plain"
 #define text_plain_utf8 "text/plain;charset=utf-8"
+#define utf8_string "UTF8_STRING"
 
 typedef char * const *argv_t;
 
