@@ -42,6 +42,7 @@ static void type ## _offer_handler( \
     struct type *proxy, \
     const char *mime_type \
 ) { \
+    if (!strcmp(mime_type, "SAVE_TARGETS")) return; \
     struct offer *self = data; \
     char *ptr = wl_array_add( \
         &self->offered_mime_types, \
