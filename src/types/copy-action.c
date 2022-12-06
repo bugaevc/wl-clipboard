@@ -68,66 +68,10 @@ static void on_focus(
 static void do_send(struct source *source, const char *mime_type, int fd) {
     struct copy_action *self = source->data;
 
-     /* Unset O_NONBLOCK */
+    /* Unset O_NONBLOCK */
     fcntl(fd, F_SETFL, 0);
 
-    if (self->file_to_copy != NULL) {
-        /* Copy the file to the given file descriptor
-         * by spawning an appropriate cat process.
-         */
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            close(fd);
-            return;
-        }
-        if (pid == 0) {
-            dup2(fd, STDOUT_FILENO);
-            close(fd);
-            execlp("cat", "cat", self->file_to_copy, NULL);
-            perror("exec cat");
-            exit(1);
-        }
-        close(fd);
-        /* Wait for the cat process to exit. This effectively
-         * means waiting for the other side to read the whole
-         * file. In theory, a malicious client could perform a
-         * denial-of-serivice attack against us. Perhaps we
-         * should switch to an asynchronous child waiting scheme
-         * instead.
-         */
-        wait(NULL);
-    } else {
-        /* We'll perform the copy ourselves */
-        FILE *f = fdopen(fd, "w");
-        if (f == NULL) {
-            perror("fdopen");
-            close(fd);
-            return;
-        }
-
-        if (self->data_to_copy.ptr != NULL) {
-            /* Just copy the given chunk of data */
-            fwrite(self->data_to_copy.ptr, 1, self->data_to_copy.len, f);
-        } else if (self->argv_to_copy != NULL) {
-            /* Copy an argv-style string array,
-             * inserting spaces between items.
-             */
-            int is_first = 1;
-            for (argv_t word = self->argv_to_copy; *word != NULL; word++) {
-                if (!is_first) {
-                    fwrite(" ", 1, 1, f);
-                }
-                is_first = 0;
-                fwrite(*word, 1, strlen(*word), f);
-            }
-        } else {
-            bail("Unreachable: nothing to copy");
-        }
-
-        fclose(f);
-    }
-
+    self->src->copy(fd, self->src);
 
     if (self->pasted_callback != NULL) {
         self->pasted_callback(self);
@@ -141,7 +85,8 @@ static void forward_cancel(struct source *source) {
     }
 }
 
-void copy_action_init(struct copy_action *self) {
+void copy_action_init(struct copy_action *self, struct copy_source* src) {
+    self->src = src;
     if (self->source != NULL) {
         self->source->send_callback = do_send;
         self->source->cancelled_callback = forward_cancel;

@@ -19,6 +19,9 @@
 #ifndef UTIL_FILES_H
 #define UTIL_FILES_H
 
+#include <stddef.h>
+#include "../types/owned-slice.h"
+
 int create_anonymous_file(void);
 
 void trim_trailing_newline(const char *file_path);
@@ -33,5 +36,8 @@ char *infer_mime_type_from_name(const char *file_path);
 
 /* Returns the name of a new file */
 char *dump_stdin_into_a_temp_file(void);
+
+int copy_stdin_to_mem(struct owned_slice* slice);
+int owned_slice_mmap_file(struct owned_slice* self, int fd);
 
 #endif /* UTIL_FILES_H */

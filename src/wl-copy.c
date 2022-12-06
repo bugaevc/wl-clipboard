@@ -23,6 +23,10 @@
 #include "types/registry.h"
 #include "types/popup-surface.h"
 
+#include "types/copy-source-argv.h"
+#include "types/copy-source-file.h"
+#include "types/copy-source-slice.h"
+
 #include "util/files.h"
 #include "util/string.h"
 #include "util/misc.h"
@@ -85,15 +89,8 @@ static void cleanup_and_exit(struct copy_action *copy_action, int code) {
     /* We're done copying!
      * All that's left to do now is to
      * clean up after ourselves and exit.*/
-    char *temp_file = (char *) copy_action->file_to_copy;
-    if (temp_file != NULL) {
-        /* Clean up our temporary file */
-        execlp("rm", "rm", "-r", dirname(temp_file), NULL);
-        perror("exec rm");
-        exit(1);
-    } else {
-        exit(code);
-    }
+    copy_action->src->destroy(copy_action->src);
+    exit(code);
 }
 
 static void cancelled_callback(struct copy_action *copy_action) {
@@ -196,6 +193,73 @@ static void parse_options(int argc, argv_t argv) {
     }
 }
 
+
+static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
+    if (optind < argc) {
+        struct copy_source_argv* src = malloc(sizeof(struct copy_source_argv));
+        if (!src) {
+            perror("malloc");
+            return NULL;
+        }
+        if (copy_source_argv_init(src, &argv[optind])) {
+            free(src);
+            return NULL;
+        }
+    }
+
+    if (options.mime_type) {
+        struct owned_slice slice;
+        if (copy_stdin_to_mem(&slice)) {
+            return NULL;
+        }
+
+        struct copy_source_slice* src = malloc(sizeof(struct copy_source_slice));
+        if (!src) {
+            perror("malloc");
+            slice.destroy(&slice);
+            return NULL;
+        }
+
+        if (copy_source_slice_init(src, &slice)) {
+            free(src);
+            slice.destroy(&slice);
+            return NULL;
+        }
+    }
+
+    /* Copy data from our stdin.
+     * It's important that we only do this
+     * after going through the initial stages
+     * that are likely to result in errors,
+     * so that we don't forget to clean up
+     * the temp file.
+     */
+    char *temp_file = dump_stdin_into_a_temp_file();
+    if (!temp_file) {
+        return NULL;
+    }
+
+    if (options.trim_newline) {
+        trim_trailing_newline(temp_file);
+    }
+    options.mime_type = infer_mime_type_from_contents(temp_file);
+
+    struct copy_source_file* src = malloc(sizeof(struct copy_source_file));
+    if (!src) {
+        perror("malloc");
+        return NULL;
+    }
+
+    if (copy_source_file_init(src, temp_file)) {
+        free(src);
+        return NULL;
+    }
+
+    return (struct copy_source*)src;
+}
+
+
+
 int main(int argc, argv_t argv) {
     parse_options(argc, argv);
 
@@ -238,27 +302,10 @@ int main(int argc, argv_t argv) {
     copy_action->device = device;
     copy_action->primary = options.primary;
 
+    struct copy_source* copy_source = NULL;
+
     if (!options.clear) {
-        if (optind < argc) {
-            /* Copy our command-line arguments */
-            copy_action->argv_to_copy = &argv[optind];
-        } else {
-            /* Copy data from our stdin.
-             * It's important that we only do this
-             * after going through the initial stages
-             * that are likely to result in errors,
-             * so that we don't forget to clean up
-             * the temp file.
-             */
-            char *temp_file = dump_stdin_into_a_temp_file();
-            if (options.trim_newline) {
-                trim_trailing_newline(temp_file);
-            }
-            if (options.mime_type == NULL) {
-                options.mime_type = infer_mime_type_from_contents(temp_file);
-            }
-            copy_action->file_to_copy = temp_file;
-        }
+        copy_source = copy_source_from_args(argc, argv);
 
         /* Create the source */
         copy_action->source = device_manager_create_source(device_manager);
@@ -286,7 +333,7 @@ int main(int argc, argv_t argv) {
     copy_action->did_set_selection_callback = did_set_selection_callback;
     copy_action->pasted_callback = pasted_callback;
     copy_action->cancelled_callback = cancelled_callback;
-    copy_action_init(copy_action);
+    copy_action_init(copy_action, copy_source);
 
     while (wl_display_dispatch(wl_display) >= 0);
 

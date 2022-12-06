@@ -16,32 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TYPES_COPY_ACTION_H
-#define TYPES_COPY_ACTION_H
+#ifndef TYPES_COPY_SOURCE_ARGV_H
+#define TYPES_COPY_SOURCE_ARGV_H
 
-#include <types/copy-source.h>
-#include "util/string.h"
+#include "../util/string.h"
+#include "copy-source.h"
 
 #include <stddef.h>
 
-struct device;
-struct source;
-struct popup_surface;
+struct copy_source_argv {
+    struct copy_source impl;
 
-struct copy_action {
-    /* These fields are initialized by the creator */
-    struct device *device;
-    struct source *source;
-    struct popup_surface *popup_surface;
-    int primary;
-
-    void (*did_set_selection_callback)(struct copy_action *self);
-    void (*pasted_callback)(struct copy_action *self);
-    void (*cancelled_callback)(struct copy_action *self);
-
-    struct copy_source* src;
+    argv_t argv;
 };
 
-void copy_action_init(struct copy_action *self, struct copy_source* src);
+int copy_source_argv_init(struct copy_source_argv* self, argv_t argv);
 
 #endif /* TYPES_COPY_ACTION_H */

@@ -124,6 +124,14 @@ lib = static_library(
         'types/registry.c',
         'types/copy-action.h',
         'types/copy-action.c',
+        'types/copy-source-argv.h',
+        'types/copy-source-argv.c',
+        'types/copy-source-slice.h',
+        'types/copy-source-slice.c',
+        'types/copy-source-file.h',
+        'types/copy-source-file.c',
+        'types/owned-slice.h',
+        'types/owned-slice.c'
     ],
     dependencies: wayland,
     link_with: protocol_deps

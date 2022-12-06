@@ -28,11 +28,13 @@
 #include <getopt.h>
 #include <string.h>
 #include <fcntl.h> // open
+#include <sys/sendfile.h> // sendfile
 #include <sys/stat.h> // open
 #include <sys/types.h> // open
 #include <stdlib.h> // exit
 #include <libgen.h> // basename
 #include <sys/wait.h>
+#include <sys/mman.h>
 
 #ifdef HAVE_MEMFD
 #    include <sys/syscall.h> // syscall, SYS_memfd_create
@@ -200,6 +202,75 @@ char *infer_mime_type_from_name(const char *file_path) {
     return NULL;
 }
 
+static int dump_stdin_to_file_using_cat(const char* res_path) {
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        exit(1);
+    }
+    if (pid == 0) {
+        int fd = creat(res_path, S_IRUSR | S_IWUSR);
+        if (fd < 0) {
+            perror("creat");
+            exit(1);
+        }
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
+        execlp("cat", "cat", NULL);
+        perror("exec cat");
+        exit(1);
+    }
+
+    int wstatus;
+    wait(&wstatus);
+    if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
+        return -1;
+    }
+    return 0;
+}
+
+static int dump_stdin_to_file_using_mmap(int fd) {
+    struct owned_slice mmapped;
+    int err = owned_slice_mmap_file(&mmapped, STDIN_FILENO);
+    if (err) {
+        return err;
+    }
+
+    char* ptr = mmapped.ptr;
+    size_t len = mmapped.len;
+    while (len) {
+        ssize_t written = write(fd, ptr, len);
+        if (written < 0) {
+            perror("dump_stdin_to_file_using_mmap: write");
+            return -1;
+        }
+        len -= written;
+        ptr += written;
+    }
+    return 0;
+}
+
+static int dump_stdin_to_file_using_sendfile(int fd) {
+    ssize_t bytes = sendfile(fd, STDIN_FILENO, NULL, 4096);
+    if (bytes < 0) {
+        int err = errno;
+        if (err != EINVAL) {
+            perror("sendfile");
+            return -1;
+        }
+        return 1;
+    }
+    while (bytes > 0) {
+        bytes = sendfile(fd, STDIN_FILENO, NULL, 4096);
+    }
+    if (bytes < 0) {
+        perror("sendfile");
+        return -1;
+    }
+    close(fd);
+    return 0;
+}
+
 /* Returns the name of a new file */
 char *dump_stdin_into_a_temp_file() {
     /* Create a temp directory to host out file */
@@ -223,32 +294,130 @@ char *dump_stdin_into_a_temp_file() {
     res_path[sizeof(dirpath) - 1] = '/';
     strcpy(res_path + sizeof(dirpath), name);
 
-    /* Spawn cat to perform the copy */
-    pid_t pid = fork();
-    if (pid < 0) {
-        perror("fork");
-        exit(1);
-    }
-    if (pid == 0) {
-        int fd = creat(res_path, S_IRUSR | S_IWUSR);
-        if (fd < 0) {
-            perror("creat");
-            exit(1);
-        }
-        dup2(fd, STDOUT_FILENO);
-        close(fd);
-        execlp("cat", "cat", NULL);
-        perror("exec cat");
+    int fd = creat(res_path, S_IRUSR | S_IWUSR);
+    if (fd < 0) {
+        perror("creat");
         exit(1);
     }
 
-    int wstatus;
-    wait(&wstatus);
+    /* Try HARD to do LESS */
+    int err = dump_stdin_to_file_using_mmap(fd);
+    switch (err) {
+        case 0: goto done;
+        case -1: goto fail;
+    }
+
+    err = dump_stdin_to_file_using_sendfile(fd);
+    switch (err) {
+        case 0: goto done;
+        case -1: goto fail;
+    }
+
+    err = dump_stdin_to_file_using_cat(res_path);
+    switch (err) {
+        case 0: goto done;
+        case -1: goto fail;
+    }
+
+fail:
+    close(fd);
+    unlink(res_path);
+    rmdir(dirpath);
+    exit(1);
+
+done:
     if (original_path != NULL) {
         free(original_path);
     }
-    if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
+    close(fd);
+    if (err < 0) {
         bail("Failed to copy the file");
     }
     return res_path;
 }
+
+
+static void do_munmap(struct owned_slice* self) {
+    if (munmap(self->ptr, self->len) ) {
+        perror("owned_slice/destroy: do_munmap");
+    }
+    memset(self, 0, sizeof(*self));
+}
+
+
+int owned_slice_mmap_file(struct owned_slice* self, int fd) {
+    struct stat stat;
+    if (fstat(fd, &stat)) {
+        perror("owned_slice_mmap_file: fstat");
+        return -1;
+    }
+
+    if (!S_ISREG(stat.st_mode)) {
+        return 1;
+    }
+
+    char* ptr = mmap(NULL, stat.st_blksize, MAP_PRIVATE, PROT_READ, fd, 0);
+    if (ptr == MAP_FAILED) {
+        return 1;
+    }
+
+    self->destroy = do_munmap;
+    self->ptr = ptr;
+    self->len = stat.st_blksize;
+    return 0;
+}
+
+
+
+static void do_free(struct owned_slice* self) {
+    free(self->ptr);
+}
+
+enum {
+    BUFFER_SIZE = 4096
+};
+
+int copy_stdin_to_mem(struct owned_slice* slice) {
+
+    switch (owned_slice_mmap_file(slice, STDIN_FILENO)) {
+        case -1: return -1;
+        case 0: return 0;
+        case 1: break;
+    }
+
+    char* begin = malloc(BUFFER_SIZE);
+    char* ptr = begin;
+    char* end = begin + BUFFER_SIZE;
+
+    for (;;) {
+        ssize_t bytes = read(STDIN_FILENO, ptr, end - ptr);
+        if (bytes < 0) {
+            perror("copy_stdin_to_mem: read");
+            goto fail;
+        }
+        if (bytes == 0) {
+            break;
+        }
+
+        ptr += bytes;
+        if (ptr == end) {
+            size_t len = end - begin;
+            begin = realloc(begin, len + BUFFER_SIZE);
+            ptr = begin + len;
+            end = begin + len + BUFFER_SIZE;
+        }
+    }
+
+    slice->destroy = do_free;
+    slice->ptr = begin;
+    slice->len = ptr - begin;
+
+    return 0;
+
+fail:
+    if (begin) {
+        free(begin);
+    }
+    return -1;
+}
+
