@@ -230,8 +230,8 @@ static int dump_stdin_to_file_using_cat(const char* res_path) {
 }
 
 static int dump_stdin_to_file_using_mmap(int fd) {
-    struct owned_slice mmapped;
-    int err = owned_slice_mmap_file(&mmapped, STDIN_FILENO);
+    struct buffer mmapped;
+    int err = buffer_mmap_file(&mmapped, STDIN_FILENO);
     if (err) {
         return err;
     }
@@ -334,7 +334,7 @@ done:
 }
 
 
-static void do_munmap(struct owned_slice* self) {
+static void do_munmap(struct buffer* self) {
     if (munmap(self->ptr, self->len) ) {
         perror("owned_slice/destroy: do_munmap");
     }
@@ -342,7 +342,7 @@ static void do_munmap(struct owned_slice* self) {
 }
 
 
-int owned_slice_mmap_file(struct owned_slice* self, int fd) {
+int buffer_mmap_file(struct buffer* self, int fd) {
     struct stat stat;
     if (fstat(fd, &stat)) {
         perror("owned_slice_mmap_file: fstat");
@@ -366,7 +366,7 @@ int owned_slice_mmap_file(struct owned_slice* self, int fd) {
 
 
 
-static void do_free(struct owned_slice* self) {
+static void do_free(struct buffer* self) {
     free(self->ptr);
 }
 
@@ -374,9 +374,9 @@ enum {
     BUFFER_SIZE = 4096
 };
 
-int copy_stdin_to_mem(struct owned_slice* slice) {
+int copy_stdin_to_mem(struct buffer* slice) {
 
-    switch (owned_slice_mmap_file(slice, STDIN_FILENO)) {
+    switch (buffer_mmap_file(slice, STDIN_FILENO)) {
         case -1: return -1;
         case 0: return 0;
         case 1: break;

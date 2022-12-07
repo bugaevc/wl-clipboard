@@ -20,7 +20,7 @@
 #define UTIL_FILES_H
 
 #include <stddef.h>
-#include "../types/owned-slice.h"
+#include "../types/buffer.h"
 
 int create_anonymous_file(void);
 
@@ -37,7 +37,7 @@ char *infer_mime_type_from_name(const char *file_path);
 /* Returns the name of a new file */
 int dump_stdin_into_a_temp_file(int* fd, char** path);
 
-int copy_stdin_to_mem(struct owned_slice* slice);
-int owned_slice_mmap_file(struct owned_slice* self, int fd);
+int copy_stdin_to_mem(struct buffer* slice);
+int buffer_mmap_file(struct buffer* self, int fd);
 
 #endif /* UTIL_FILES_H */

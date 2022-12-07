@@ -25,7 +25,7 @@
 
 #include "types/copy-source-argv.h"
 #include "types/copy-source-file.h"
-#include "types/copy-source-slice.h"
+#include "types/copy-source-buffer.h"
 
 #include "util/files.h"
 #include "util/string.h"
@@ -208,19 +208,19 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
     }
 
     if (options.mime_type) {
-        struct owned_slice slice;
+        struct buffer slice;
         if (copy_stdin_to_mem(&slice)) {
             return NULL;
         }
 
-        struct copy_source_slice* src = malloc(sizeof(struct copy_source_slice));
+        struct copy_source_buffer* src = malloc(sizeof(struct copy_source_buffer));
         if (!src) {
             perror("malloc");
             slice.destroy(&slice);
             return NULL;
         }
 
-        if (copy_source_slice_init(src, &slice)) {
+        if (copy_source_buffer_init(src, &slice)) {
             free(src);
             slice.destroy(&slice);
             return NULL;
@@ -254,21 +254,21 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
     free(temp_file);
 
     // mmap file
-    struct owned_slice map;
-    if (owned_slice_mmap_file(&map, fd)) {
+    struct buffer map;
+    if (buffer_mmap_file(&map, fd)) {
         close(fd);
         return NULL;
     }
     // close fd, the file still exists as long as it's mmapped
     close(fd);
 
-    struct copy_source_slice* src = malloc(sizeof(struct copy_source_slice));
+    struct copy_source_buffer* src = malloc(sizeof(struct copy_source_buffer));
     if (!src) {
         perror("malloc");
         return NULL;
     }
 
-    if (copy_source_slice_init(src, &map)) {
+    if (copy_source_buffer_init(src, &map)) {
         free(src);
         return NULL;
     }

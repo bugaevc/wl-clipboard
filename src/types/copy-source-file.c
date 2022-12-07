@@ -65,8 +65,8 @@ static ssize_t read_(int fd, char* buf, size_t n) {
 }
 
 static int mmap_and_copy(int dest, int src) {
-    struct owned_slice file;
-    int err = owned_slice_mmap_file(&file, src);
+    struct buffer file;
+    int err = buffer_mmap_file(&file, src);
     if (err) {
         return err;
     }

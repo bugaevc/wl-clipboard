@@ -20,10 +20,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "copy-source-slice.h"
+#include "copy-source-buffer.h"
 
 static void copy(int fd, struct copy_source* self) {
-    struct copy_source_slice* self2 = (struct copy_source_slice*)self;
+    struct copy_source_buffer* self2 = (struct copy_source_buffer*)self;
 
     const char* ptr = self2->slice.ptr;
     size_t len = self2->slice.len;
@@ -51,12 +51,12 @@ static void copy(int fd, struct copy_source* self) {
 }
 
 static void destroy(struct copy_source* self) {
-    struct copy_source_slice* self2 = (struct copy_source_slice*)self;
+    struct copy_source_buffer* self2 = (struct copy_source_buffer*)self;
     self2->slice.destroy(&self2->slice);
 }
 
 
-int copy_source_slice_init(struct copy_source_slice* self, struct owned_slice* slice) {
+int copy_source_buffer_init(struct copy_source_buffer* self, struct buffer* slice) {
     if (!slice || !slice->ptr || !slice->len) {
         return -1;
     }
@@ -64,7 +64,7 @@ int copy_source_slice_init(struct copy_source_slice* self, struct owned_slice* s
     self->impl.copy = copy;
     self->impl.destroy = destroy;
 
-    owned_slice_steal(&self->slice, slice);
+    buffer_steal(&self->slice, slice);
     return 0;
 }
 

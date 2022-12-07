@@ -19,13 +19,13 @@
 
 #include <string.h>
 
-#include "owned-slice.h"
+#include "buffer.h"
 
-static void noop(struct owned_slice*) {
+static void noop(struct buffer*) {
     /* intentionally left blank */
 }
 
-void owned_slice_steal(struct owned_slice* dest, struct owned_slice* src) {
+void buffer_steal(struct buffer* dest, struct buffer* src) {
     memcpy(dest, src, sizeof(*src));
     src->destroy = noop;
     src->ptr = NULL;

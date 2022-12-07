@@ -16,19 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TYPES_OWNED_SLICE_H
-#define TYPES_OWNED_SLICE_H
+#ifndef TYPES_COPY_SOURCE_SLICE_H
+#define TYPES_COPY_SOURCE_SLICE_H
+
+#include "copy-source.h"
+#include "buffer.h"
 
 #include <stddef.h>
 
-struct owned_slice {
-    void (*destroy)(struct owned_slice*);
+struct copy_source_buffer {
+    struct copy_source impl;
 
-    char*  ptr;
-    size_t len;
+    struct buffer slice;
 };
 
+int copy_source_buffer_init(struct copy_source_buffer* self, struct buffer* src);
 
-void owned_slice_steal(struct owned_slice* dest, struct owned_slice* src);
-
-#endif /* UTIL_FILES_H */
+#endif /* TYPES_COPY_ACTION_H */
