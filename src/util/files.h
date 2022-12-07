@@ -35,7 +35,7 @@ char *infer_mime_type_from_contents(const char *file_path);
 char *infer_mime_type_from_name(const char *file_path);
 
 /* Returns the name of a new file */
-char *dump_stdin_into_a_temp_file(void);
+int dump_stdin_into_a_temp_file(int* fd, char** path);
 
 int copy_stdin_to_mem(struct owned_slice* slice);
 int owned_slice_mmap_file(struct owned_slice* self, int fd);

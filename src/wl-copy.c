@@ -234,8 +234,9 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
      * so that we don't forget to clean up
      * the temp file.
      */
-    char *temp_file = dump_stdin_into_a_temp_file();
-    if (!temp_file) {
+    char* temp_file;
+    int fd;
+    if (dump_stdin_into_a_temp_file(&fd, &temp_file)) {
         return NULL;
     }
 
@@ -244,13 +245,30 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
     }
     options.mime_type = infer_mime_type_from_contents(temp_file);
 
-    struct copy_source_file* src = malloc(sizeof(struct copy_source_file));
+    // unlink only removes the name from fs, but the file is still open
+    unlink(temp_file);
+    char* dir = dirname(temp_file);
+    if (dir) {
+        rmdir(dir);
+    }
+    free(temp_file);
+
+    // mmap file
+    struct owned_slice map;
+    if (owned_slice_mmap_file(&map, fd)) {
+        close(fd);
+        return NULL;
+    }
+    // close fd, the file still exists as long as it's mmapped
+    close(fd);
+
+    struct copy_source_slice* src = malloc(sizeof(struct copy_source_slice));
     if (!src) {
         perror("malloc");
         return NULL;
     }
 
-    if (copy_source_file_init(src, temp_file)) {
+    if (copy_source_slice_init(src, &map)) {
         free(src);
         return NULL;
     }

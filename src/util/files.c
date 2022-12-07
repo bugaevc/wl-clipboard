@@ -267,12 +267,11 @@ static int dump_stdin_to_file_using_sendfile(int fd) {
         perror("sendfile");
         return -1;
     }
-    close(fd);
     return 0;
 }
 
 /* Returns the name of a new file */
-char *dump_stdin_into_a_temp_file() {
+int dump_stdin_into_a_temp_file(int* fildes, char** path) {
     /* Create a temp directory to host out file */
     char dirpath[] = "/tmp/wl-copy-buffer-XXXXXX";
     if (mkdtemp(dirpath) != dirpath) {
@@ -294,9 +293,9 @@ char *dump_stdin_into_a_temp_file() {
     res_path[sizeof(dirpath) - 1] = '/';
     strcpy(res_path + sizeof(dirpath), name);
 
-    int fd = creat(res_path, S_IRUSR | S_IWUSR);
+    int fd = open(res_path, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd < 0) {
-        perror("creat");
+        perror("open");
         exit(1);
     }
 
@@ -323,17 +322,15 @@ fail:
     close(fd);
     unlink(res_path);
     rmdir(dirpath);
-    exit(1);
+    return -1;
 
 done:
     if (original_path != NULL) {
         free(original_path);
     }
-    close(fd);
-    if (err < 0) {
-        bail("Failed to copy the file");
-    }
-    return res_path;
+    *fildes = fd;
+    *path = res_path;
+    return 0;
 }
 
 
