@@ -42,9 +42,6 @@ static void copy(int fd, struct copy_source* self) {
         ptr += bytes;
     }
 
-    char str[] = "\n";
-    write(fd, &str, sizeof(str));
-
     if (close(fd)) {
         perror("copy_source_slice/copy: close");
     }

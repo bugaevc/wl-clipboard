@@ -59,7 +59,19 @@ int create_anonymous_file() {
     }
 #endif
     (void) res;
-    return fileno(tmpfile());
+
+    FILE* tmp = tmpfile();
+    if (!tmp) {
+        perror("tmpfile");
+        return -1;
+    }
+
+    res = fileno(tmp);
+    if (res < 0) {
+        fclose(tmp);
+        perror("fileno");
+    }
+    return res;
 }
 
 void trim_trailing_newline(const char *file_path) {
@@ -375,7 +387,7 @@ enum {
 };
 
 int copy_stdin_to_mem(struct buffer* slice) {
-
+    // opportunistic mmap in case if it's a mmappable (e.g. wl-copy < some_file)
     switch (buffer_mmap_file(slice, STDIN_FILENO)) {
         case -1: return -1;
         case 0: return 0;
@@ -383,6 +395,9 @@ int copy_stdin_to_mem(struct buffer* slice) {
     }
 
     char* begin = malloc(BUFFER_SIZE);
+    if (!begin) {
+        goto fail;
+    }
     char* ptr = begin;
     char* end = begin + BUFFER_SIZE;
 
@@ -400,6 +415,9 @@ int copy_stdin_to_mem(struct buffer* slice) {
         if (ptr == end) {
             size_t len = end - begin;
             begin = realloc(begin, len + BUFFER_SIZE);
+            if (!begin) {
+                goto fail;
+            }
             ptr = begin + len;
             end = begin + len + BUFFER_SIZE;
         }

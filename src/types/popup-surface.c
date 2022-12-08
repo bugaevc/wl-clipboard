@@ -97,6 +97,9 @@ void popup_surface_init(struct popup_surface *self) {
 
     /* Open an anonymous file and write some zero bytes to it */
     int fd = create_anonymous_file();
+    if (fd < 0) {
+        bail("Failed to create anonymous file");
+    }
     ftruncate(fd, size);
 
     /* Create a shared memory pool */

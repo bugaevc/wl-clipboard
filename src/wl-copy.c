@@ -324,6 +324,9 @@ int main(int argc, argv_t argv) {
 
     if (!options.clear) {
         copy_source = copy_source_from_args(argc, argv);
+        if (!copy_source) {
+            return EXIT_FAILURE;
+        }
 
         /* Create the source */
         copy_action->source = device_manager_create_source(device_manager);
