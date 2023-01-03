@@ -338,16 +338,6 @@ int dump_stdin_into_a_temp_file(int* fildes, char** path) {
         return -1;
     }
 
-    // this will close fd if signalled,
-    // forcing sendfile/mmap
-    struct sensitive_fd sensitive_handler;
-    sensitive_fd_init(&sensitive_handler, fd);
-
-    // begin sensitive region
-    if (sensitive_begin((struct sensitive*)&sensitive_handler)) {
-        goto fail;
-    }
-
     // Try hard to do less, forking is much more expensive anyway
     int err = dump_stdin_to_file_using_mmap(fd);
     switch (err) {
@@ -367,22 +357,13 @@ int dump_stdin_into_a_temp_file(int* fildes, char** path) {
         case -1: goto fail;
     }
 
-    // interrupted
-    if (sensitive_handler.fd < 0) {
-        goto fail;
-    }
-
 fail:
-    sensitive_end((struct sensitive*)&sensitive_handler);
     close(fd);
     unlink(res_path);
     rmdir(dirpath);
     return -1;
 
 done:
-    if (sensitive_end((struct sensitive*)&sensitive_handler)) {
-        goto fail;
-    }
     if (original_path != NULL) {
         free(original_path);
     }

@@ -230,23 +230,27 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
         return (struct copy_source*)src;
     }
 
-    /* Copy data from our stdin.
-     * It's important that we only do this
-     * after going through the initial stages
-     * that are likely to result in errors,
-     * so that we don't forget to clean up
-     * the temp file.
-     */
-    char* temp_file;
-    int fd;
-    if (dump_stdin_into_a_temp_file(&fd, &temp_file)) {
+    struct sensitive_fd sensitive_handler;
+    sensitive_fd_init(&sensitive_handler, -1);
+
+    // begin sensitive region
+    if (sensitive_begin((struct sensitive*)&sensitive_handler)) {
         return NULL;
     }
+
+    char* temp_file;
+    if (dump_stdin_into_a_temp_file(&sensitive_handler.fd, &temp_file)) {
+        return NULL;
+    }
+    int fd = sensitive_handler.fd;
 
     if (options.trim_newline) {
         trim_trailing_newline(temp_file);
     }
     options.mime_type = infer_mime_type_from_contents(temp_file);
+
+    // end sensitive region, preserve error checking for later
+    int failed = sensitive_end((struct sensitive*)&sensitive_handler);
 
     // unlink only removes the name from fs, but the file is still open
     unlink(temp_file);
@@ -256,6 +260,11 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
         rmdir(dir);
     }
     free(temp_file);
+
+    // return if signalled
+    if (failed || sensitive_handler.fd < 0) {
+        return NULL;
+    }
 
     // mmap file
     struct buffer map;
