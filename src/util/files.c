@@ -249,7 +249,7 @@ static int dump_stdin_to_file_using_cat(const char* res_path) {
     if (pid == 0) {
         int fd = open(res_path, O_RDWR | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd < 0) {
-            perror("creat");
+            perror("open");
             exit(1);
         }
         dup2(fd, STDOUT_FILENO);

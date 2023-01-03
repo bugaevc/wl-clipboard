@@ -205,6 +205,8 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
             free(src);
             return NULL;
         }
+
+        return (struct copy_source*)src;
     }
 
     if (options.mime_type) {
