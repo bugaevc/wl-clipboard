@@ -22,7 +22,14 @@
 #include <stddef.h>
 #include "../types/buffer.h"
 
-int create_anonymous_file(void);
+struct anonfile {
+    void (*destroy)(struct anonfile*);
+    void* ctx;
+
+    int fd;
+};
+
+int create_anonymous_file(struct anonfile* file);
 
 void trim_trailing_newline(const char *file_path);
 
@@ -34,10 +41,18 @@ char *path_for_fd(int fd);
 char *infer_mime_type_from_contents(const char *file_path);
 char *infer_mime_type_from_name(const char *file_path);
 
-/* Returns the name of a new file */
+/* Returns error code and, if successful, writes file descriptor to `fd` and file path to `path`.
+ * NOTE: path should be freed with `free`.
+ */
 int dump_stdin_into_a_temp_file(int* fd, char** path);
 
+/* Copies stdin to memory buffer */
 int copy_stdin_to_mem(struct buffer* slice);
+
+/* Attempts to mmap file `fd`.
+ * Returns negative value on failure,
+ * and positive value if it the file is not mmappable
+ */
 int buffer_mmap_file(struct buffer* self, int fd);
 
 #endif /* UTIL_FILES_H */

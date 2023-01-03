@@ -42,23 +42,45 @@
 #ifdef HAVE_SHM_ANON
 #    include <sys/mman.h> // shm_open, SHM_ANON
 #endif
+#ifdef HAVE_CLONE3
+#    include <linux/sched.h>
+#endif
 
 
-int create_anonymous_file() {
+static void do_close(struct anonfile* file) {
+    if (close(file->fd)) {
+        perror("tmpfile/destroy: close");
+    }
+}
+
+static void do_fclose(struct anonfile* file) {
+    FILE* ctx = file->ctx;
+    if (fclose(ctx)) {
+        perror("tmpfile/destroy: fclose");
+    }
+}
+
+
+int create_anonymous_file(struct anonfile* file) {
     int res;
 #ifdef HAVE_MEMFD
     res = syscall(SYS_memfd_create, "buffer", 0);
     if (res >= 0) {
-        return res;
+        file->destroy = do_close;
+        file->ctx = NULL;
+        file->fd = res;
+        return 0;
     }
 #endif
 #ifdef HAVE_SHM_ANON
     res = shm_open(SHM_ANON, O_RDWR | O_CREAT, 0600);
     if (res >= 0) {
-        return res;
+        file->destroy = do_close;
+        file->ctx = NULL;
+        file->fd = res;
+        return 0;
     }
 #endif
-    (void) res;
 
     FILE* tmp = tmpfile();
     if (!tmp) {
@@ -70,8 +92,12 @@ int create_anonymous_file() {
     if (res < 0) {
         fclose(tmp);
         perror("fileno");
+        return res;
     }
-    return res;
+    file->destroy = do_fclose;
+    file->ctx = tmp;
+    file->fd = res;
+    return 0;
 }
 
 void trim_trailing_newline(const char *file_path) {
@@ -221,7 +247,7 @@ static int dump_stdin_to_file_using_cat(const char* res_path) {
         exit(1);
     }
     if (pid == 0) {
-        int fd = creat(res_path, S_IRUSR | S_IWUSR);
+        int fd = open(res_path, O_RDWR | O_EXCL | O_CREAT, S_IRUSR | S_IWUSR);
         if (fd < 0) {
             perror("creat");
             exit(1);
