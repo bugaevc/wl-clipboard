@@ -24,7 +24,6 @@
 #include "types/popup-surface.h"
 
 #include "types/copy-source-argv.h"
-#include "types/copy-source-file.h"
 #include "types/copy-source-buffer.h"
 
 #include "util/files.h"
@@ -251,6 +250,7 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
     unlink(temp_file);
     char* dir = dirname(temp_file);
     if (dir) {
+        // we can't handle failure sensibly, let's atleast not fail
         rmdir(dir);
     }
     free(temp_file);
@@ -264,6 +264,7 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
     // close fd, the file still exists as long as it's mmapped
     close(fd);
 
+    // we don't need to clean up the buffer, we'll be exiting anyway
     struct copy_source_buffer* src = malloc(sizeof(struct copy_source_buffer));
     if (!src) {
         perror("malloc");

@@ -42,6 +42,7 @@ struct copy_action {
     struct copy_source* src;
 };
 
+/// @brief Initialise copy action from specified copy source
 void copy_action_init(struct copy_action *self, struct copy_source* src);
 
 #endif /* TYPES_COPY_ACTION_H */

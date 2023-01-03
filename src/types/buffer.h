@@ -28,7 +28,11 @@ struct buffer {
     size_t len;
 };
 
-
+/// @brief Steal buffer to dest from src, leaving the latter empty
+/// @param[out] dest Uninitialised (or empty) buffer
+/// @param[in]  src  Initialised and valid buffer
+/// @note It is safe to call .destroy on src after stealing
+/// @warning Does not check anything
 void buffer_steal(struct buffer* dest, struct buffer* src);
 
 #endif /* UTIL_FILES_H */

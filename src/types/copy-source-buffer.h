@@ -24,12 +24,17 @@
 
 #include <stddef.h>
 
+/// @brief Copy source, serving data from the provided buffer
 struct copy_source_buffer {
     struct copy_source impl;
 
     struct buffer slice;
 };
 
+/// @brief Initialise copy source from buffer, stealing it from provided ptr
+/// @param[out] self
+/// @param[in]  src
+/// @return 0 on success, negative value otherwise
 int copy_source_buffer_init(struct copy_source_buffer* self, struct buffer* src);
 
 #endif /* TYPES_COPY_ACTION_H */

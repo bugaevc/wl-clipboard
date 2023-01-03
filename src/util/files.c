@@ -337,7 +337,7 @@ int dump_stdin_into_a_temp_file(int* fildes, char** path) {
         exit(1);
     }
 
-    /* Try HARD to do LESS */
+    /* Try hard to do less, forking is much more expensive anyway */
     int err = dump_stdin_to_file_using_mmap(fd);
     switch (err) {
         case 0: goto done;

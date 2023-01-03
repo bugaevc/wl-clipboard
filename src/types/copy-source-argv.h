@@ -24,12 +24,18 @@
 
 #include <stddef.h>
 
+/// @brief Copy source, serving data from the argv-like array of strings
 struct copy_source_argv {
     struct copy_source impl;
 
     argv_t argv;
 };
 
+/// @brief Initialise copy source from argv-like array of (unowned) array of strings,
+/// terminated with empty string
+/// @param[out] self Uninitialised copy source
+/// @param[in]  argv argv-like array of strings
+/// @return 0 on success, negative value otherwise
 int copy_source_argv_init(struct copy_source_argv* self, argv_t argv);
 
 #endif /* TYPES_COPY_ACTION_H */

@@ -29,6 +29,9 @@ struct anonfile {
     int fd;
 };
 
+/// @brief Create anonymous file
+/// @param[out] file
+/// @return 0 on success, negative value otherwise
 int create_anonymous_file(struct anonfile* file);
 
 void trim_trailing_newline(const char *file_path);
@@ -41,18 +44,20 @@ char *path_for_fd(int fd);
 char *infer_mime_type_from_contents(const char *file_path);
 char *infer_mime_type_from_name(const char *file_path);
 
-/* Returns error code and, if successful, writes file descriptor to `fd` and file path to `path`.
- * NOTE: path should be freed with `free`.
- */
+/// @brief Creates a temporary file and writes stdin contents into it
+/// @param[out] fd   Temporary file descriptor
+/// @param[out] path Path to created file
+/// @return 0 on success, negative value otherwise
+/// @note Use `free` to free `path`.
 int dump_stdin_into_a_temp_file(int* fd, char** path);
 
 /* Copies stdin to memory buffer */
 int copy_stdin_to_mem(struct buffer* slice);
 
-/* Attempts to mmap file `fd`.
- * Returns negative value on failure,
- * and positive value if it the file is not mmappable
- */
+/// @brief Attempts to mmap file `fd`.
+/// @param[out] self Uninitialised valid buffer
+/// @param[in]  fd   Valid file descriptor
+/// @return 0 on success, -1 on failure and 1 if the fd is not mmappable
 int buffer_mmap_file(struct buffer* self, int fd);
 
 #endif /* UTIL_FILES_H */
