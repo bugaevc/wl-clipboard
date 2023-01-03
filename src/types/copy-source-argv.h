@@ -19,8 +19,8 @@
 #ifndef TYPES_COPY_SOURCE_ARGV_H
 #define TYPES_COPY_SOURCE_ARGV_H
 
-#include "../util/string.h"
-#include "copy-source.h"
+#include <util/string.h>
+#include <types/copy-source.h>
 
 #include <stddef.h>
 

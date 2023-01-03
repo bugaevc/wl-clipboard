@@ -16,19 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "types/copy-action.h"
-#include "types/source.h"
-#include "types/device.h"
-#include "types/device-manager.h"
-#include "types/registry.h"
-#include "types/popup-surface.h"
+#include <types/copy-action.h>
+#include <types/source.h>
+#include <types/device.h>
+#include <types/device-manager.h>
+#include <types/registry.h>
+#include <types/popup-surface.h>
 
-#include "types/copy-source-argv.h"
-#include "types/copy-source-buffer.h"
+#include <types/copy-source-argv.h>
+#include <types/copy-source-buffer.h>
 
-#include "util/files.h"
-#include "util/string.h"
-#include "util/misc.h"
+#include <util/files.h>
+#include <util/string.h>
+#include <util/misc.h>
 
 #include <wayland-client.h>
 #include <unistd.h>

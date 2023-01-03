@@ -20,7 +20,7 @@
 #define UTIL_FILES_H
 
 #include <stddef.h>
-#include "../types/buffer.h"
+#include <types/buffer.h>
 
 struct anonfile {
     void (*destroy)(struct anonfile*);
@@ -51,7 +51,10 @@ char *infer_mime_type_from_name(const char *file_path);
 /// @note Use `free` to free `path`.
 int dump_stdin_into_a_temp_file(int* fd, char** path);
 
-/* Copies stdin to memory buffer */
+/// @brief Copy stdin contents into memory
+/// @param[out] slice Uninitialised valid buffer
+/// @return 0 on success, -1 on failure
+/// @note Attempts to mmap stdin, falls back to plain `read(2)` if it's not allowed
 int copy_stdin_to_mem(struct buffer* slice);
 
 /// @brief Attempts to mmap file `fd`.

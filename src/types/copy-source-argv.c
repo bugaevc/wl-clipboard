@@ -21,7 +21,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "copy-source-argv.h"
+#include <types/copy-source-argv.h>
 
 static void copy(int fd, struct copy_source* self) {
     struct copy_source_argv* self2 = (struct copy_source_argv*)self;

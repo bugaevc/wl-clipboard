@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "util/files.h"
-#include "util/string.h"
-#include "util/misc.h"
+#include <util/files.h>
+#include <util/string.h>
+#include <util/misc.h>
 
 #include "config.h"
 

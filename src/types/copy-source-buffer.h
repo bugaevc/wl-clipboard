@@ -19,8 +19,8 @@
 #ifndef TYPES_COPY_SOURCE_SLICE_H
 #define TYPES_COPY_SOURCE_SLICE_H
 
-#include "copy-source.h"
-#include "buffer.h"
+#include <types/copy-source.h>
+#include <types/buffer.h>
 
 #include <stddef.h>
 

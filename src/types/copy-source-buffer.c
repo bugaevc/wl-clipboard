@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "copy-source-buffer.h"
+#include <types/copy-source-buffer.h>
 
 static void copy(int fd, struct copy_source* self) {
     struct copy_source_buffer* self2 = (struct copy_source_buffer*)self;
