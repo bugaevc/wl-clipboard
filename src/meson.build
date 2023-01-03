@@ -87,6 +87,8 @@ foreach protocol : protocols
     protocol_deps += lib
 endforeach
 
+inc = include_directories('.')
+
 lib = static_library(
     'wl-clipboard',
     [
@@ -124,9 +126,18 @@ lib = static_library(
         'types/registry.c',
         'types/copy-action.h',
         'types/copy-action.c',
+        'types/buffer.h',
+        'types/buffer.c',
+        'types/copy-source-argv.h',
+        'types/copy-source-argv.c',
+        'types/copy-source-buffer.h',
+        'types/copy-source-buffer.c',
+        'types/sensitive-section.h',
+        'types/sensitive-section.c',
     ],
     dependencies: wayland,
-    link_with: protocol_deps
+    link_with: protocol_deps,
+    include_directories: [inc]
 )
 
 executable(
@@ -134,6 +145,7 @@ executable(
     ['wl-copy.c', protocol_headers],
     dependencies: wayland,
     link_with: lib,
+    include_directories: [inc],
     install: true
 )
 executable(
@@ -141,5 +153,6 @@ executable(
     ['wl-paste.c', protocol_headers],
     dependencies: wayland,
     link_with: lib,
+    include_directories: [inc],
     install: true
 )

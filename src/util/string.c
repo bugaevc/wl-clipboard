@@ -16,10 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "util/string.h"
+#include <util/string.h>
 
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 int mime_type_is_text(const char *mime_type) {
     /* A heuristic to detect plain text mime types */

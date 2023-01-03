@@ -16,33 +16,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TYPES_COPY_ACTION_H
-#define TYPES_COPY_ACTION_H
-
-#include <types/copy-source.h>
-#include "util/string.h"
+#ifndef TYPES_OWNED_SLICE_H
+#define TYPES_OWNED_SLICE_H
 
 #include <stddef.h>
 
-struct device;
-struct source;
-struct popup_surface;
+struct buffer {
+    void (*destroy)(struct buffer*);
 
-struct copy_action {
-    /* These fields are initialized by the creator */
-    struct device *device;
-    struct source *source;
-    struct popup_surface *popup_surface;
-    int primary;
-
-    void (*did_set_selection_callback)(struct copy_action *self);
-    void (*pasted_callback)(struct copy_action *self);
-    void (*cancelled_callback)(struct copy_action *self);
-
-    struct copy_source* src;
+    char*  ptr;
+    size_t len;
 };
 
-/// @brief Initialise copy action from specified copy source
-void copy_action_init(struct copy_action *self, struct copy_source* src);
+/// @brief Steal buffer to dest from src, leaving the latter empty
+/// @param[out] dest Uninitialised (or empty) buffer
+/// @param[in]  src  Initialised and valid buffer
+/// @note It is safe to call .destroy on src after stealing
+/// @warning Does not check anything
+void buffer_steal(struct buffer* dest, struct buffer* src);
 
-#endif /* TYPES_COPY_ACTION_H */
+#endif /* UTIL_FILES_H */

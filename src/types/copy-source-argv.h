@@ -16,33 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TYPES_COPY_ACTION_H
-#define TYPES_COPY_ACTION_H
+#ifndef TYPES_COPY_SOURCE_ARGV_H
+#define TYPES_COPY_SOURCE_ARGV_H
 
+#include <util/string.h>
 #include <types/copy-source.h>
-#include "util/string.h"
 
 #include <stddef.h>
 
-struct device;
-struct source;
-struct popup_surface;
+/// @brief Copy source, serving data from the argv-like array of strings
+struct copy_source_argv {
+    struct copy_source impl;
 
-struct copy_action {
-    /* These fields are initialized by the creator */
-    struct device *device;
-    struct source *source;
-    struct popup_surface *popup_surface;
-    int primary;
-
-    void (*did_set_selection_callback)(struct copy_action *self);
-    void (*pasted_callback)(struct copy_action *self);
-    void (*cancelled_callback)(struct copy_action *self);
-
-    struct copy_source* src;
+    argv_t argv;
 };
 
-/// @brief Initialise copy action from specified copy source
-void copy_action_init(struct copy_action *self, struct copy_source* src);
+/// @brief Initialise copy source from argv-like array of (unowned) array of strings,
+/// terminated with empty string
+/// @param[out] self Uninitialised copy source
+/// @param[in]  argv argv-like array of strings
+/// @return 0 on success, negative value otherwise
+int copy_source_argv_init(struct copy_source_argv* self, argv_t argv);
 
 #endif /* TYPES_COPY_ACTION_H */

@@ -96,15 +96,18 @@ void popup_surface_init(struct popup_surface *self) {
     int size = stride * height;
 
     /* Open an anonymous file and write some zero bytes to it */
-    int fd = create_anonymous_file();
-    ftruncate(fd, size);
+    struct anonfile anon;
+    if (create_anonymous_file(&anon)) {
+        bail("Failed to create anonymous file");
+    }
+    ftruncate(anon.fd, size);
 
     /* Create a shared memory pool */
     struct wl_shm *wl_shm = self->registry->wl_shm;
     if (wl_shm == NULL) {
         bail("Missing the shm");
     }
-    struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, fd, size);
+    struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, anon.fd, size);
 
     /* Allocate the buffer in that pool */
     struct wl_buffer *wl_buffer = wl_shm_pool_create_buffer(
