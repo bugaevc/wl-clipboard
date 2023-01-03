@@ -131,7 +131,9 @@ lib = static_library(
         'types/copy-source-argv.h',
         'types/copy-source-argv.c',
         'types/copy-source-buffer.h',
-        'types/copy-source-buffer.c'
+        'types/copy-source-buffer.c',
+        'types/sensitive-section.h',
+        'types/sensitive-section.c',
     ],
     dependencies: wayland,
     link_with: protocol_deps,

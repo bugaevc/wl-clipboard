@@ -305,6 +305,7 @@ static int dump_stdin_to_file_using_sendfile(int fd) {
         perror("sendfile");
         return -1;
     }
+
     return 0;
 }
 
@@ -314,7 +315,7 @@ int dump_stdin_into_a_temp_file(int* fildes, char** path) {
     char dirpath[] = "/tmp/wl-copy-buffer-XXXXXX";
     if (mkdtemp(dirpath) != dirpath) {
         perror("mkdtemp");
-        exit(1);
+        return -1;
     }
 
     /* Pick a name for the file we'll be
@@ -334,10 +335,20 @@ int dump_stdin_into_a_temp_file(int* fildes, char** path) {
     int fd = open(res_path, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd < 0) {
         perror("open");
-        exit(1);
+        return -1;
     }
 
-    /* Try hard to do less, forking is much more expensive anyway */
+    // this will close fd if signalled,
+    // forcing sendfile/mmap
+    struct sensitive_fd sensitive_handler;
+    sensitive_fd_init(&sensitive_handler, fd);
+
+    // begin sensitive region
+    if (sensitive_begin((struct sensitive*)&sensitive_handler)) {
+        goto fail;
+    }
+
+    // Try hard to do less, forking is much more expensive anyway
     int err = dump_stdin_to_file_using_mmap(fd);
     switch (err) {
         case 0: goto done;
@@ -356,13 +367,22 @@ int dump_stdin_into_a_temp_file(int* fildes, char** path) {
         case -1: goto fail;
     }
 
+    // interrupted
+    if (sensitive_handler.fd < 0) {
+        goto fail;
+    }
+
 fail:
+    sensitive_end((struct sensitive*)&sensitive_handler);
     close(fd);
     unlink(res_path);
     rmdir(dirpath);
     return -1;
 
 done:
+    if (sensitive_end((struct sensitive*)&sensitive_handler)) {
+        goto fail;
+    }
     if (original_path != NULL) {
         free(original_path);
     }
@@ -460,5 +480,18 @@ fail:
         free(begin);
     }
     return -1;
+}
+
+
+static void sensitive_do_close(struct sensitive* self) {
+    struct sensitive_fd* self2 = (struct sensitive_fd*)self;
+    int fd = self2->fd;
+    self2->fd = -1;
+    close(fd);
+}
+
+void sensitive_fd_init(struct sensitive_fd* handler, int fd) {
+    handler->impl.cleanup = sensitive_do_close;
+    handler->fd = fd;
 }
 

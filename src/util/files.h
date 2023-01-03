@@ -21,6 +21,7 @@
 
 #include <stddef.h>
 #include <types/buffer.h>
+#include <types/sensitive-section.h>
 
 struct anonfile {
     void (*destroy)(struct anonfile*);
@@ -62,5 +63,16 @@ int copy_stdin_to_mem(struct buffer* slice);
 /// @param[in]  fd   Valid file descriptor
 /// @return 0 on success, -1 on failure and 1 if the fd is not mmappable
 int buffer_mmap_file(struct buffer* self, int fd);
+
+struct sensitive_fd {
+    struct sensitive impl;
+
+    int fd;
+};
+
+/// @brief When used in sensitive section, close provided fd
+/// @param[out] handler
+/// @param[in]  fd
+void sensitive_fd_init(struct sensitive_fd* handler, int fd);
 
 #endif /* UTIL_FILES_H */
