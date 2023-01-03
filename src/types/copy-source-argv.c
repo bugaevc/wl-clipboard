@@ -36,6 +36,7 @@ static void copy(int fd, struct copy_source* self) {
     argv_t word = self2->argv;
     if (*word) {
         fwrite(*word, 1, strlen(*word), file);
+        ++word;
     }
     for (; *word; ++word) {
         fputc(' ', file);
