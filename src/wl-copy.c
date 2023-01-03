@@ -226,6 +226,8 @@ static struct copy_source* copy_source_from_args(int argc, argv_t argv) {
             slice.destroy(&slice);
             return NULL;
         }
+
+        return (struct copy_source*)src;
     }
 
     /* Copy data from our stdin.
