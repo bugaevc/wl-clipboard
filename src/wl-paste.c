@@ -276,7 +276,7 @@ static void selection_callback(struct offer *offer, int primary) {
     }
     close(pipefd[0]);
     close(pipefd[1]);
-    wait(NULL);
+    waitpid(pid, NULL, 0);
     if (!options.no_newline && !options.watch) {
         rc = write(STDOUT_FILENO, "\n", 1);
         if (rc != 1) {

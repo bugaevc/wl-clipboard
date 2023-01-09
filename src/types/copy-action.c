@@ -96,7 +96,7 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
          * should switch to an asynchronous child waiting scheme
          * instead.
          */
-        wait(NULL);
+        waitpid(pid, NULL, 0);
     } else {
         /* We'll perform the copy ourselves */
         FILE *f = fdopen(fd, "w");
