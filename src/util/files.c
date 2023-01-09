@@ -136,7 +136,7 @@ char *infer_mime_type_from_contents(const char *file_path) {
 
     close(pipefd[1]);
     int wstatus;
-    wait(&wstatus);
+    waitpid(pid, &wstatus, 0);
 
     /* See if that worked */
     if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
@@ -243,7 +243,7 @@ char *dump_stdin_into_a_temp_file() {
     }
 
     int wstatus;
-    wait(&wstatus);
+    waitpid(pid, &wstatus, 0);
     if (original_path != NULL) {
         free(original_path);
     }
