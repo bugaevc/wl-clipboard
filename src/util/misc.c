@@ -1,6 +1,6 @@
 /* wl-clipboard
  *
- * Copyright © 2019 Sergey Bugaev <bugaevc@gmail.com>
+ * Copyright © 2018-2023 Sergey Bugaev <bugaevc@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 void print_version_info() {
     printf(
         "wl-clipboard " PROJECT_VERSION "\n"
-        "Copyright (C) 2019 Sergey Bugaev\n"
+        "Copyright (C) 2018-2023 Sergey Bugaev\n"
         "License GPLv3+: GNU GPL version 3 or later"
         " <https://gnu.org/licenses/gpl.html>.\n"
         "This is free software: you are free to change and redistribute it.\n"
