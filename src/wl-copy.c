@@ -84,7 +84,8 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
 static void cleanup_and_exit(struct copy_action *copy_action, int code) {
     /* We're done copying!
      * All that's left to do now is to
-     * clean up after ourselves and exit.*/
+     * clean up after ourselves and exit.
+     */
     char *temp_file = (char *) copy_action->file_to_copy;
     if (temp_file != NULL) {
         /* Clean up our temporary file */
