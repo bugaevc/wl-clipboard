@@ -28,6 +28,7 @@
 
 #include <wayland-client.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <string.h>
 #include <getopt.h>
@@ -226,10 +227,16 @@ static void selection_callback(struct offer *offer, int primary) {
     }
 
     if (offer == NULL) {
-        if (options.watch) {
+        if (!options.watch) {
+            bail("No selection");
+        }
+        int devnull = open("/dev/null", O_RDONLY | O_CLOEXEC);
+        if (devnull < 0) {
+            perror("open /dev/null");
             return;
         }
-        bail("No selection");
+        run_paste_command(devnull, "nil");
+        return;
     }
 
     offer_received = 1;
