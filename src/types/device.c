@@ -41,7 +41,10 @@ void device_set_selection(
 /* Macros to reduce implementation boilerplate */
 
 #define SUPPORTS_SELECTION(type, expr) \
-static int device_supports_selection_on_ ## type(struct device *self, int primary) { \
+static int device_supports_selection_on_ ## type( \
+    struct device *self, \
+    int primary \
+) { \
     return expr; \
 }
 
