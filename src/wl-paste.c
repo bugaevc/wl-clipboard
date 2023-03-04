@@ -172,6 +172,39 @@ static const char *mime_type_to_request(struct types types) {
 #undef try_any_text
 #undef try_any
 
+static int run_paste_command(int stdin_fd) {
+    /* Spawn a cat to perform the copy.
+     * If watch mode is active, we spawn
+     * a custom command instead.
+     */
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        close(stdin_fd);
+        return 0;
+    }
+    if (pid == 0) {
+        dup2(stdin_fd, STDIN_FILENO);
+        close(stdin_fd);
+        if (options.watch) {
+            execvp(options.watch_command[0], options.watch_command);
+            fprintf(
+                stderr,
+                "Failed to spawn %s: %s",
+                options.watch_command[0],
+                strerror(errno)
+            );
+        } else {
+            execlp("cat", "cat", NULL);
+            perror("exec cat");
+        }
+        exit(1);
+    }
+    close(stdin_fd);
+    waitpid(pid, NULL, 0);
+    return 1;
+}
+
 static void selection_callback(struct offer *offer, int primary) {
     /* Ignore all but the first non-NULL offer.
      * This could happen due to reentrancy, though
@@ -248,43 +281,17 @@ static void selection_callback(struct offer *offer, int primary) {
      */
     wl_display_flush(wl_display);
 
-    /* Spawn a cat to perform the copy.
-     * If watch mode is active, we spawn
-     * a custom command instead.
-     */
-    pid_t pid = fork();
-    if (pid < 0) {
-        perror("fork");
+    close(pipefd[1]);
+    rc = run_paste_command(pipefd[0]);
+    if (!rc) {
         if (options.watch) {
             /* Try to cope without exiting completely */
-            close(pipefd[0]);
-            close(pipefd[1]);
             offer_destroy(offer);
             return;
         }
         exit(1);
     }
-    if (pid == 0) {
-        dup2(pipefd[0], STDIN_FILENO);
-        close(pipefd[0]);
-        close(pipefd[1]);
-        if (options.watch) {
-            execvp(options.watch_command[0], options.watch_command);
-            fprintf(
-                stderr,
-                "Failed to spawn %s: %s",
-                options.watch_command[0],
-                strerror(errno)
-            );
-        } else {
-            execlp("cat", "cat", NULL);
-            perror("exec cat");
-        }
-        exit(1);
-    }
-    close(pipefd[0]);
-    close(pipefd[1]);
-    waitpid(pid, NULL, 0);
+
     if (!options.no_newline && !options.watch) {
         rc = write(STDOUT_FILENO, "\n", 1);
         if (rc != 1) {
