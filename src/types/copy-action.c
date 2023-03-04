@@ -71,7 +71,7 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
      /* Unset O_NONBLOCK */
     fcntl(fd, F_SETFL, 0);
 
-    if (self->file_to_copy != NULL) {
+    if (self->fd_to_copy_from != -1) {
         /* Copy the file to the given file descriptor
          * by spawning an appropriate cat process.
          */
@@ -82,9 +82,11 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
             return;
         }
         if (pid == 0) {
+            dup2(self->fd_to_copy_from, STDIN_FILENO);
+            close(self->fd_to_copy_from);
             dup2(fd, STDOUT_FILENO);
             close(fd);
-            execlp("cat", "cat", self->file_to_copy, NULL);
+            execlp("cat", "cat", NULL);
             perror("exec cat");
             exit(1);
         }
@@ -97,6 +99,11 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
          * instead.
          */
         waitpid(pid, NULL, 0);
+        /* Seek back to the beginning of the file */
+        off_t rc = lseek(self->fd_to_copy_from, 0, SEEK_SET);
+        if (rc < 0) {
+            perror("lseek");
+        }
     } else {
         /* We'll perform the copy ourselves */
         FILE *f = fdopen(fd, "w");

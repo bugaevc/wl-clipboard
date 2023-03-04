@@ -40,8 +40,9 @@ struct copy_action {
 
     /* Exactly one of these fields must be non-null if the source
      * is non-null, otherwise all these fields must be null.
+     * The null value for fd_to_copy_from is -1.
      */
-    const char *file_to_copy;
+    int fd_to_copy_from;
     argv_t argv_to_copy;
     struct {
         const char *ptr;

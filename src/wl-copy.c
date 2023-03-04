@@ -81,29 +81,13 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
     }
 }
 
-static void cleanup_and_exit(struct copy_action *copy_action, int code) {
-    /* We're done copying!
-     * All that's left to do now is to
-     * clean up after ourselves and exit.
-     */
-    char *temp_file = (char *) copy_action->file_to_copy;
-    if (temp_file != NULL) {
-        /* Clean up our temporary file */
-        execlp("rm", "rm", "-r", dirname(temp_file), NULL);
-        perror("exec rm");
-        exit(1);
-    } else {
-        exit(code);
-    }
-}
-
 static void cancelled_callback(struct copy_action *copy_action) {
-    cleanup_and_exit(copy_action, 0);
+    exit(0);
 }
 
 static void pasted_callback(struct copy_action *copy_action) {
     if (options.paste_once) {
-        cleanup_and_exit(copy_action, 0);
+        exit(0);
     }
 }
 
@@ -244,6 +228,7 @@ int main(int argc, argv_t argv) {
 
     /* Create and initialize the copy action */
     struct copy_action *copy_action = calloc(1, sizeof(struct copy_action));
+    copy_action->fd_to_copy_from = -1;
     copy_action->device = device;
     copy_action->primary = options.primary;
 
@@ -266,7 +251,28 @@ int main(int argc, argv_t argv) {
             if (options.mime_type == NULL) {
                 options.mime_type = infer_mime_type_from_contents(temp_file);
             }
-            copy_action->file_to_copy = temp_file;
+            copy_action->fd_to_copy_from = open(
+                temp_file,
+                O_RDONLY | O_CLOEXEC
+            );
+            if (copy_action->fd_to_copy_from < 0) {
+                perror("Failed to open temp file");
+                return 1;
+            }
+            /* Now, remove the temp file and its
+             * containing directory. We still keep
+             * access to the file through our open
+             * file descriptor.
+             */
+             int rc = unlink(temp_file);
+             if (rc < 0) {
+                 perror("Failed to unlink temp file");
+             }
+             rc = rmdir(dirname(temp_file));
+             if (rc < 0) {
+                 perror("Failed to remove temp file directory");
+             }
+             free(temp_file);
         }
 
         /* Create the source */
@@ -300,6 +306,5 @@ int main(int argc, argv_t argv) {
     while (wl_display_dispatch(wl_display) >= 0);
 
     perror("wl_display_dispatch");
-    cleanup_and_exit(copy_action, 1);
     return 1;
 }
