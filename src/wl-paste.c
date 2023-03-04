@@ -172,7 +172,7 @@ static const char *mime_type_to_request(struct types types) {
 #undef try_any_text
 #undef try_any
 
-static int run_paste_command(int stdin_fd) {
+static int run_paste_command(int stdin_fd, const char *clipboard_state) {
     /* Spawn a cat to perform the copy.
      * If watch mode is active, we spawn
      * a custom command instead.
@@ -187,6 +187,9 @@ static int run_paste_command(int stdin_fd) {
         dup2(stdin_fd, STDIN_FILENO);
         close(stdin_fd);
         if (options.watch) {
+            if (clipboard_state != NULL) {
+                setenv("CLIPBOARD_STATE", clipboard_state, 1);
+            }
             execvp(options.watch_command[0], options.watch_command);
             fprintf(
                 stderr,
@@ -282,7 +285,7 @@ static void selection_callback(struct offer *offer, int primary) {
     wl_display_flush(wl_display);
 
     close(pipefd[1]);
-    rc = run_paste_command(pipefd[0]);
+    rc = run_paste_command(pipefd[0], "data");
     if (!rc) {
         if (options.watch) {
             /* Try to cope without exiting completely */
