@@ -36,7 +36,9 @@ int mime_type_is_text(const char *mime_type) {
         = strstr(mime_type, "json") != NULL
         || str_has_suffix(mime_type, "script")
         || str_has_suffix(mime_type, "xml")
-        || str_has_suffix(mime_type, "yaml");
+        || str_has_suffix(mime_type, "yaml")
+        || str_has_suffix(mime_type, "csv")
+        || str_has_suffix(mime_type, "ini");
 
     /* Special-case PGP and SSH keys.
      * A public SSH key is typically stored
