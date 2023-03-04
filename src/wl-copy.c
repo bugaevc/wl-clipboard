@@ -22,6 +22,7 @@
 #include "types/device-manager.h"
 #include "types/registry.h"
 #include "types/popup-surface.h"
+#include "types/offer.h"
 
 #include "util/files.h"
 #include "util/string.h"
@@ -88,6 +89,13 @@ static void cancelled_callback(struct copy_action *copy_action) {
 static void pasted_callback(struct copy_action *copy_action) {
     if (options.paste_once) {
         exit(0);
+    }
+}
+
+static void selection_callback(struct offer *offer, int primary) {
+    /* We're not interested */
+    if (offer != NULL) {
+        offer_destroy(offer);
     }
 }
 
@@ -221,6 +229,7 @@ int main(int argc, argv_t argv) {
     }
 
     struct device *device = device_manager_get_device(device_manager, seat);
+    device->selection_callback = selection_callback;
 
     if (!device_supports_selection(device, options.primary)) {
         complain_about_selection_support(options.primary);
