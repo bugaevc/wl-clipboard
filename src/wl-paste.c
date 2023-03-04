@@ -173,7 +173,10 @@ static const char *mime_type_to_request(struct types types) {
 #undef try_any
 
 static void selection_callback(struct offer *offer, int primary) {
-    /* Ignore all but the first non-NULL offer */
+    /* Ignore all but the first non-NULL offer.
+     * This could happen due to reentrancy, though
+     * we try to prevent it in other ways.
+     */
     if (offer_received && !options.watch) {
         return;
     }
@@ -238,7 +241,12 @@ static void selection_callback(struct offer *offer, int primary) {
         popup_surface_destroy(popup_surface);
         popup_surface = NULL;
     }
-    wl_display_roundtrip(wl_display);
+    /* Make sure the receive request reaches
+     * the compositor before we block on reading.
+     * We call flush() instead of dispatch() to
+     * prevent reentrancy.
+     */
+    wl_display_flush(wl_display);
 
     /* Spawn a cat to perform the copy.
      * If watch mode is active, we spawn
