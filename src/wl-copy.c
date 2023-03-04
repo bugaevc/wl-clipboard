@@ -200,6 +200,14 @@ static void parse_options(int argc, argv_t argv) {
 int main(int argc, argv_t argv) {
     parse_options(argc, argv);
 
+    /* Ignore SIGPIPE.
+     * We don't really output anything
+     * to our stdout, yet we don't want
+     * to get killed when writing clipboard
+     * contents to a closed pipe.
+     */
+    signal(SIGPIPE, SIG_IGN);
+
     struct wl_display *wl_display = wl_display_connect(NULL);
     if (wl_display == NULL) {
         bail("Failed to connect to a Wayland server");
