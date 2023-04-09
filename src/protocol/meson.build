@@ -15,6 +15,7 @@ if wayland_scanner.found()
     endif
 else
     have_xdg_shell = false
+    have_wp_primary_selection = false
     have_gtk_primary_selection = false
     have_wlr_data_control = false
 endif
