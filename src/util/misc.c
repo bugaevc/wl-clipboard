@@ -20,6 +20,9 @@
 #include "util/misc.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 
 void print_version_info() {
     printf(
@@ -56,4 +59,36 @@ void complain_about_watch_mode_support() {
         "wl-clipboard was built without wlroots data-control protocol support"
     );
 #endif
+}
+
+void complain_about_wayland_connection() {
+    int saved_errno = errno;
+    fprintf(stderr, "Failed to connect to a Wayland server");
+    if (saved_errno != 0) {
+        fprintf(stderr, ": %s", strerror(saved_errno));
+    }
+    fputc('\n', stderr);
+
+    const char *display = getenv("WAYLAND_DISPLAY");
+    const char *runtime_dir = getenv("XDG_RUNTIME_DIR");
+    if (display != NULL) {
+        fprintf(stderr, "Note: WAYLAND_DISPLAY is set to %s\n", display);
+    } else {
+        fprintf(stderr, "Note: WAYLAND_DISPLAY is unset (using wayland-0)\n");
+        display = "wayland-0";
+    }
+    if (runtime_dir != NULL) {
+        fprintf(stderr, "Note: XDG_RUNTIME_DIR is set to %s\n", runtime_dir);
+    } else {
+        fprintf(stderr, "Note: XDG_RUNTIME_DIR is unset\n");
+    }
+    if (display[0] != '/' && runtime_dir != NULL) {
+        fprintf(
+            stderr,
+            "Please check whether %s/%s socket exists and is accessible.\n",
+            runtime_dir,
+            display
+        );
+    }
+    exit(1);
 }

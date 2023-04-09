@@ -451,7 +451,7 @@ int main(int argc, argv_t argv) {
 
     wl_display = wl_display_connect(NULL);
     if (wl_display == NULL) {
-        bail("Failed to connect to a Wayland server");
+        complain_about_wayland_connection();
     }
 
     struct registry *registry = calloc(1, sizeof(struct registry));
