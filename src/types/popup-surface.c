@@ -42,7 +42,7 @@ static void forward_on_focus(
 void popup_surface_init(struct popup_surface *self) {
     self->shell = registry_find_shell(self->registry);
     if (self->shell == NULL) {
-        complain_about_missing_global("a Wayland shell");
+        complain_about_missing_shell();
     }
 
     self->keyboard = seat_get_keyboard(self->seat);

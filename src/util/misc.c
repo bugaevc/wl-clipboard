@@ -74,7 +74,11 @@ void complain_about_wayland_connection() {
     if (display != NULL) {
         fprintf(stderr, "Note: WAYLAND_DISPLAY is set to %s\n", display);
     } else {
-        fprintf(stderr, "Note: WAYLAND_DISPLAY is unset (using wayland-0)\n");
+        fprintf(
+            stderr,
+            "Note: WAYLAND_DISPLAY is unset"
+            " (falling back to wayland-0)\n"
+        );
         display = "wayland-0";
     }
     if (runtime_dir != NULL) {
@@ -109,5 +113,22 @@ void complain_about_missing_global(const char *global) {
         " which is required for wl-clipboard to work\n",
         global
     );
+    exit(1);
+}
+
+void complain_about_missing_shell() {
+    fprintf(
+        stderr,
+        "The compositor does not seem to implement a Wayland shell,"
+        " which is required for wl-clipboard to work\n"
+    );
+
+#ifndef HAVE_XDG_SHELL
+    fprintf(
+        stderr,
+        "Note: wl-clipboard was built without xdg-shell support\n"
+    );
+#endif
+
     exit(1);
 }

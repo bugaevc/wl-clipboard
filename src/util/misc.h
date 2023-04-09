@@ -31,5 +31,6 @@ void complain_about_watch_mode_support(void);
 void complain_about_wayland_connection(void);
 void complain_about_missing_seat(const char *seat_name);
 void complain_about_missing_global(const char *global);
+void complain_about_missing_shell(void);
 
 #endif /* UTIL_MISC_H */
