@@ -40,6 +40,10 @@ struct registry {
     struct wl_compositor *wl_compositor;
     struct wl_shm *wl_shm;
 
+#ifdef HAVE_XDG_ACTIVATION
+    struct xdg_activation_v1 *xdg_activation_v1;
+#endif
+
     /* Shells */
 
     struct wl_shell *wl_shell;

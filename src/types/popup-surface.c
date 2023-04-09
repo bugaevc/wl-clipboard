@@ -138,6 +138,24 @@ void popup_surface_init(struct popup_surface *self) {
         gtk_surface1_present(self->gtk_surface, 0);
     }
 #endif
+#ifdef HAVE_XDG_ACTIVATION
+    if (self->registry->xdg_activation_v1 != NULL) {
+        /* See if someone was kind enough to leave
+         * some tokens for us in the environment.
+         */
+        const char *token = getenv("XDG_ACTIVATION_TOKEN");
+        if (token == NULL) {
+            token = getenv("DESKTOP_STARTUP_ID");
+        }
+        if (token != NULL) {
+            xdg_activation_v1_activate(
+                self->registry->xdg_activation_v1,
+                token,
+                self->wl_surface
+            );
+        }
+    }
+#endif
 
     wl_surface_commit(self->wl_surface);
 }
@@ -153,7 +171,7 @@ void popup_surface_destroy(struct popup_surface *self) {
 
     shell_surface_destroy(self->shell_surface);
 #ifdef HAVE_GTK_SHELL
-    if (self->gtk_surface) {
+    if (self->gtk_surface != NULL) {
         if (
             gtk_surface1_get_version(self->gtk_surface) >=
             GTK_SURFACE1_RELEASE_SINCE_VERSION

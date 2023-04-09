@@ -31,4 +31,9 @@
 #    include "gtk-shell.h"
 #endif
 
+/* Not strictly speaking a shell */
+#ifdef HAVE_XDG_ACTIVATION
+#    include "xdg-activation.h"
+#endif
+
 #endif /* INCLUDES_SHELL_PROTOCOLS_H */

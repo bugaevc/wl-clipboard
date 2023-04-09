@@ -49,6 +49,10 @@ static void wl_registry_global_handler(
     BIND(wl_compositor, 2)
     BIND(wl_shm, 1)
 
+#ifdef HAVE_XDG_ACTIVATION
+    BIND(xdg_activation_v1, 1)
+#endif
+
     /* Shells */
 
     BIND(wl_shell, 1)
