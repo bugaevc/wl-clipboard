@@ -46,6 +46,9 @@ struct registry {
 #ifdef HAVE_XDG_SHELL
     struct xdg_wm_base *xdg_wm_base;
 #endif
+#ifdef HAVE_GTK_SHELL
+    struct gtk_shell1 *gtk_shell1;
+#endif
 
     /* Device managers */
 

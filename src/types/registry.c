@@ -57,6 +57,10 @@ static void wl_registry_global_handler(
     BIND(xdg_wm_base, 1)
 #endif
 
+#ifdef HAVE_GTK_SHELL
+    BIND(gtk_shell1, 4)
+#endif
+
     /* Device managers */
 
     BIND(wl_data_device_manager, 1)

@@ -19,6 +19,8 @@
 #ifndef TYPES_POPUP_SURFACE_H
 #define TYPES_POPUP_SURFACE_H
 
+#include "includes/shell-protocols.h"
+
 #include <wayland-client.h>
 
 struct registry;
@@ -40,6 +42,10 @@ struct popup_surface {
     struct wl_surface *wl_surface;
     struct keyboard *keyboard;
     int should_free_self;
+
+#ifdef HAVE_GTK_SHELL
+    struct gtk_surface1 *gtk_surface;
+#endif
 };
 
 void popup_surface_init(struct popup_surface *self);

@@ -69,6 +69,15 @@ void popup_surface_init(struct popup_surface *self) {
         self->wl_surface
     );
 
+#ifdef HAVE_GTK_SHELL
+    if (self->registry->gtk_shell1 != NULL) {
+        self->gtk_surface = gtk_shell1_get_gtk_surface(
+            self->registry->gtk_shell1,
+            self->wl_surface
+        );
+    }
+#endif
+
     /* Signal that the surface is ready to be configured */
     wl_surface_commit(self->wl_surface);
     wl_display_roundtrip(self->registry->wl_display);
@@ -122,6 +131,14 @@ void popup_surface_init(struct popup_surface *self) {
 
     wl_surface_attach(self->wl_surface, wl_buffer, 0, 0);
     wl_surface_damage(self->wl_surface, 0, 0, width, height);
+
+    /* Ask the compositor nicely to give us focus */
+#ifdef HAVE_GTK_SHELL
+    if (self->gtk_surface != NULL) {
+        gtk_surface1_present(self->gtk_surface, 0);
+    }
+#endif
+
     wl_surface_commit(self->wl_surface);
 }
 
@@ -135,6 +152,18 @@ void popup_surface_destroy(struct popup_surface *self) {
     self->keyboard->data = NULL;
 
     shell_surface_destroy(self->shell_surface);
+#ifdef HAVE_GTK_SHELL
+    if (self->gtk_surface) {
+        if (
+            gtk_surface1_get_version(self->gtk_surface) >=
+            GTK_SURFACE1_RELEASE_SINCE_VERSION
+        ) {
+            gtk_surface1_release(self->gtk_surface);
+        } else {
+            gtk_surface1_destroy(self->gtk_surface);
+        }
+    }
+#endif
     wl_surface_destroy(self->wl_surface);
     free(self->shell);
 

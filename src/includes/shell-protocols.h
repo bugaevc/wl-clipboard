@@ -27,4 +27,8 @@
 #    include "xdg-shell.h"
 #endif
 
+#ifdef HAVE_GTK_SHELL
+#    include "gtk-shell.h"
+#endif
+
 #endif /* INCLUDES_SHELL_PROTOCOLS_H */
