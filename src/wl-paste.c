@@ -28,6 +28,7 @@
 
 #include <wayland-client.h>
 #include <unistd.h>
+#include <assert.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
@@ -209,6 +210,26 @@ static int run_paste_command(int stdin_fd, const char *clipboard_state) {
     return 1;
 }
 
+static void complain_no_suitable_type() {
+    fprintf(stderr, "Clipboard content is not available as ");
+    if (options.explicit_type != NULL) {
+        fprintf(stderr, "requested type \"%s\"\n", options.explicit_type);
+    } else {
+        assert(options.inferred_type);
+        fprintf(
+            stderr,
+            "inferred output type \"%s\"\n",
+            options.inferred_type
+        );
+    }
+    fprintf(stderr, "Use \"wl-paste --list-types\" to view available types.");
+    if (options.explicit_type == NULL) {
+        fprintf(stderr, " Use \"--type\" to explicitly specify a type.");
+    }
+    fputc('\n', stderr);
+    exit(1);
+}
+
 static void selection_callback(struct offer *offer, int primary) {
     /* Ignore all but the first non-NULL offer.
      * This could happen due to reentrancy, though
@@ -256,7 +277,7 @@ static void selection_callback(struct offer *offer, int primary) {
             offer_destroy(offer);
             return;
         }
-        bail("No suitable type of content copied");
+        complain_no_suitable_type();
     }
 
     /* Never append a newline character to binary content */
