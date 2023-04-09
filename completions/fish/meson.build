@@ -2,7 +2,11 @@ fish_completion_dir = get_option('fishcompletiondir')
 fish = dependency('fish', required : false)
 
 if fish_completion_dir == '' and fish.found()
-    fish_completion_dir = fish.get_pkgconfig_variable('completionsdir')
+    if meson.version().version_compare('>= 0.58')
+        fish_completion_dir = fish.get_variable('completionsdir')
+    else
+        fish_completion_dir = fish.get_pkgconfig_variable('completionsdir')
+    endif
 elif fish_completion_dir == ''
     # Fish does not look in /usr/local/, which is the default prefix,
     # so we cannot use get_option("datadir"). Instead, they recommend

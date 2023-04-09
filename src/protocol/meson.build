@@ -27,7 +27,11 @@ conf_data.set('HAVE_GTK_PRIMARY_SELECTION', have_gtk_primary_selection)
 conf_data.set('HAVE_WLR_DATA_CONTROL', have_wlr_data_control)
 
 if wayland_protocols.found()
-    protocols_path = wayland_protocols.get_pkgconfig_variable('pkgdatadir')
+    if meson.version().version_compare('>= 0.58')
+        protocols_path = wayland_protocols.get_variable('pkgdatadir')
+    else
+        protocols_path = wayland_protocols.get_pkgconfig_variable('pkgdatadir')
+    endif
 endif
 
 protocols = []
