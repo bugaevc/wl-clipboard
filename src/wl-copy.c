@@ -214,11 +214,7 @@ int main(int argc, argv_t argv) {
 
     struct seat *seat = registry_find_seat(registry, options.seat_name);
     if (seat == NULL) {
-        if (options.seat_name != NULL) {
-            bail("No such seat");
-        } else {
-            bail("Missing a seat");
-        }
+        complain_about_missing_seat(options.seat_name);
     }
 
     /* Create the device */

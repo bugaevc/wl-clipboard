@@ -249,7 +249,7 @@ static void selection_callback(struct offer *offer, int primary) {
 
     if (offer == NULL) {
         if (!options.watch) {
-            bail("No selection");
+            bail("Nothing is copied");
         }
         int devnull = open("/dev/null", O_RDONLY | O_CLOEXEC);
         if (devnull < 0) {
@@ -484,11 +484,7 @@ int main(int argc, argv_t argv) {
 
     struct seat *seat = registry_find_seat(registry, options.seat_name);
     if (seat == NULL) {
-        if (options.seat_name != NULL) {
-            bail("No such seat");
-        } else {
-            bail("Missing a seat");
-        }
+        complain_about_missing_seat(options.seat_name);
     }
 
     /* Create the device */

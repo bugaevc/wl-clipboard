@@ -42,7 +42,7 @@ static void forward_on_focus(
 void popup_surface_init(struct popup_surface *self) {
     self->shell = registry_find_shell(self->registry);
     if (self->shell == NULL) {
-        bail("Missing a shell");
+        complain_about_missing_global("a Wayland shell");
     }
 
     self->keyboard = seat_get_keyboard(self->seat);
@@ -61,7 +61,7 @@ void popup_surface_init(struct popup_surface *self) {
 
     struct wl_compositor *wl_compositor = self->registry->wl_compositor;
     if (wl_compositor == NULL) {
-        bail("Missing the compositor");
+        complain_about_missing_global("wl_compositor");
     }
     self->wl_surface = wl_compositor_create_surface(wl_compositor);
     self->shell_surface = shell_create_shell_surface(
@@ -102,7 +102,7 @@ void popup_surface_init(struct popup_surface *self) {
     /* Create a shared memory pool */
     struct wl_shm *wl_shm = self->registry->wl_shm;
     if (wl_shm == NULL) {
-        bail("Missing the shm");
+        complain_about_missing_global("wl_shm");
     }
     struct wl_shm_pool *wl_shm_pool = wl_shm_create_pool(wl_shm, fd, size);
 

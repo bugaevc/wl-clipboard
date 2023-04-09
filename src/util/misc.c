@@ -38,7 +38,7 @@ void print_version_info() {
 void complain_about_selection_support(int primary) {
     if (!primary) {
         /* We always expect to find at least wl_data_device_manager */
-        bail("Missing a required global object");
+        complain_about_missing_global("wl_data_device_manager");
     }
 
 #if !defined(HAVE_WP_PRIMARY_SELECTION) && !defined(HAVE_GTK_PRIMARY_SELECTION)
@@ -90,5 +90,24 @@ void complain_about_wayland_connection() {
             display
         );
     }
+    exit(1);
+}
+
+void complain_about_missing_seat(const char *seat_name) {
+    if (seat_name != NULL) {
+        fprintf(stderr, "No such seat: %s\n", seat_name);
+    } else {
+        complain_about_missing_global("seat");
+    }
+    exit(1);
+}
+
+void complain_about_missing_global(const char *global) {
+    fprintf(
+        stderr,
+        "The compositor does not seem to implement %s,"
+        " which is required for wl-clipboard to work\n",
+        global
+    );
     exit(1);
 }
