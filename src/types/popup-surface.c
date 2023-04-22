@@ -183,6 +183,8 @@ void popup_surface_destroy(struct popup_surface *self) {
     }
 #endif
     wl_surface_destroy(self->wl_surface);
+    /* Let popup_surface_init() know we're already done */
+    self->wl_surface = NULL;
     free(self->shell);
 
     if (self->should_free_self) {
