@@ -1,24 +1,17 @@
-.TH WL-CLIPBOARD 1 2023-03-04 wl-clipboard
+.TH WL-CLIPBOARD 1 2023-04-22 wl-clipboard
 .SH NAME
 wl-clipboard \- Wayland copy and paste command line utilities
 .SH SYNOPSIS
 .B wl-copy
-[\fB--primary\fR]
-[\fB--trim-newline\fR]
-[\fB--paste-once\fR]
-[\fB--foreground\fR]
-[\fB--clear\fR]
-[\fB--type \fImime/type\fR]
-[\fB--seat \fIseat-name\fR]
+[\fB\-\-primary\fR]
+[\fB\-\-type \fImime/type\fR]
 [\fItext\fR...]
 .PP
 .B wl-paste
-[\fB--primary\fR]
-[\fB--no-newline\fR]
-[\fB--list-types\fR]
-[\fB--type \fImime/type\fR]
-[\fB--seat \fIseat-name\fR]
-[\fB--watch \fIcommand\fR...\]
+[\fB\-\-primary\fR]
+[\fB\-\-type \fImime/type\fR]
+.PP
+Only the most useful options are listed here; see below for the full list.
 .SH DESCRIPTION
 \fBwl-copy\fR copies the given \fItext\fR to the Wayland clipboard.
 If no \fItext\fR is given, \fBwl-copy\fR copies data from its standard input.
@@ -32,36 +25,36 @@ running \fBxdg-mime\fR(1) on it. \fBwl-paste\fR tries its best to pick a type to
 paste based on the list of offered MIME types and the extension of the file it's
 pasting into. If you're not satisfied with the type they pick or don't want to
 rely on this implicit type inference, you can explicitly specify the type to use
-with the \fB--type\fR option.
+with the \fB\-\-type\fR option.
 .SH OPTIONS
 .TP
-\fB-p\fR, \fB--primary
+\fB\-p\fR, \fB\-\-primary
 Use the "primary" clipboard instead of the regular clipboard.
 .TP
-\fB-o\fR, \fB--paste-once
+\fB\-o\fR, \fB\-\-paste-once\fR (for \fBwl-copy\fR)
 Only serve one paste request and then exit. Unless a clipboard manager
 specifically designed to prevent this is in use, this has the effect of clearing
 the clipboard after the first paste, which is useful for copying sensitive data
-such as passwords. Note that this may break pasting into some clients, in
-particular pasting into XWayland windows is known to break when this option is
-used.
+such as passwords. Note that this may break pasting into some clients that
+expect to be able to paste multiple times, in particular pasting into XWayland
+windows is known to break when this option is used.
 .TP
-\fB-f\fR, \fB--foreground
+\fB\-f\fR, \fB\-\-foreground\fR (for \fBwl-copy\fR)
 By default, \fBwl-copy\fR forks and serves data requests in the background; this
 option overrides that behavior, causing \fBwl-copy\fR to run in the foreground.
 .TP
-\fB-c\fR, \fB--clear
+\fB\-c\fR, \fB\-\-clear\fR (for \fBwl-copy\fR)
 Instead of copying anything, clear the clipboard so that nothing is copied.
 .TP
-\fB-n\fR, \fB--trim-newline
+\fB\-n\fR, \fB\-\-trim-newline\fR (for \fBwl-copy\fR)
 Do not copy the trailing newline character if it is present in the input file.
 .TP
-\fB-n\fR, \fB--no-newline
+\fB\-n\fR, \fB\-\-no-newline\fR (for \fBwl-paste\fR)
 Do not append a newline character after the pasted clipboard content. This
 option is automatically enabled for non-text content types and when using the
-\fB--watch\fR mode.
+\fB\-\-watch\fR mode.
 .TP
-\fB-t\fI mime/type\fR, \fB--type\fI mime/type
+\fB\-t\fI mime/type\fR, \fB\-\-type\fI mime/type
 Override the automatically selected MIME type. For \fBwl-copy\fR this option
 controls which type \fBwl-copy\fR will offer the content as. For \fBwl-paste\fR
 it controls which of the offered types \fBwl-paste\fR will request the content
@@ -69,7 +62,7 @@ in. In addition to specific MIME types such as \fIimage/png\fR, \fBwl-paste\fR
 also accepts generic type names such as \fItext\fR and \fIimage\fR which make it
 automatically pick some offered MIME type that matches the given generic name.
 .TP
-\fB-s\fI seat-name\fR, \fB--seat\fI seat-name
+\fB\-s\fI seat-name\fR, \fB\-\-seat\fI seat-name
 Specify which seat \fBwl-copy\fR and \fBwl-paste\fR should work with. Wayland
 natively supports multi-seat configurations where each seat gets its own mouse
 pointer, keyboard focus, and among other things its own separate clipboard. The
@@ -83,24 +76,27 @@ tool. If you don't specify the seat name explicitly, \fBwl-copy\fR and
 \fBwl-paste\fR will pick a seat arbitrarily. If you are using a single-seat
 system, there is little reason to use this option.
 .TP
-\fB-l\fR, \fB--list-types
+\fB\-l\fR, \fB\-\-list-types\fR (for \fBwl-paste\fR)
 Instead of pasting the selection, output the list of MIME types it is offered
 in.
 .TP
-\fB-w\fI command\fR..., \fB--watch \fIcommand\fR...
+\fB\-w\fI command\fR..., \fB\-\-watch \fIcommand\fR... (for \fBwl-paste\fR)
 Instead of pasting once and exiting, continuously watch the clipboard for
 changes, and run the specified \fIcommand\fR each time a new selection appears.
 The spawned process can read the clipboard contents from its standard input.
+\fBwl-paste\fR also sets the \fBCLIPBOARD_STATE\fR variable in the environment
+of the spawned processes (see below).
+.IP
 This mode requires a compositor that supports the wlroots data-control protocol.
 .TP
-\fB-v\fR, \fB--version
+\fB\-v\fR, \fB\-\-version
 Display the version of wl-clipboard and some short info about its license.
 .TP
-\fB-h\fR, \fB--help
+\fB\-h\fR, \fB\-\-help
 Display a short help message listing the available options.
 .SH ENVIRONMENT
 .TP
-WAYLAND_DISPLAY
+.B WAYLAND_DISPLAY
 Specifies what Wayland server \fBwl-copy\fR and \fBwl-paste\fR should connect
 to. This is the same environment variable that you pass to other Wayland
 clients, such as graphical applications, that connect to this Wayland server. It
@@ -109,32 +105,129 @@ compositor. See
 .BR wl_display_connect (3)
 for more details.
 .TP
-WAYLAND_DEBUG
+.B WAYLAND_DEBUG
 When set to \fB1\fR, causes the \fBwayland-client\fR(7) library to log every
 interaction \fBwl-copy\fR and \fBwl-paste\fR make with the Wayland compositor to
 stderr.
+.TP
+.B CLIPBOARD_STATE
+Set by \fBwl-paste\fR for the spawned command in \fB\-\-watch\fR mode. Currently
+the following possible values are \fIdefined\fR:
+.RS
+.TP
+CLIPBOARD_STATE=\fBdata
+Indicates that the clipboard contains data that the spawned command can read
+from its standard input. This is the most common case.
+.TP
+CLIPBOARD_STATE=\fBnil
+Indicates that the clipboard is empty. In this case the spawned command's
+standard input will be attached to \fI/dev/null\fR. Note that this is subtly
+different from the clipboard containing zero-sized data (which can be achieved,
+for instance, by running \fBwl-copy < /dev/null\fR).
+.TP
+CLIPBOARD_STATE=\fBclear
+Indicates that the clipboard is empty because of an explicit clear request, such
+as after running \fBwl-copy --clear\fR. As for \fBnil\fR, the command's standard
+input will be attached to \fI/dev/null\fR.
+.TP
+CLIPBOARD_STATE=\fBsensitive
+Indicates that the clipboard contains sensitive data such as a password or a
+key. It is probably best to avoid visibly displaying or persistently saving
+clipboard contents.
+.RE
+.IP
+Any client programs implementing the \fBCLIPBOARD_STATE\fR protocol are
+encouraged to implement proper support for all the values listed above, as well
+as to fall back to some sensible behavior if \fBCLIPBOARD_STATE\fR is unset or
+set to some unrecognized value (this is to leave the design space open for
+future extensions). However, the currently existing Wayland clipboard protocols
+don't let wl-clipboard identify the cases where \fBclear\fR and \fBsensitive\fR
+values should be set, so currently wl-clipboard only ever sets
+\fBCLIPBOARD_STATE\fR to \fBdata\fR or \fBnil\fR.
+.IP
+The \fBCLIPBOARD_STATE\fR protocol was intentionally designed to not be specific
+to either wl-clipboard or Wayland; in fact, other clipboard tools are encouraged
+to implement the same protocol. Currently, the SerenityOS
+.BR paste (1)
+utility is known to implement the same \fBCLIPBOARD_STATE\fR protocol.
+.SH FILES
+.TP
+.I /etc/mime.types
+If present, read by \fBwl-paste\fR to infer the MIME type to paste in based on
+the file name extension of its standard output.
+.SH BUGS
+Unless the Wayland compositor implements the wlroots data-control protocol,
+wl-clipboard has to resort to using a hack to access the clipboard: it will
+briefly pop up a tiny transparent surface (window). On some desktop
+environments (in particular when using tiling window managers), this can cause
+visual issues such as brief flashing. In some cases the Wayland compositor
+doesn't give focus to the popup surface, which prevents wl-clipboard from
+accessing the clipboard and manifests as a hang.
+.PP
+There is currently no way to copy data in multiple MIME types, such as multiple
+image formats, at the same time.
+.br
+See
+.nh
+<https://github.com/bugaevc/wl-clipboard/issues/71>.
+.hy
+.PP
+wl-clipboard is not always able to detect that a MIME type is textual, which may
+break pasting into clients that expect textual formats, not
+\fIapplication/something\fR. The workaround, same as for all format inference
+issues, is to specify the desired MIME type explicitly, such as
+\fBwl-copy \-\-type\fI text/plain\fR.
+.PP
+\fBwl-copy \-\-clear\fR and \fBwl-copy \-\-paste-once\fR don't always interact
+well with clipboard managers that are overeager to preserve clipboard contents.
+.PP
+Applications written using the GTK 3 toolkit copy text with \(dq\er\en\(dq (also
+known as CR LF, 13 10 in ASCII) line endings, which takes most other software by
+surprise. wl-cipboard does nothing to rectify this. The recommended workaround
+is piping \fBwl-paste\fR output through
+.BR dos2unix (1)
+when pasting from a GTK 3 application.
+.br
+See
+.nh
+<https://gitlab.gnome.org/GNOME/gtk/-/issues/2307>.
+.hy
 .SH EXAMPLES
+.TP
+Copy a simple text message:
 $
 .BI wl-copy " Hello world!"
-.PP
+.TP
+Copy the list of files in \fI~/Downloads\fR:
 $
 .IB "ls ~/Downloads" " | wl-copy"
-.PP
+.TP
+Copy an image:
 $
 .BI "wl-copy < " ~/Pictures/photo.png
-.PP
+.TP
+Copy the previous command:
 $
 .B wl-copy \(dq!!\(dq
-.PP
+.TP
+Paste to a file, without appending a newline:
 $
-.BI "wl-paste -n > " clipboard.txt
-.PP
+.BI "wl-paste \-n > " clipboard.txt
+.TP
+Sort clipboard contents:
 $
-.B wl-paste --list-types | wl-copy
+.B wl-paste | sort | wl-copy
+.TP
+Upload clipboard contents to a pastebin on each change:
+$
+.BI "wl-paste --watch nc " "paste.example.org 5555
 .SH AUTHOR
 Written by Sergey Bugaev.
 .SH REPORTING BUGS
 Report wl-clipboard bugs to <https://github.com/bugaevc/wl-clipboard/issues>
+.br
+Please make sure to mention which Wayland compositor you are using, and attach
+\fBWAYLAND_DEBUG=1\fR debugging logs of wl-clipboard.
 .SH COPYRIGHT
 Copyright \(co 2018-2023 Sergey Bugaev.
 License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
