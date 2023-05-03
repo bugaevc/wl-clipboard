@@ -106,7 +106,10 @@ void popup_surface_init(struct popup_surface *self) {
 
     /* Open an anonymous file and write some zero bytes to it */
     int fd = create_anonymous_file();
-    ftruncate(fd, size);
+    int rc = ftruncate(fd, size);
+    if (rc < 0) {
+        perror("ftruncate");
+    }
 
     /* Create a shared memory pool */
     struct wl_shm *wl_shm = self->registry->wl_shm;
