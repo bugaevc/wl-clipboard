@@ -19,6 +19,9 @@
 #ifndef UTIL_FILES_H
 #define UTIL_FILES_H
 
+struct wl_display;
+void complain_about_closed_stdio(struct wl_display *wl_display);
+
 int create_anonymous_file(void);
 
 void trim_trailing_newline(const char *file_path);

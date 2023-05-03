@@ -204,6 +204,9 @@ int main(int argc, argv_t argv) {
     if (wl_display == NULL) {
         complain_about_wayland_connection();
     }
+    if (wl_display_get_fd(wl_display) <= STDERR_FILENO) {
+        complain_about_closed_stdio(wl_display);
+    }
 
     struct registry *registry = calloc(1, sizeof(struct registry));
     registry->wl_display = wl_display;

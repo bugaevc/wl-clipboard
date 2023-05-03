@@ -27,12 +27,13 @@
 #include <errno.h>
 #include <getopt.h>
 #include <string.h>
-#include <fcntl.h> // open
+#include <fcntl.h>
 #include <sys/stat.h> // open
 #include <sys/types.h> // open
 #include <stdlib.h> // exit
 #include <libgen.h> // basename
 #include <sys/wait.h>
+#include <syslog.h>
 
 #ifdef HAVE_MEMFD
 #    include <sys/syscall.h> // syscall, SYS_memfd_create
@@ -41,6 +42,42 @@
 #    include <sys/mman.h> // shm_open, SHM_ANON
 #endif
 
+#include <wayland-client.h> // wl_display_get_fd
+
+
+void complain_about_closed_stdio(struct wl_display *wl_display) {
+    const char *message = "wl-clipboard has been launched with a closed"
+        " standard file descriptor. This is a bug in the software that"
+        " has launched wl-clipboard. Aborting.";
+
+    /* See if we can write to stderr */
+    if (wl_display_get_fd(wl_display) < STDERR_FILENO) {
+        int rc = fcntl(STDERR_FILENO, F_GETFL);
+        if (rc > 0) {
+            rc &= O_ACCMODE;
+            if (rc == O_WRONLY || rc == O_RDWR) {
+                /* Yes, we can! */
+                fprintf(stderr, "%s\n", message);
+                fflush(stderr);
+                abort();
+            }
+        }
+    }
+
+    /* Maybe there is a tty we could write to? */
+    FILE *tty = fopen("/dev/tty", "w");
+    if (tty != NULL) {
+        fprintf(tty, "%s\n", message);
+        fflush(stderr);
+        abort();
+    }
+
+    /* As a last resort, try syslog */
+    openlog("wl-clipboard", LOG_CONS | LOG_PID, LOG_USER);
+    syslog(LOG_ERR, message);
+    closelog();
+    abort();
+}
 
 int create_anonymous_file() {
     int res;
