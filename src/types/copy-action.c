@@ -72,6 +72,12 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
      /* Unset O_NONBLOCK */
     fcntl(fd, F_SETFL, 0);
 
+    if (strcmp(mime_type, "x-kde-passwordManagerHint") == 0 && self->sensitive) {
+        write(fd, "secret", 6);
+        close(fd);
+        return;
+    }
+
     if (self->fd_to_copy_from != -1) {
         /* Copy the file to the given file descriptor
          * by spawning an appropriate cat process.
