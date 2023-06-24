@@ -59,6 +59,8 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
          * Also replace stdin/stdout with
          * /dev/null so the stdout file
          * descriptor isn't kept alive.
+         * CWD is changed to the root, to prevent blocking
+         * umount of removable devices.
          */
         int devnull = open("/dev/null", O_RDWR);
         if (devnull >= 0) {
@@ -69,6 +71,9 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
             /* If we cannot open /dev/null, just close stdin/stdout */
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
+        }
+        if (chdir("/") < 0) {
+            /* Cannot do much if it fails. Just continue. */
         }
         signal(SIGHUP, SIG_IGN);
         pid_t pid = fork();
