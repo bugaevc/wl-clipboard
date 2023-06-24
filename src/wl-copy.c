@@ -55,10 +55,12 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
         /* Move to background.
          * We fork our process and leave the
          * child running in the background,
-         * while exiting in the parent.
-         * Also replace stdin/stdout with
-         * /dev/null so the stdout file
-         * descriptor isn't kept alive.
+         * while exiting in the parent. We also
+         * replace stdin/stdout with /dev/null
+         * so the stdout file descriptor isn't
+         * kept alive, and chdir to the root, to
+         * prevent blocking file systems from
+         * being unmounted.
          */
         int devnull = open("/dev/null", O_RDWR);
         if (devnull >= 0) {
@@ -66,9 +68,14 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
             dup2(devnull, STDIN_FILENO);
             close(devnull);
         } else {
-            /* If we cannot open /dev/null, just close stdin/stdout */
+            /* If we cannot open /dev/null,
+             * just close stdin/stdout.
+             */
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
+        }
+        if (chdir("/") < 0) {
+            perror("chdir /");
         }
         signal(SIGHUP, SIG_IGN);
         pid_t pid = fork();
