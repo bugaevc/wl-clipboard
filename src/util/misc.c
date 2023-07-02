@@ -117,18 +117,22 @@ void complain_about_missing_global(const char *global) {
 }
 
 void complain_about_missing_shell() {
+#ifndef HAVE_XDG_SHELL
+    fprintf(
+        stderr,
+        "wl-clipboard was built without xdg-shell support, and the compositor"
+        " does not seem to support any other Wayland shell.\nPlease rebuild"
+        " wl-clipboard with xdg-shell support.\n"
+    );
+    exit(1);
+#endif
+
+
     fprintf(
         stderr,
         "The compositor does not seem to implement a Wayland shell,"
         " which is required for wl-clipboard to work\n"
     );
-
-#ifndef HAVE_XDG_SHELL
-    fprintf(
-        stderr,
-        "Note: wl-clipboard was built without xdg-shell support\n"
-    );
-#endif
 
     exit(1);
 }
