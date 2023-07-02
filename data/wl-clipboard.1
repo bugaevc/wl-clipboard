@@ -27,6 +27,13 @@ pasting into. If you're not satisfied with the type they pick or don't want to
 rely on this implicit type inference, you can explicitly specify the type to use
 with the \fB\-\-type\fR option.
 .SH OPTIONS
+To parse options, wl-clipboard uses the
+.BR getopt (3)
+library routines, whose features depend on the C library in use. In particular,
+it may be possible to specify \fB\-\-\fR as an argument on its own to prevent
+any further arguments from getting parsed as options (which lets you copy text
+containing words that start with the \fB-\fR sign), and to shorten long options
+to their unambiguous prefixes.
 .TP
 \fB\-p\fR, \fB\-\-primary
 Use the "primary" clipboard instead of the regular clipboard.
@@ -201,6 +208,9 @@ provides the same data in response.
 Copy a simple text message:
 $
 .BI wl-copy " Hello world!"
+.TP
+Copy a message starting with dashes:
+.BI "wl-copy -- " --long
 .TP
 Copy the list of files in \fI~/Downloads\fR:
 $
