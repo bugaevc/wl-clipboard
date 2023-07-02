@@ -116,7 +116,7 @@ static void print_usage(FILE *f, const char *argv0) {
         "Options:\n"
         "\t-o, --paste-once\tOnly serve one paste request and then exit.\n"
         "\t-f, --foreground\tStay in the foreground instead of forking.\n"
-        "\t-c, --clear\t\tInstead of copying anything, clear the clipboard.\n"
+        "\t-c, --clear\t\tInstead of copying, clear the clipboard.\n"
         "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
         "\t-n, --trim-newline\tDo not copy the trailing newline character.\n"
         "\t-t, --type mime/type\t"
