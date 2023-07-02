@@ -26,9 +26,13 @@ Optional (but highly recommended) dependencies for building:
 
 If these are found during configuration, wl-clipboard gets built with
 additional protocols support, which enables features such as primary selection
-support and `--watch` mode. Note that many compositors have dropped support for
-the `wl_shell` interface, which means wl-clipboard will not work under them
-unless built with both `wayland-scanner` and `wayland-protocols`.
+support and `--watch` mode.
+
+Note that many compositors have dropped support for the `wl_shell` interface,
+which means wl-clipboard will not work under them unless built with both
+`wayland-scanner` and `wayland-protocols`. For this reason, you have to
+explicitly opt into allowing building without these dependencies by specifying
+`-D protocols=auto` (or `-D protocols=disabled`) when configuring with Meson.
 
 Optional dependencies for running:
 * `xdg-mime` for content type inference in `wl-copy` (try package named

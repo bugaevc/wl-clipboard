@@ -1,3 +1,6 @@
+option('protocols',
+    type: 'feature',
+    value: 'enabled')
 option('zshcompletiondir',
     type: 'string',
     value: '',

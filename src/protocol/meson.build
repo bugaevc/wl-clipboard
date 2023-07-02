@@ -1,5 +1,6 @@
-wayland_scanner = find_program('wayland-scanner', required: false, native: true)
-wayland_protocols = dependency('wayland-protocols', version: '>= 1.12', required: false)
+protocols_opt = get_option('protocols')
+wayland_scanner = find_program('wayland-scanner', required: protocols_opt, native: true)
+wayland_protocols = dependency('wayland-protocols', version: '>= 1.12', required: protocols_opt)
 
 if wayland_scanner.found()
     have_xdg_shell = wayland_protocols.found()
@@ -43,7 +44,7 @@ endif
 protocols = []
 
 if not have_xdg_shell
-    warning('Building without xdg-shell support')
+    warning('Building without xdg-shell support, wl-clipboard will be unable to work on some compositors')
 else
     xdg_shell_xml = join_paths(protocols_path, 'stable', 'xdg-shell', 'xdg-shell.xml')
     protocols += [['xdg-shell', xdg_shell_xml]]

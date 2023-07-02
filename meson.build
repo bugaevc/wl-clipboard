@@ -1,7 +1,7 @@
 project('wl-clipboard', 'c',
     version: '2.2.0-rc1',
     license: 'GPL3+',
-    meson_version: '>= 0.44.0',
+    meson_version: '>= 0.47.0',
     default_options: 'c_std=gnu99'
 )
 
