@@ -182,9 +182,9 @@ issues, is to specify the desired MIME type explicitly, such as
 well with clipboard managers that are overeager to preserve clipboard contents.
 .PP
 Applications written using the GTK 3 toolkit copy text with \(dq\er\en\(dq (also
-known as CR LF, 13 10 in ASCII) line endings, which takes most other software by
-surprise. wl-cipboard does nothing to rectify this. The recommended workaround
-is piping \fBwl-paste\fR output through
+known as CR LF) line endings, which takes most other software by surprise.
+wl-cipboard does nothing to rectify this. The recommended workaround is piping
+\fBwl-paste\fR output through
 .BR dos2unix (1)
 when pasting from a GTK 3 application.
 .br
@@ -192,6 +192,10 @@ See
 .nh
 <https://gitlab.gnome.org/GNOME/gtk/-/issues/2307>.
 .hy
+.PP
+When trying to paste content copied with \fBwl-copy\fR, \fBwl-copy\fR does not
+check whether the requested MIME type is among those it has offered, and always
+provides the same data in response.
 .SH EXAMPLES
 .TP
 Copy a simple text message:
