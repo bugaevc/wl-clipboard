@@ -74,7 +74,7 @@ void complain_about_closed_stdio(struct wl_display *wl_display) {
 
     /* As a last resort, try syslog */
     openlog("wl-clipboard", LOG_CONS | LOG_PID, LOG_USER);
-    syslog(LOG_ERR, message);
+    syslog(LOG_ERR, "%s", message);
     closelog();
     abort();
 }
