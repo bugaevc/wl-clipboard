@@ -1,6 +1,11 @@
 protocols_opt = get_option('protocols')
 wayland_scanner = find_program('wayland-scanner', required: protocols_opt, native: true)
-wayland_protocols = dependency('wayland-protocols', version: '>= 1.12', required: protocols_opt)
+wayland_protocols = dependency(
+    'wayland-protocols',
+    version: '>= 1.12',
+    required: protocols_opt,
+    default_options: ['tests=false']
+)
 
 if wayland_scanner.found()
     have_xdg_shell = wayland_protocols.found()
