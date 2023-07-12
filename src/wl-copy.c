@@ -279,15 +279,15 @@ int main(int argc, argv_t argv) {
              * access to the file through our open
              * file descriptor.
              */
-             int rc = unlink(temp_file);
-             if (rc < 0) {
-                 perror("Failed to unlink temp file");
-             }
-             rc = rmdir(dirname(temp_file));
-             if (rc < 0) {
-                 perror("Failed to remove temp file directory");
-             }
-             free(temp_file);
+            int rc = unlink(temp_file);
+            if (rc < 0) {
+                perror("Failed to unlink temp file");
+            }
+            rc = rmdir(dirname(temp_file));
+            if (rc < 0) {
+                perror("Failed to remove temp file directory");
+            }
+            free(temp_file);
         }
 
         /* Create the source */
