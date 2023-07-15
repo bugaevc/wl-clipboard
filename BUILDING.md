@@ -26,8 +26,8 @@ Optional (but highly recommended) dependencies for building:
 
 If these are found during configuration, wl-clipboard gets built with
 additional protocols support, which enables features such as primary selection
-support and `--watch` mode. If `wayland-protocols` is not found, Meson can
-optionally build it on the spot as a subproject.
+support and `--watch` mode. If they are not found, Meson can optionally build
+them on the spot as subprojects.
 
 Note that many compositors have dropped support for the `wl_shell` interface,
 which means wl-clipboard will not work under them unless built with both

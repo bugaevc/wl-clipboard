@@ -1,4 +1,7 @@
-wayland = dependency('wayland-client')
+wayland = dependency(
+    'wayland-client',
+    default_options: ['tests=false', 'documentation=false', 'dtd_validation=false']
+)
 
 cc = meson.get_compiler('c')
 have_memfd = cc.has_header_symbol('sys/syscall.h', 'SYS_memfd_create')
