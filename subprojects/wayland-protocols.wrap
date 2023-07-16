@@ -1,4 +1,8 @@
-[wrap-git]
-url = https://gitlab.freedesktop.org/wayland/wayland-protocols.git
-revision = 1.31
-depth = 1
+[wrap-file]
+directory = wayland-protocols-1.24
+source_url = https://wayland.freedesktop.org/releases/wayland-protocols-1.24.tar.xz
+source_filename = wayland-protocols-1.24.tar.xz
+source_hash = bff0d8cffeeceb35159d6f4aa6bab18c807b80642c9d50f66cba52ecf7338bc2
+
+[provide]
+wayland-protocols = wayland_protocols
