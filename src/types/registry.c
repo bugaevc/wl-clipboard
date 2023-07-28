@@ -62,7 +62,7 @@ static void wl_registry_global_handler(
 #endif
 
 #ifdef HAVE_GTK_SHELL
-    BIND(gtk_shell1, 4)
+    BIND(gtk_shell1, 3)
 #endif
 
     /* Device managers */
