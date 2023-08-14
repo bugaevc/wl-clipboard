@@ -40,8 +40,11 @@ Optional dependencies for running:
   `xdg-utils`)
 * `/etc/mime.types` file for type inference in `wl-paste` (try package named
   `mime-support` or `mailcap`)
+* `/usr/share/mime/globs2` file for for type inference in `wl-paste` (try
+  packaged named `shared-mime-info`)
 
 If you're packaging wl-clipboard for a distribution, please consider making
-packages providing `xdg-mime` and `/etc/mime.types` *weak* dependencies of the
-package providing wl-clipboard, meaning ones that get installed along with
-wl-clipboard by default, but are not strictly required by it.
+packages providing `xdg-mime`, `/etc/mime.types`, and `/usr/share/mime/globs2`
+*weak* dependencies of the package providing wl-clipboard, meaning ones that
+get installed along with wl-clipboard by default, but are not strictly required
+by it.
