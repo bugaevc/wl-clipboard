@@ -29,12 +29,14 @@
 
 #define BIND(interface_name, known_version) \
 if (strcmp(interface, #interface_name) == 0) { \
-    self->interface_name = wl_registry_bind( \
-        wl_registry, \
-        name, \
-        &interface_name ## _interface, \
-        known_version \
-    ); \
+    if (version >= known_version) { \
+        self->interface_name = wl_registry_bind( \
+            wl_registry, \
+            name, \
+            &interface_name ## _interface, \
+            known_version \
+        ); \
+    } \
 }
 
 static void wl_registry_global_handler(
