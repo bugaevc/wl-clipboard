@@ -37,6 +37,16 @@ if (strcmp(interface, #interface_name) == 0) { \
     ); \
 }
 
+#define BIND_OPTIONAL(interface_name, min_version) \
+if (strcmp(interface, #interface_name) == 0 && version >= min_version) { \
+    self->interface_name = wl_registry_bind( \
+        wl_registry, \
+        name, \
+        &interface_name ## _interface, \
+        min_version \
+    ); \
+}
+
 static void wl_registry_global_handler(
     void *data,
     struct wl_registry *wl_registry,
@@ -62,7 +72,7 @@ static void wl_registry_global_handler(
 #endif
 
 #ifdef HAVE_GTK_SHELL
-    BIND(gtk_shell1, 3)
+    BIND_OPTIONAL(gtk_shell1, 4)
 #endif
 
     /* Device managers */
