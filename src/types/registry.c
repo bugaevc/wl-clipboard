@@ -29,7 +29,7 @@
 
 #define BIND(interface_name, known_version) \
 if (strcmp(interface, #interface_name) == 0) { \
-    if (version >= known_version) { \
+    if (version >= (known_version)) { \
         self->interface_name = wl_registry_bind( \
             wl_registry, \
             name, \
@@ -83,7 +83,7 @@ static void wl_registry_global_handler(
     BIND(zwlr_data_control_manager_v1, version > 2 ? 2 : version)
 #endif
 
-    if (strcmp(interface, "wl_seat") == 0) {
+    if (strcmp(interface, "wl_seat") == 0 && version >= 2) {
         struct seat *seat = calloc(1, sizeof(struct seat));
         seat->proxy = wl_registry_bind(
             wl_registry,
