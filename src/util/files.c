@@ -33,6 +33,7 @@
 #include <stdlib.h> // exit
 #include <libgen.h> // basename
 #include <sys/wait.h>
+#include <signal.h>
 #include <syslog.h>
 
 #ifdef HAVE_MEMFD
@@ -167,6 +168,8 @@ char *infer_mime_type_from_contents(const char *file_path) {
             /* If we cannot open /dev/null, just close stdin */
             close(STDIN_FILENO);
         }
+        signal(SIGHUP, SIG_DFL);
+        signal(SIGPIPE, SIG_DFL);
         execlp("xdg-mime", "xdg-mime", "query", "filetype", file_path, NULL);
         exit(1);
     }
@@ -274,6 +277,8 @@ char *dump_stdin_into_a_temp_file() {
         }
         dup2(fd, STDOUT_FILENO);
         close(fd);
+        signal(SIGHUP, SIG_DFL);
+        signal(SIGPIPE, SIG_DFL);
         execlp("cat", "cat", NULL);
         perror("exec cat");
         exit(1);

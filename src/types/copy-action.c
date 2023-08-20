@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 static void do_set_selection(struct copy_action *self, uint32_t serial) {
     /* Set the selection and make sure it reaches
@@ -86,6 +87,8 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
             close(self->fd_to_copy_from);
             dup2(fd, STDOUT_FILENO);
             close(fd);
+            signal(SIGHUP, SIG_DFL);
+            signal(SIGPIPE, SIG_DFL);
             execlp("cat", "cat", NULL);
             perror("exec cat");
             exit(1);
