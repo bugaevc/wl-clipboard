@@ -210,7 +210,13 @@ static int run_paste_command(int stdin_fd, const char *clipboard_state) {
     return 1;
 }
 
-static void complain_no_suitable_type() {
+static void complain_no_suitable_type(const struct types *types) {
+    if (types->any == NULL) {
+        /* Report this the same way as
+         * there being no offer at all.
+         */
+        bail("Nothing is copied");
+    }
     fprintf(stderr, "Clipboard content is not available as ");
     if (options.explicit_type != NULL) {
         fprintf(stderr, "requested type \"%s\"\n", options.explicit_type);
@@ -277,7 +283,7 @@ static void selection_callback(struct offer *offer, int primary) {
             offer_destroy(offer);
             return;
         }
-        complain_no_suitable_type();
+        complain_no_suitable_type(&types);
     }
 
     /* Never append a newline character to binary content */
