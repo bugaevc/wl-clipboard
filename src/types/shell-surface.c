@@ -67,6 +67,7 @@ void shell_surface_init_wl_shell_surface(struct shell_surface *self) {
     wl_shell_surface_add_listener(proxy, &wl_shell_surface_listener, self);
     wl_shell_surface_set_toplevel(proxy);
     wl_shell_surface_set_title(proxy, "wl-clipboard");
+    wl_shell_surface_set_class(proxy, "com.github.bugaevc.wl-clipboard");
     self->do_destroy = destroy_wl_shell_surface;
 }
 
@@ -119,6 +120,7 @@ void shell_surface_init_xdg_surface(struct shell_surface *self) {
     self->proxy2 = (struct wl_proxy *) toplevel;
     xdg_toplevel_add_listener(toplevel, &xdg_toplevel_listener, self);
     xdg_toplevel_set_title(toplevel, "wl-clipboard");
+    xdg_toplevel_set_app_id(toplevel, "com.github.bugaevc.wl-clipboard");
     self->do_destroy = destroy_xdg_surface;
 }
 
