@@ -140,6 +140,28 @@ char *path_for_fd(int fd) {
     return realpath(fdpath, NULL);
 }
 
+int infer_is_text_plain_utf8(const char *file_path) {
+    /* Infer if the file is valid UTF-8 text */
+    pid_t pid = fork();
+    if (pid < 0) {
+        perror("fork");
+        return 0;
+    }
+    if (pid == 0) {
+        int devnull = open("/dev/null", O_WRONLY);
+        dup2(devnull, STDOUT_FILENO);
+        dup2(devnull, STDERR_FILENO);
+        execlp("iconv", "iconv", "-f", "utf-8", "-t", "utf-8", file_path, NULL);
+        exit(1);
+    }
+
+    int wstatus;
+    wait(&wstatus);
+
+    /* A successful conversion will return zero */
+    return WIFEXITED(wstatus) && WEXITSTATUS(wstatus) == 0;
+}
+
 char *infer_mime_type_from_contents(const char *file_path) {
     /* Spawn xdg-mime query filetype */
     int pipefd[2];
