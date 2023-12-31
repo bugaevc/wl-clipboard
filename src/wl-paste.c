@@ -51,6 +51,7 @@ static struct {
 struct types {
     int explicit_available;
     int inferred_available;
+    int utf8_string_available;
     int plain_text_utf8_available;
     int plain_text_available;
     const char *having_explicit_as_prefix;
@@ -76,6 +77,9 @@ static struct types classify_offer_types(struct offer *offer) {
             strcmp(mime_type, options.inferred_type) == 0
         ) {
             types.inferred_available = 1;
+        }
+        if (strcmp(mime_type, utf8_string) == 0) {
+            types.utf8_string_available = 1;
         }
         if (strcmp(mime_type, text_plain_utf8) == 0) {
             types.plain_text_utf8_available = 1;
@@ -111,6 +115,10 @@ if (types.explicit_available) \
 if (types.inferred_available) \
     return options.inferred_type
 
+#define try_utf8_string \
+if (types.utf8_string_available) \
+    return utf8_string
+
 #define try_text_plain_utf8 \
 if (types.plain_text_utf8_available) \
     return text_plain_utf8
@@ -134,6 +142,9 @@ if (types.any != NULL) \
 static const char *mime_type_to_request(struct types types) {
     if (options.explicit_type != NULL) {
         if (strcmp(options.explicit_type, "text") == 0) {
+            // try this for GTK
+            // https://gitlab.gnome.org/GNOME/gtk/-/issues/2307#note_681003
+            try_utf8_string;
             try_text_plain_utf8;
             try_text_plain;
             try_any_text;
@@ -150,12 +161,14 @@ static const char *mime_type_to_request(struct types types) {
          * so try to guess.
          */
         if (options.inferred_type == NULL) {
+            try_utf8_string;
             try_text_plain_utf8;
             try_text_plain;
             try_any_text;
             try_any;
         } else if (mime_type_is_text(options.inferred_type)) {
             try_inferred;
+            try_utf8_string;
             try_text_plain_utf8;
             try_text_plain;
             try_any_text;
