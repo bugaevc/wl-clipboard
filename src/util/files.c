@@ -69,7 +69,7 @@ void complain_about_closed_stdio(struct wl_display *wl_display) {
     FILE *tty = fopen("/dev/tty", "w");
     if (tty != NULL) {
         fprintf(tty, "%s\n", message);
-        fflush(stderr);
+        fflush(tty);
         abort();
     }
 
