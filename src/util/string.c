@@ -55,6 +55,12 @@ int mime_type_is_text(const char *mime_type) {
     return basic || common || special;
 }
 
+int mime_type_is_sensitive(const char *mime_type) {
+    /* A heuristic to detect sensitive mime types */
+    
+    return strcmp(mime_type, "x-kde-passwordManagerHint");
+}
+
 int str_has_prefix(const char *string, const char *prefix) {
     size_t prefix_length = strlen(prefix);
     return strncmp(string, prefix, prefix_length) == 0;

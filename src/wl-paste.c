@@ -275,6 +275,15 @@ static void selection_callback(struct offer *offer, int primary) {
         exit(0);
     }
 
+    int sensitive = 0;
+
+    offer_for_each_mime_type(offer, mime_type) {
+        if (mime_type_is_sensitive(mime_type) == 0) {
+            sensitive = 1;
+            break;
+        }
+    }
+
     struct types types = classify_offer_types(offer);
     const char *mime_type = mime_type_to_request(types);
 
@@ -319,7 +328,7 @@ static void selection_callback(struct offer *offer, int primary) {
     wl_display_flush(wl_display);
 
     close(pipefd[1]);
-    rc = run_paste_command(pipefd[0], "data");
+    rc = run_paste_command(pipefd[0], sensitive == 1 ? "sensitive" : "data");
     if (!rc) {
         if (options.watch) {
             /* Try to cope without exiting completely */
