@@ -43,6 +43,7 @@ static struct {
     int trim_newline;
     int paste_once;
     int primary;
+    int sensitive;
     const char *seat_name;
 } options;
 
@@ -123,6 +124,8 @@ static void print_usage(FILE *f, const char *argv0) {
         "Override the inferred MIME type for the content.\n"
         "\t-s, --seat seat-name\t"
         "Pick the seat to work with.\n"
+        "\t-!, --sensitive\t\t"
+        "Set the x-kde-passwordManagerHint = secret flag.\n"
         "\t-v, --version\t\tDisplay version info.\n"
         "\t-h, --help\t\tDisplay this message.\n"
         "Mandatory arguments to long options are mandatory"
@@ -148,11 +151,12 @@ static void parse_options(int argc, argv_t argv) {
         {"clear", no_argument, 0, 'c'},
         {"type", required_argument, 0, 't'},
         {"seat", required_argument, 0, 's'},
+        {"sensitive", no_argument, 0, '!'},
         {0, 0, 0, 0}
     };
     while (1) {
         int option_index;
-        const char *opts = "vhpnofct:s:";
+        const char *opts = "vhpnofct:s:!";
         int c = getopt_long(argc, argv, opts, long_options, &option_index);
         if (c == -1) {
             break;
@@ -187,6 +191,9 @@ static void parse_options(int argc, argv_t argv) {
             break;
         case 's':
             options.seat_name = strdup(optarg);
+            break;
+        case '!':
+            options.sensitive = 1;
             break;
         default:
             /* getopt has already printed an error message */
@@ -303,6 +310,11 @@ int main(int argc, argv_t argv) {
             source_offer(copy_action->source, "STRING");
             source_offer(copy_action->source, "UTF8_STRING");
         }
+
+        if (options.sensitive) {
+            source_offer(copy_action->source, "x-kde-passwordManagerHint");
+        }
+
         free(options.mime_type);
         options.mime_type = NULL;
     }
@@ -316,6 +328,7 @@ int main(int argc, argv_t argv) {
     copy_action->did_set_selection_callback = did_set_selection_callback;
     copy_action->pasted_callback = pasted_callback;
     copy_action->cancelled_callback = cancelled_callback;
+    copy_action->sensitive = options.sensitive;
     copy_action_init(copy_action);
 
     while (wl_display_dispatch(wl_display) >= 0);
