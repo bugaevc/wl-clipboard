@@ -47,10 +47,15 @@ int mime_type_is_text(const char *mime_type) {
      * as being a Publisher file. Note that it
      * handles private keys, which do not have
      * a .pub extension, correctly.
+     *
+     * Also special case PEM certs and keys.
      */
     int special
         = strstr(mime_type, "application/vnd.ms-publisher") != NULL
-        || str_has_suffix(mime_type, "pgp-keys");
+        || str_has_suffix(mime_type, "pgp-keys")
+        || strstr(mime_type, "application/x-pem-key")
+        || strstr(mime_type, "application/pkcs8+pem")
+        || strstr(mime_type, "application/pkix-cert+pem");
 
     return basic || common || special;
 }
