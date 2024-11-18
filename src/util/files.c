@@ -186,11 +186,15 @@ char *infer_mime_type_from_contents(const char *file_path) {
 
     /* Read the result */
     char *res = malloc(256);
-    size_t len = read(pipefd[0], res, 256);
+    ssize_t len = read(pipefd[0], res, 256);
+    close(pipefd[0]);
+    if (len <= 0) {
+        free(res);
+        return NULL;
+    }
     /* Trim the newline */
     len--;
     res[len] = 0;
-    close(pipefd[0]);
 
     if (str_has_prefix(res, "inode/")) {
         free(res);
