@@ -120,7 +120,7 @@ static void print_usage(FILE *f, const char *argv0) {
         "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
         "\t-n, --trim-newline\tDo not copy the trailing newline character.\n"
         "\t-t, --type mime/type\t"
-        "Override the inferred MIME type for the content.\n"
+        "Override the inferred MIME type for the content. Use '|' to separate multiple types.\n"
         "\t-s, --seat seat-name\t"
         "Pick the seat to work with.\n"
         "\t-v, --version\t\tDisplay version info.\n"
