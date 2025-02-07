@@ -120,7 +120,7 @@ static void print_usage(FILE *f, const char *argv0) {
         "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
         "\t-n, --trim-newline\tDo not copy the trailing newline character.\n"
         "\t-t, --type mime/type\t"
-        "Override the inferred MIME type for the content.\n"
+        "Override the inferred MIME type for the content. Use '|' to separate multiple types.\n"
         "\t-s, --seat seat-name\t"
         "Pick the seat to work with.\n"
         "\t-v, --version\t\tDisplay version info.\n"
@@ -293,7 +293,16 @@ int main(int argc, argv_t argv) {
         /* Create the source */
         copy_action->source = device_manager_create_source(device_manager);
         if (options.mime_type != NULL) {
-            source_offer(copy_action->source, options.mime_type);
+
+            char *mime_type_str = strdup(options.mime_type);
+            char *mime_type = strtok(mime_type_str, "|"); // '|' - delimiter
+
+            while (mime_type != NULL) {
+                source_offer(copy_action->source, mime_type);
+                mime_type = strtok(NULL, "|"); // Get next MIME type
+            }
+
+            free(mime_type_str); // Free the duplicated string
         }
         if (options.mime_type == NULL || mime_type_is_text(options.mime_type)) {
             /* Offer a few generic plain text formats */
