@@ -53,6 +53,7 @@ struct types {
     int inferred_available;
     int plain_text_utf8_available;
     int plain_text_available;
+    int has_sensitive_hint;
     const char *having_explicit_as_prefix;
     const char *any_text;
     const char *any;
@@ -98,6 +99,14 @@ static struct types classify_offer_types(struct offer *offer) {
             str_has_prefix(mime_type, options.explicit_type)
         ) {
             types.having_explicit_as_prefix = mime_type;
+        }
+        if (strcmp(mime_type, x_kde_password_manager_hint) == 0) {
+            /* We should be checking if it contains
+             * the string "secret" as opposed to "public",
+             * but for now let's just use the presence
+             * of the type as an indication.
+             */
+            types.has_sensitive_hint = 1;
         }
     }
     return types;
@@ -319,7 +328,11 @@ static void selection_callback(struct offer *offer, int primary) {
     wl_display_flush(wl_display);
 
     close(pipefd[1]);
-    rc = run_paste_command(pipefd[0], "data");
+    const char *clipboard_state = "data";
+    if (types.has_sensitive_hint) {
+        clipboard_state = "sensitive";
+    }
+    rc = run_paste_command(pipefd[0], clipboard_state);
     if (!rc) {
         if (options.watch) {
             /* Try to cope without exiting completely */

@@ -155,8 +155,9 @@ as to fall back to some sensible behavior if \fBCLIPBOARD_STATE\fR is unset or
 set to some unrecognized value (this is to leave the design space open for
 future extensions). However, the currently existing Wayland clipboard protocols
 don't let wl-clipboard identify the cases where \fBclear\fR and \fBsensitive\fR
-values should be set, so currently wl-clipboard only ever sets
-\fBCLIPBOARD_STATE\fR to \fBdata\fR or \fBnil\fR.
+values should be set. For this reason, currently, wl-clipboard never actually
+sets \fBCLIPBOARD_STATE\fR to \fBclear\fR, and only sets it to \fBsensitive\fR
+when it enounters \fBx-kde-passwordManagerHint\fR among the MIME types.
 .IP
 The \fBCLIPBOARD_STATE\fR protocol was intentionally designed to not be specific
 to either wl-clipboard or Wayland; in fact, other clipboard tools are encouraged
