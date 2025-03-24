@@ -21,6 +21,7 @@
 
 #define text_plain "text/plain"
 #define text_plain_utf8 "text/plain;charset=utf-8"
+#define x_kde_password_manager_hint "x-kde-passwordManagerHint"
 
 typedef char * const *argv_t;
 

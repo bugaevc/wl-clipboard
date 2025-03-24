@@ -33,6 +33,7 @@ struct copy_action {
     struct source *source;
     struct popup_surface *popup_surface;
     int primary;
+    int sensitive;
 
     void (*did_set_selection_callback)(struct copy_action *self);
     void (*pasted_callback)(struct copy_action *self);

@@ -43,6 +43,7 @@ static struct {
     int trim_newline;
     int paste_once;
     int primary;
+    int sensitive;
     const char *seat_name;
 } options;
 
@@ -121,6 +122,7 @@ static void print_usage(FILE *f, const char *argv0) {
         "\t-n, --trim-newline\tDo not copy the trailing newline character.\n"
         "\t-t, --type mime/type\t"
         "Override the inferred MIME type for the content.\n"
+        "\t    --sensitive\t\tHint that the content is sensitive.\n"
         "\t-s, --seat seat-name\t"
         "Pick the seat to work with.\n"
         "\t-v, --version\t\tDisplay version info.\n"
@@ -147,6 +149,7 @@ static void parse_options(int argc, argv_t argv) {
         {"foreground", no_argument, 0, 'f'},
         {"clear", no_argument, 0, 'c'},
         {"type", required_argument, 0, 't'},
+        {"sensitive", no_argument, 0, 'S'},
         {"seat", required_argument, 0, 's'},
         {0, 0, 0, 0}
     };
@@ -184,6 +187,9 @@ static void parse_options(int argc, argv_t argv) {
             break;
         case 't':
             options.mime_type = strdup(optarg);
+            break;
+        case 'S':
+            options.sensitive = 1;
             break;
         case 's':
             options.seat_name = strdup(optarg);
@@ -246,6 +252,7 @@ int main(int argc, argv_t argv) {
     copy_action->fd_to_copy_from = -1;
     copy_action->device = device;
     copy_action->primary = options.primary;
+    copy_action->sensitive = options.sensitive;
 
     if (!options.clear) {
         if (optind < argc) {
@@ -305,6 +312,9 @@ int main(int argc, argv_t argv) {
         }
         free(options.mime_type);
         options.mime_type = NULL;
+        if (options.sensitive) {
+            source_offer(copy_action->source, x_kde_password_manager_hint);
+        }
     }
 
     if (device->needs_popup_surface) {

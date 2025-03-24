@@ -96,6 +96,12 @@ of the spawned processes (see below).
 .IP
 This mode requires a compositor that supports the wlroots data-control protocol.
 .TP
+\fB\-\-sensitive\fR (for \fBwl-copy\fR)
+Hint that the data being copied contains passwords, keys, or other sensitive
+content. Some clipboard managers may react by not persisting the copied data in
+the clipboard history. This corresponds to \fBCLIPBOARD_STATE=sensitive\fR (see
+below).
+.TP
 \fB\-v\fR, \fB\-\-version
 Display the version of wl-clipboard and some short info about its license.
 .TP

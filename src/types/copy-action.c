@@ -69,8 +69,22 @@ static void on_focus(
 static void do_send(struct source *source, const char *mime_type, int fd) {
     struct copy_action *self = source->data;
 
-     /* Unset O_NONBLOCK */
+    /* Unset O_NONBLOCK */
     fcntl(fd, F_SETFL, 0);
+
+    if (!strcmp(mime_type, x_kde_password_manager_hint)) {
+        /* We always respond to x-kde-passwordManagerHint,
+         * even though we only offer it when --sensitive
+         * is set.
+         */
+        const char *data = self->sensitive ? "secret" : "public";
+        write(fd, data, strlen(data));
+        close(fd);
+        /* This does not count as pasting, so don't invoke
+         * our pasted_callback, just return.
+         */
+        return;
+    }
 
     if (self->fd_to_copy_from != -1) {
         /* Copy the file to the given file descriptor
