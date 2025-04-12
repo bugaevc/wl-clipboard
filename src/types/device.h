@@ -71,4 +71,8 @@ void device_init_zwp_primary_selection_device_v1(struct device *self);
 void device_init_zwlr_data_control_device_v1(struct device *self);
 #endif
 
+#ifdef HAVE_EXT_DATA_CONTROL
+void device_init_ext_data_control_device_v1(struct device *self);
+#endif
+
 #endif /* TYPES_DEVICE_H */

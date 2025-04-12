@@ -52,4 +52,8 @@ void source_init_zwp_primary_selection_source_v1(struct source *self);
 void source_init_zwlr_data_control_source_v1(struct source *self);
 #endif
 
+#ifdef HAVE_EXT_DATA_CONTROL
+void source_init_ext_data_control_source_v1(struct source *self);
+#endif
+
 #endif /* TYPES_SOURCE_H */

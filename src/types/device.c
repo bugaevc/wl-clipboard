@@ -25,6 +25,12 @@
 #include <wayland-client.h>
 #include <stdlib.h>
 
+enum TriState {
+    Unknown,
+    Yes,
+    No
+};
+
 int device_supports_selection(struct device *self, int primary) {
     return self->supports_selection(self, primary);
 }
@@ -195,12 +201,6 @@ INIT(zwp_primary_selection_device_v1, 1)
 
 #ifdef HAVE_WLR_DATA_CONTROL
 
-enum TriState {
-    Unknown,
-    Yes,
-    No
-};
-
 /* Whether wlr-data-control supports primary selection */
 static enum TriState device_wlr_supports_primary_selection = Unknown;
 static int device_get_wlr_supports_selection(struct device *self, int primary) {
@@ -272,3 +272,80 @@ zwlr_data_control_device_v1_listener = {
 INIT(zwlr_data_control_device_v1, 0)
 
 #endif /* HAVE_WLR_DATA_CONTROL */
+
+
+/* ext-data-control implementation */
+
+#ifdef HAVE_EXT_DATA_CONTROL
+
+/* Whether ext-data-control supports primary selection */
+static enum TriState device_ext_supports_primary_selection = Unknown;
+static int device_get_ext_supports_selection(struct device *self, int primary) {
+    if (!primary) {
+        return 1;
+    }
+
+    if (device_ext_supports_primary_selection == Yes) {
+        return 1;
+    } else if (device_ext_supports_primary_selection == No) {
+        return 0;
+    }
+
+    wl_display_roundtrip(self->wl_display);
+
+    if (device_ext_supports_primary_selection == Yes) {
+        return 1;
+    } else {
+        device_ext_supports_primary_selection = No;
+        return 0;
+    }
+}
+
+SUPPORTS_SELECTION(
+    ext_data_control_device_v1,
+    device_get_ext_supports_selection(self, primary)
+)
+
+SET_SELECTION_IMPL(ext_data_control_device_v1, ext_data_control_source_v1, {
+    if (!primary) {
+        ext_data_control_device_v1_set_selection(device, source);
+    } else {
+        ext_data_control_device_v1_set_primary_selection(device, source);
+    }
+})
+
+DATA_OFFER_HANDLER(ext_data_control_device_v1, ext_data_control_offer_v1)
+
+SELECTION_HANDLER(
+    ext_data_control_device_v1,
+    ext_data_control_offer_v1,
+    selection,
+    0
+)
+
+static void ext_data_control_device_v1_primary_selection_handler(
+    void *data,
+    struct ext_data_control_device_v1 *device,
+    struct ext_data_control_offer_v1 *offer_proxy
+) {
+    device_ext_supports_primary_selection = Yes;
+    struct device *self = data;
+    struct offer *offer = NULL;
+    if (offer_proxy != NULL) {
+        offer = wl_proxy_get_user_data((struct wl_proxy *) offer_proxy);
+    }
+    if (self->selection_callback != NULL) {
+        self->selection_callback(offer, 1);
+    }
+}
+
+static const struct ext_data_control_device_v1_listener
+ext_data_control_device_v1_listener = {
+    .data_offer = ext_data_control_device_v1_data_offer_handler,
+    .selection = ext_data_control_device_v1_selection_handler,
+    .primary_selection = ext_data_control_device_v1_primary_selection_handler
+};
+
+INIT(ext_data_control_device_v1, 0)
+
+#endif /* HAVE_EXT_DATA_CONTROL */

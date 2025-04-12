@@ -14,6 +14,7 @@ if wayland_scanner.found()
     # these are bundled
     have_gtk_primary_selection = true
     have_wlr_data_control = true
+    have_ext_data_control = wayland_protocols.found() and wayland_protocols.version().version_compare('>= 1.39')
     have_gtk_shell = true
 
     if wayland.version().version_compare('>= 1.15')
@@ -27,6 +28,7 @@ else
     have_xdg_activation = false
     have_gtk_primary_selection = false
     have_wlr_data_control = false
+    have_ext_data_control = false
     have_gtk_shell = false
 endif
 
@@ -35,6 +37,7 @@ conf_data.set('HAVE_XDG_SHELL', have_xdg_shell)
 conf_data.set('HAVE_WP_PRIMARY_SELECTION', have_wp_primary_selection)
 conf_data.set('HAVE_GTK_PRIMARY_SELECTION', have_gtk_primary_selection)
 conf_data.set('HAVE_WLR_DATA_CONTROL', have_wlr_data_control)
+conf_data.set('HAVE_EXT_DATA_CONTROL', have_ext_data_control)
 conf_data.set('HAVE_XDG_ACTIVATION', have_xdg_activation)
 conf_data.set('HAVE_GTK_SHELL', have_gtk_shell)
 
@@ -70,6 +73,11 @@ endif
 if have_wlr_data_control
     wlr_data_control_xml = 'wlr-data-control-unstable-v1.xml'
     protocols += [['wlr-data-control', wlr_data_control_xml]]
+endif
+
+if have_ext_data_control
+    ext_data_control_xml = join_paths(protocols_path, 'staging', 'ext-data-control', 'ext-data-control-v1.xml')
+    protocols += [['ext-data-control', ext_data_control_xml]]
 endif
 
 if have_xdg_activation

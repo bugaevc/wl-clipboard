@@ -138,3 +138,23 @@ GET_DEVICE(
 INIT(zwlr_data_control_manager_v1)
 
 #endif /* HAVE_WLR_DATA_CONTROL */
+
+/* ext-data-control implementation */
+
+#ifdef HAVE_EXT_DATA_CONTROL
+
+CREATE_SOURCE(
+    ext_data_control_manager_v1,
+    ext_data_control_source_v1,
+    create_data_source
+)
+
+GET_DEVICE(
+    ext_data_control_manager_v1,
+    ext_data_control_device_v1,
+    get_data_device
+)
+
+INIT(ext_data_control_manager_v1)
+
+#endif /* HAVE_EXT_DATA_CONTROL */

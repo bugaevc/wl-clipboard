@@ -35,4 +35,8 @@
 #    include "wlr-data-control.h"
 #endif
 
+#ifdef HAVE_EXT_DATA_CONTROL
+#    include "ext-data-control.h"
+#endif
+
 #endif /* INCLUDES_SELECTION_PROTOCOLS_H */

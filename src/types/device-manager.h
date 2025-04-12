@@ -69,4 +69,10 @@ void device_manager_init_zwlr_data_control_manager_v1(
 );
 #endif
 
+#ifdef HAVE_EXT_DATA_CONTROL
+void device_manager_init_ext_data_control_manager_v1(
+    struct device_manager *self
+);
+#endif
+
 #endif /* TYPES_DEVICE_MANAGER_H */

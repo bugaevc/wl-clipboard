@@ -61,4 +61,8 @@ void offer_init_zwp_primary_selection_offer_v1(struct offer *self);
 void offer_init_zwlr_data_control_offer_v1(struct offer *self);
 #endif
 
+#ifdef HAVE_EXT_DATA_CONTROL
+void offer_init_ext_data_control_offer_v1(struct offer *self);
+#endif
+
 #endif /* TYPES_OFFER_H */

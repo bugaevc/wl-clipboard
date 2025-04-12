@@ -127,3 +127,14 @@ INIT(zwlr_data_control_source_v1)
 
 #endif /* HAVE_WLR_DATA_CONTROL */
 
+
+/* ext-data-control implementation */
+
+#ifdef HAVE_EXT_DATA_CONTROL
+
+SEND_HANDLER(ext_data_control_source_v1)
+CANCELLED_HANDLER(ext_data_control_source_v1)
+LISTENER(ext_data_control_source_v1)
+INIT(ext_data_control_source_v1)
+
+#endif /* HAVE_EXT_DATA_CONTROL */

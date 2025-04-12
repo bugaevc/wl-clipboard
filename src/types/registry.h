@@ -69,6 +69,10 @@ struct registry {
     struct zwlr_data_control_manager_v1
         *zwlr_data_control_manager_v1;
 #endif
+#ifdef HAVE_EXT_DATA_CONTROL
+    struct ext_data_control_manager_v1
+        *ext_data_control_manager_v1;
+#endif
 };
 
 void registry_init(struct registry *self);

@@ -49,15 +49,15 @@ void complain_about_selection_support(int primary) {
 }
 
 void complain_about_watch_mode_support() {
-#ifdef HAVE_WLR_DATA_CONTROL
+#if defined(HAVE_WLR_DATA_CONTROL) || defined(HAVE_EXT_DATA_CONTROL)
     bail(
         "Watch mode requires a compositor that supports"
-        " the wlroots data-control protocol"
+        " the data-control protocol"
     );
 #else
     bail(
         "wl-clipboard was built without support for"
-        " the wlroots data-control protocol"
+        " the data-control protocol"
     );
 #endif
 }

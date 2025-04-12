@@ -83,6 +83,10 @@ static void wl_registry_global_handler(
     BIND(zwlr_data_control_manager_v1, version > 2 ? 2 : version)
 #endif
 
+#ifdef HAVE_EXT_DATA_CONTROL
+    BIND(ext_data_control_manager_v1, 1)
+#endif
+
     if (strcmp(interface, "wl_seat") == 0 && version >= 2) {
         struct seat *seat = calloc(1, sizeof(struct seat));
         seat->proxy = wl_registry_bind(
@@ -149,12 +153,15 @@ struct device_manager *registry_find_device_manager(
         = calloc(1, sizeof(struct device_manager));
     device_manager->wl_display = self->wl_display;
 
-    /* For regular selection, we just look at the two supported
-     * protocols. We prefer wlr-data-control, as it doesn't require
-     * us to use the popup surface hack.
+    /* For regular selection, we just look at the three supported
+     * protocols. We prefer ext-data-control or wlr-data-control,
+     * as they don't require us to use the popup surface hack.
      */
 
     if (!primary) {
+#ifdef HAVE_EXT_DATA_CONTROL
+        TRY(ext_data_control_manager_v1)
+#endif
 #ifdef HAVE_WLR_DATA_CONTROL
         TRY(zwlr_data_control_manager_v1)
 #endif
@@ -172,7 +179,15 @@ struct device_manager *registry_find_device_manager(
      * that if a compositor supports primary selection at all, then
      * if it supports wlr-data-control v2 it also supports primary
      * selection over wlr-data-control; which is only reasonable.
+     *
+     * The same goes for the newer ext-data-control, which has
+     * potential support for primary selection since v1, so no need
+     * for the version check there.
      */
+
+#ifdef HAVE_EXT_DATA_CONTROL
+    TRY(ext_data_control_manager_v1)
+#endif
 
 #ifdef HAVE_WLR_DATA_CONTROL
     if (self->zwlr_data_control_manager_v1 != NULL) {
