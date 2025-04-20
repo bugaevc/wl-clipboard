@@ -45,6 +45,7 @@ static struct {
     int primary;
     int sensitive;
     const char *seat_name;
+    char *input_file;
 } options;
 
 static void did_set_selection_callback(struct copy_action *copy_action) {
@@ -118,6 +119,7 @@ static void print_usage(FILE *f, const char *argv0) {
         "\t-o, --paste-once\tOnly serve one paste request and then exit.\n"
         "\t-f, --foreground\tStay in the foreground instead of forking.\n"
         "\t-c, --clear\t\tInstead of copying, clear the clipboard.\n"
+        "\t-i, --input-file\tInstead of copying from stdin copy file-content of this file.\n"
         "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
         "\t-n, --trim-newline\tDo not copy the trailing newline character.\n"
         "\t-t, --type mime/type\t"
@@ -155,7 +157,7 @@ static void parse_options(int argc, argv_t argv) {
     };
     while (1) {
         int option_index;
-        const char *opts = "vhpnofct:s:";
+        const char *opts = "vhpnofct:s:i:";
         int c = getopt_long(argc, argv, opts, long_options, &option_index);
         if (c == -1) {
             break;
@@ -193,6 +195,9 @@ static void parse_options(int argc, argv_t argv) {
             break;
         case 's':
             options.seat_name = strdup(optarg);
+            break;
+        case 'i':
+            options.input_file = strdup(optarg);
             break;
         default:
             /* getopt has already printed an error message */
@@ -259,42 +264,60 @@ int main(int argc, argv_t argv) {
             /* Copy our command-line arguments */
             copy_action->argv_to_copy = &argv[optind];
         } else {
-            /* Copy data from our stdin.
-             * It's important that we only do this
-             * after going through the initial stages
-             * that are likely to result in errors,
-             * so that we don't forget to clean up
-             * the temp file.
-             */
-            char *temp_file = dump_stdin_into_a_temp_file();
-            if (options.trim_newline) {
-                trim_trailing_newline(temp_file);
+            if (options.input_file != NULL) {
+                /* The user already passed a file to copy, so use that instead of
+                   creating a tempfile.*/
+                if (options.trim_newline) {
+                    trim_trailing_newline(options.input_file);
+                }
+                if (options.mime_type == NULL) {
+                    options.mime_type = infer_mime_type_from_contents(options.input_file);
+                }
+                copy_action->fd_to_copy_from = open(options.input_file, O_RDONLY | O_CLOEXEC);
+                if (copy_action->fd_to_copy_from < 0) {
+                    fprintf(stderr, "Could not open file: %s\n", options.input_file);
+                    return 1;
+                }
+                free(options.input_file);
+                options.input_file = NULL;
+            } else {
+                /* Copy data from our stdin.
+                 * It's important that we only do this
+                 * after going through the initial stages
+                 * that are likely to result in errors,
+                 * so that we don't forget to clean up
+                 * the temp file.
+                 */
+                char *temp_file = dump_stdin_into_a_temp_file();
+                if (options.trim_newline) {
+                    trim_trailing_newline(temp_file);
+                }
+                if (options.mime_type == NULL) {
+                    options.mime_type = infer_mime_type_from_contents(temp_file);
+                }
+                copy_action->fd_to_copy_from = open(
+                                                    temp_file,
+                                                    O_RDONLY | O_CLOEXEC
+                                                    );
+                if (copy_action->fd_to_copy_from < 0) {
+                    perror("Failed to open temp file");
+                    return 1;
+                }
+                /* Now, remove the temp file and its
+                 * containing directory. We still keep
+                 * access to the file through our open
+                 * file descriptor.
+                 */
+                int rc = unlink(temp_file);
+                if (rc < 0) {
+                    perror("Failed to unlink temp file");
+                }
+                rc = rmdir(dirname(temp_file));
+                if (rc < 0) {
+                    perror("Failed to remove temp file directory");
+                }
+                free(temp_file);
             }
-            if (options.mime_type == NULL) {
-                options.mime_type = infer_mime_type_from_contents(temp_file);
-            }
-            copy_action->fd_to_copy_from = open(
-                temp_file,
-                O_RDONLY | O_CLOEXEC
-            );
-            if (copy_action->fd_to_copy_from < 0) {
-                perror("Failed to open temp file");
-                return 1;
-            }
-            /* Now, remove the temp file and its
-             * containing directory. We still keep
-             * access to the file through our open
-             * file descriptor.
-             */
-            int rc = unlink(temp_file);
-            if (rc < 0) {
-                perror("Failed to unlink temp file");
-            }
-            rc = rmdir(dirname(temp_file));
-            if (rc < 0) {
-                perror("Failed to remove temp file directory");
-            }
-            free(temp_file);
         }
 
         /* Create the source */
