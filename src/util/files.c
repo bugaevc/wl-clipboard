@@ -242,13 +242,6 @@ char *infer_mime_type_from_name(const char *file_path) {
 
 /* Returns the name of a new file */
 char *dump_stdin_into_a_temp_file() {
-    /* Create a temp directory to host out file */
-    char dirpath[] = "/tmp/wl-copy-buffer-XXXXXX";
-    if (mkdtemp(dirpath) != dirpath) {
-        perror("mkdtemp");
-        exit(1);
-    }
-
     /* Pick a name for the file we'll be
      * creating inside that directory. We
      * try to preserve the origial name for
@@ -257,11 +250,29 @@ char *dump_stdin_into_a_temp_file() {
     char *original_path = path_for_fd(STDIN_FILENO);
     char *name = original_path != NULL ? basename(original_path) : "stdin";
 
-    /* Construct the path */
-    char *res_path = malloc(strlen(dirpath) + 1 + strlen(name) + 1);
-    memcpy(res_path, dirpath, sizeof(dirpath));
-    res_path[sizeof(dirpath) - 1] = '/';
-    strcpy(res_path + sizeof(dirpath), name);
+    /* Create a temp directory to host out file */
+    const char *tmpdir = getenv("TMPDIR");
+    if (tmpdir == NULL) {
+        tmpdir = "/tmp";
+    }
+    size_t tmpdir_len = strlen(tmpdir);
+    static const char dir_template[] = "wl-copy-buffer-XXXXXX";
+    char *path = malloc(
+        tmpdir_len + 1 + strlen(dir_template) + 1 + strlen(name) + 1
+    );
+    memcpy(path, tmpdir, tmpdir_len);
+    path[tmpdir_len] = '/';
+    memcpy(path + tmpdir_len + 1, dir_template, strlen(dir_template));
+    size_t prefix_len = tmpdir_len + 1 + strlen(dir_template);
+    path[prefix_len] = 0;
+
+    if (mkdtemp(path) != path) {
+        perror("mkdtemp");
+        exit(1);
+    }
+
+    path[prefix_len] = '/';
+    strcpy(path + prefix_len + 1, name);
 
     /* Spawn cat to perform the copy */
     pid_t pid = fork();
@@ -270,7 +281,7 @@ char *dump_stdin_into_a_temp_file() {
         exit(1);
     }
     if (pid == 0) {
-        int fd = creat(res_path, S_IRUSR | S_IWUSR);
+        int fd = creat(path, S_IRUSR | S_IWUSR);
         if (fd < 0) {
             perror("creat");
             exit(1);
@@ -286,11 +297,9 @@ char *dump_stdin_into_a_temp_file() {
 
     int wstatus;
     waitpid(pid, &wstatus, 0);
-    if (original_path != NULL) {
-        free(original_path);
-    }
+    free(original_path);
     if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
         bail("Failed to copy the file");
     }
-    return res_path;
+    return path;
 }
