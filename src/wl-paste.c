@@ -369,7 +369,7 @@ static void print_usage(FILE *f, const char *argv0) {
         "\t-l, --list-types\tInstead of pasting, list the offered types.\n"
         "\t-p, --primary\t\tUse the \"primary\" clipboard.\n"
         "\t-w, --watch command\t"
-        "Run a command each time the selection changes.\n"
+        "Spawn command and pipe selection to its stdin when it changes.\n"
         "\t-t, --type mime/type\t"
         "Override the inferred MIME type for the content.\n"
         "\t-s, --seat seat-name\t"
