@@ -79,6 +79,8 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
             perror("chdir /");
         }
         signal(SIGHUP, SIG_IGN);
+        signal(SIGINT, SIG_IGN);
+        signal(SIGQUIT, SIG_IGN);
         pid_t pid = fork();
         if (pid < 0) {
             perror("fork");
