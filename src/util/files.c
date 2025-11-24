@@ -28,6 +28,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <fcntl.h>
+#include <fnmatch.h>
 #include <sys/stat.h> // open
 #include <sys/types.h> // open
 #include <stdlib.h> // exit
@@ -204,9 +205,8 @@ char *infer_mime_type_from_contents(const char *file_path) {
     return res;
 }
 
-char *infer_mime_type_from_name(const char *file_path) {
-    const char *actual_ext = get_file_extension(file_path);
-    if (actual_ext == NULL) {
+static char *search_mime_dot_types_for_ext(const char *ext) {
+    if (ext == NULL) {
         return NULL;
     }
 
@@ -219,7 +219,7 @@ char *infer_mime_type_from_name(const char *file_path) {
     }
 
     for (char line[200]; fgets(line, sizeof(line), f) != NULL;) {
-        /* Skip comments and black lines */
+        /* Skip comments and blank lines */
         if (line[0] == '#' || line[0] == '\n') {
             continue;
         }
@@ -229,11 +229,12 @@ char *infer_mime_type_from_name(const char *file_path) {
         int consumed;
         if (sscanf(line, "%199s%n", mime_type, &consumed) != 1) {
             /* A malformed line, perhaps? */
+            fprintf(stderr, "malformed mime.types line: %s\n", line);
             continue;
         }
         char *lineptr = line + consumed;
-        for (char ext[200]; sscanf(lineptr, "%199s%n", ext, &consumed) == 1;) {
-            if (strcmp(ext, actual_ext) == 0) {
+        for (char ext_pattern[200]; sscanf(lineptr, "%199s%n", ext_pattern, &consumed) == 1;) {
+            if (strcmp(ext_pattern, ext) == 0) {
                 fclose(f);
                 return strdup(mime_type);
             }
@@ -242,6 +243,53 @@ char *infer_mime_type_from_name(const char *file_path) {
     }
     fclose(f);
     return NULL;
+}
+
+static char *search_shared_mime_info_globs_for_filename(const char *filename) {
+    FILE *f = fopen("/usr/share/mime/globs2", "r");
+    if (f == NULL) {
+        f = fopen("/usr/local/share/mime/globs2", "r");
+    }
+    if (f == NULL) {
+        return NULL;
+    }
+
+    for (char line[200]; fgets(line, sizeof(line), f) != NULL;) {
+        /* Skip comments and blank lines */
+        if (line[0] == '#' || line[0] == '\n') {
+            continue;
+        }
+
+        /* Each line consists of colon-separated
+         * weight, mime type, and glob pattern.
+         * We ignore the weight.
+         */
+        char mime_type[200];
+        char filename_glob[200];
+        if (sscanf(line, "%*d:%199[^:]:%199s\n", mime_type, filename_glob) != 2) {
+            /* A malformed line, perhaps? */
+            fprintf(stderr, "malformed globs2 line: %s\n", line);
+            continue;
+        }
+        if (fnmatch(filename_glob, filename, 0) == 0) {
+            fclose(f);
+            return strdup(mime_type);
+        }
+    }
+    fclose(f);
+    return NULL;
+}
+
+char *infer_mime_type_from_name(const char *file_path) {
+    const char *ext = get_file_extension(file_path);
+    char* file_path_dup = strdup(file_path);
+    const char *filename = basename(file_path_dup);
+    char* mime_type = search_shared_mime_info_globs_for_filename(filename);
+    if (!mime_type) {
+        mime_type = search_mime_dot_types_for_ext(ext);
+    }
+    free(file_path_dup);
+    return mime_type;
 }
 
 /* Returns the name of a new file */
