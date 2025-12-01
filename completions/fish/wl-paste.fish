@@ -22,7 +22,7 @@ function __wl_paste_types --description 'Print types with context'
 
     # Note fish does not handle passing unset variables
     # to commands well, thus setting clip to "--primary" and passing
-    # that to wl-paste wont work, so if statements are used instead
+    # that to wl-paste won't work, so if statements are used instead
     if test -n "$seat"; and test -n "$clip"
         wl-paste 2>/dev/null --seat "$seat" -p -l
     else if test -n "$seat"
