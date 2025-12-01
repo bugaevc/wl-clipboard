@@ -22,7 +22,7 @@ __all_seats() {
 	fi
 
 	if [[ -z $seats ]]; then
-		# seat0 is always a vaild seat and covers most cases, so its a good fallback.
+		# seat0 is always a valid seat and covers most cases, so it's a good fallback.
 		compadd "$@" - seat0
 	else
 		compadd "$@" -a seats

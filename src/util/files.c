@@ -248,7 +248,7 @@ char *infer_mime_type_from_name(const char *file_path) {
 char *dump_stdin_into_a_temp_file() {
     /* Pick a name for the file we'll be
      * creating inside that directory. We
-     * try to preserve the origial name for
+     * try to preserve the original name for
      * the mime type inference to work.
      */
     char *original_path = path_for_fd(STDIN_FILENO);

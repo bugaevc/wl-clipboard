@@ -84,7 +84,7 @@ void popup_surface_init(struct popup_surface *self) {
 
     if (self->wl_surface == NULL) {
         /* It's possible that we were given focus
-         * (without ever commiting a buffer) during
+         * (without ever committing a buffer) during
          * the above roundtrip, in which case we have
          * already fired the callback and have likely
          * already destroyed the surface. No need to
