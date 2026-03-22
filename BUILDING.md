@@ -48,3 +48,16 @@ packages providing `xdg-mime`, `/etc/mime.types`, and `/usr/share/mime/globs2`
 *weak* dependencies of the package providing wl-clipboard, meaning ones that
 get installed along with wl-clipboard by default, but are not strictly required
 by it.
+
+A package definition for wl-clipboard might therefore contain something along
+the following lines:
+
+```
+Package: wl-clipboard
+Build-Depends:
+    gcc, meson, ninja,
+    wayland-devel, wayland-scanner,
+    wayland-protocols >= 1.12
+Recommends:
+    xdg-utils, mime-support, shared-mime-info
+```
