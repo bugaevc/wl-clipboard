@@ -36,6 +36,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <syslog.h>
+#include <magic.h>
 
 #ifdef HAVE_MEMFD
 #    include <sys/syscall.h> // syscall, SYS_memfd_create
@@ -142,67 +143,33 @@ char *path_for_fd(int fd) {
 }
 
 char *infer_mime_type_from_contents(const char *file_path) {
-    /* Spawn xdg-mime query filetype */
-    int pipefd[2];
-    int rc = pipe(pipefd);
-    if (rc < 0) {
-        perror("pipe");
+    /* use libmagic to check filetype */
+    magic_t cookie;
+    const char *res;
+    char *mutable;
+
+    if ((cookie = magic_open(MAGIC_MIME_TYPE)) == NULL) {
         return NULL;
     }
 
-    pid_t pid = fork();
-    if (pid < 0) {
-        perror("fork");
-        close(pipefd[0]);
-        close(pipefd[1]);
-        return NULL;
-    }
-    if (pid == 0) {
-        dup2(pipefd[1], STDOUT_FILENO);
-        close(pipefd[0]);
-        close(pipefd[1]);
-        int devnull = open("/dev/null", O_RDONLY);
-        if (devnull >= 0) {
-            dup2(devnull, STDIN_FILENO);
-            close(devnull);
-        } else {
-            /* If we cannot open /dev/null, just close stdin */
-            close(STDIN_FILENO);
-        }
-        signal(SIGHUP, SIG_DFL);
-        signal(SIGPIPE, SIG_DFL);
-        execlp("xdg-mime", "xdg-mime", "query", "filetype", file_path, NULL);
-        exit(1);
-    }
-
-    close(pipefd[1]);
-    int wstatus;
-    waitpid(pid, &wstatus, 0);
-
-    /* See if that worked */
-    if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
-        close(pipefd[0]);
+    if (magic_load(cookie, NULL)) {
+        magic_close(cookie);
         return NULL;
     }
 
-    /* Read the result */
-    char *res = malloc(256);
-    ssize_t len = read(pipefd[0], res, 256);
-    close(pipefd[0]);
-    if (len <= 0) {
-        free(res);
+    if ((res = magic_file(cookie, file_path)) == NULL) {
+        magic_close(cookie);
         return NULL;
     }
-    /* Trim the newline */
-    len--;
-    res[len] = 0;
 
     if (str_has_prefix(res, "inode/")) {
-        free(res);
+        magic_close(cookie);
         return NULL;
     }
 
-    return res;
+    mutable = strdup(res);
+    magic_close(cookie);
+    return mutable;
 }
 
 static char *search_mime_dot_types_for_ext(const char *ext) {
