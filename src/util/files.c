@@ -99,20 +99,33 @@ int create_anonymous_file() {
     return fileno(tmpfile());
 }
 
-void trim_trailing_newline(const char *file_path) {
-    int fd = open(file_path, O_RDWR);
-    if (fd < 0) {
-        perror("open file for trimming");
-        return;
-    }
+int copy_fd(int src, int dest) {
+    /* Copy data between two file descriptors */
 
+    char *buf[256]; /* Arbitrary buffer size, can be made a macro */
+    ssize_t rlen, wlen, written;
+
+    while ((rlen = read(src, buf, 256)) > 0) {
+        for (written = 0; written < rlen; written += wlen) {
+            if ((wlen = write(dest, buf + written, rlen - written)) < 0) {
+                return 1;
+            }
+        }
+    }
+    if (rlen < 0) {
+        return 1;
+    }
+    return 0;
+}
+
+void trim_trailing_newline(int fd) {
     int seek_res = lseek(fd, -1, SEEK_END);
     if (seek_res < 0 && errno == EINVAL) {
         /* It was an empty file */
-        goto out;
+        return;
     } else if (seek_res < 0) {
         perror("lseek");
-        goto out;
+        return;
     }
     /* If the seek was successful, seek_res is the
      * new file size after trimming the newline.
@@ -121,18 +134,16 @@ void trim_trailing_newline(const char *file_path) {
     int read_res = read(fd, &last_char, 1);
     if (read_res != 1) {
         perror("read");
-        goto out;
+        return;
     }
     if (last_char != '\n') {
-        goto out;
+        return;
     }
 
     int rc = ftruncate(fd, seek_res);
     if (rc < 0) {
         perror("ftruncate");
     }
-out:
-    close(fd);
 }
 
 char *path_for_fd(int fd) {
@@ -141,8 +152,13 @@ char *path_for_fd(int fd) {
     return realpath(fdpath, NULL);
 }
 
-char *infer_mime_type_from_contents(const char *file_path) {
-    /* Spawn xdg-mime query filetype */
+char *infer_mime_type_from_contents(int fd) {
+    /* Spawn file(1) to check filetype */
+    if (lseek(fd, 0, SEEK_SET) != 0) {
+        perror("lseek");
+        return NULL;
+    }
+
     int pipefd[2];
     int rc = pipe(pipefd);
     if (rc < 0) {
@@ -158,20 +174,14 @@ char *infer_mime_type_from_contents(const char *file_path) {
         return NULL;
     }
     if (pid == 0) {
+        dup2(fd, STDIN_FILENO);
+        close(fd);
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[0]);
         close(pipefd[1]);
-        int devnull = open("/dev/null", O_RDONLY);
-        if (devnull >= 0) {
-            dup2(devnull, STDIN_FILENO);
-            close(devnull);
-        } else {
-            /* If we cannot open /dev/null, just close stdin */
-            close(STDIN_FILENO);
-        }
         signal(SIGHUP, SIG_DFL);
         signal(SIGPIPE, SIG_DFL);
-        execlp("xdg-mime", "xdg-mime", "query", "filetype", file_path, NULL);
+        execlp("file", "file", "--brief", "--mime-type", "-", (char *) NULL);
         exit(1);
     }
 
@@ -290,68 +300,4 @@ char *infer_mime_type_from_name(const char *file_path) {
     }
     free(file_path_dup);
     return mime_type;
-}
-
-/* Returns the name of a new file */
-char *dump_stdin_into_a_temp_file() {
-    /* Pick a name for the file we'll be
-     * creating inside that directory. We
-     * try to preserve the original name for
-     * the mime type inference to work.
-     */
-    char *original_path = path_for_fd(STDIN_FILENO);
-    char *name = original_path != NULL ? basename(original_path) : "stdin";
-
-    /* Create a temp directory to host out file */
-    const char *tmpdir = getenv("TMPDIR");
-    if (tmpdir == NULL) {
-        tmpdir = "/tmp";
-    }
-    size_t tmpdir_len = strlen(tmpdir);
-    static const char dir_template[] = "wl-copy-buffer-XXXXXX";
-    char *path = malloc(
-        tmpdir_len + 1 + strlen(dir_template) + 1 + strlen(name) + 1
-    );
-    memcpy(path, tmpdir, tmpdir_len);
-    path[tmpdir_len] = '/';
-    memcpy(path + tmpdir_len + 1, dir_template, strlen(dir_template));
-    size_t prefix_len = tmpdir_len + 1 + strlen(dir_template);
-    path[prefix_len] = 0;
-
-    if (mkdtemp(path) != path) {
-        perror("mkdtemp");
-        exit(1);
-    }
-
-    path[prefix_len] = '/';
-    strcpy(path + prefix_len + 1, name);
-
-    /* Spawn cat to perform the copy */
-    pid_t pid = fork();
-    if (pid < 0) {
-        perror("fork");
-        exit(1);
-    }
-    if (pid == 0) {
-        int fd = creat(path, S_IRUSR | S_IWUSR);
-        if (fd < 0) {
-            perror("creat");
-            exit(1);
-        }
-        dup2(fd, STDOUT_FILENO);
-        close(fd);
-        signal(SIGHUP, SIG_DFL);
-        signal(SIGPIPE, SIG_DFL);
-        execlp("cat", "cat", NULL);
-        perror("exec cat");
-        exit(1);
-    }
-
-    int wstatus;
-    waitpid(pid, &wstatus, 0);
-    free(original_path);
-    if (!WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
-        bail("Failed to copy the file");
-    }
-    return path;
 }
