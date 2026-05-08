@@ -2,7 +2,6 @@ wayland = dependency(
     'wayland-client',
     default_options: ['tests=false', 'documentation=false', 'dtd_validation=false']
 )
-magic = dependency('libmagic')
 
 cc = meson.get_compiler('c')
 have_memfd = cc.has_header_symbol('sys/syscall.h', 'SYS_memfd_create')
@@ -53,7 +52,7 @@ lib = static_library(
     'types/registry.c',
     'types/copy-action.h',
     'types/copy-action.c',
-    dependencies: [wayland, magic],
+    dependencies: wayland,
     link_with: protocol_deps
 )
 
@@ -61,7 +60,7 @@ executable(
     'wl-copy',
     'wl-copy.c',
     protocol_headers,
-    dependencies: [wayland, magic],
+    dependencies: wayland,
     link_with: lib,
     install: true
 )
@@ -69,7 +68,7 @@ executable(
     'wl-paste',
     'wl-paste.c',
     protocol_headers,
-    dependencies: [wayland, magic],
+    dependencies: wayland,
     link_with: lib,
     install: true
 )

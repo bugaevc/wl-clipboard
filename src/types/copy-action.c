@@ -21,6 +21,7 @@
 #include "types/source.h"
 #include "types/popup-surface.h"
 
+#include "util/files.h"
 #include "util/misc.h"
 
 #include <stdint.h>
@@ -86,72 +87,23 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
         return;
     }
 
-    if (self->fd_to_copy_from != -1) {
-        /* Copy the file to the given file descriptor
-         * by spawning an appropriate cat process.
-         */
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            close(fd);
-            return;
-        }
-        if (pid == 0) {
-            dup2(self->fd_to_copy_from, STDIN_FILENO);
-            close(self->fd_to_copy_from);
-            dup2(fd, STDOUT_FILENO);
-            close(fd);
-            signal(SIGHUP, SIG_DFL);
-            signal(SIGPIPE, SIG_DFL);
-            execlp("cat", "cat", NULL);
-            perror("exec cat");
-            exit(1);
-        }
+    if (self->fd_to_copy_from == -1) {
         close(fd);
-        /* Wait for the cat process to exit. This effectively
-         * means waiting for the other side to read the whole
-         * file. In theory, a malicious client could perform a
-         * denial-of-serivice attack against us. Perhaps we
-         * should switch to an asynchronous child waiting scheme
-         * instead.
-         */
-        waitpid(pid, NULL, 0);
-        /* Seek back to the beginning of the file */
-        off_t rc = lseek(self->fd_to_copy_from, 0, SEEK_SET);
-        if (rc < 0) {
-            perror("lseek");
-        }
-    } else {
-        /* We'll perform the copy ourselves */
-        FILE *f = fdopen(fd, "w");
-        if (f == NULL) {
-            perror("fdopen");
-            close(fd);
-            return;
-        }
-
-        if (self->data_to_copy.ptr != NULL) {
-            /* Just copy the given chunk of data */
-            fwrite(self->data_to_copy.ptr, 1, self->data_to_copy.len, f);
-        } else if (self->argv_to_copy != NULL) {
-            /* Copy an argv-style string array,
-             * inserting spaces between items.
-             */
-            int is_first = 1;
-            for (argv_t word = self->argv_to_copy; *word != NULL; word++) {
-                if (!is_first) {
-                    fwrite(" ", 1, 1, f);
-                }
-                is_first = 0;
-                fwrite(*word, 1, strlen(*word), f);
-            }
-        } else {
-            bail("Unreachable: nothing to copy");
-        }
-
-        fclose(f);
+        bail("Unreachable: nothing to copy");
     }
 
+    /* Copy the file to the given file descriptor */
+    if (lseek(self->fd_to_copy_from, 0, SEEK_SET) != 0) {
+        close(fd);
+        bail("Could not seek anonymous file");
+    }
+
+    if (copy_fd(self->fd_to_copy_from, fd) != 0) {
+        close(fd);
+        bail("Could not paste");
+    }
+
+    close(fd);
 
     if (self->pasted_callback != NULL) {
         self->pasted_callback(self);
