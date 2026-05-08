@@ -94,13 +94,15 @@ static void do_send(struct source *source, const char *mime_type, int fd) {
 
     /* Copy the file to the given file descriptor */
     if (lseek(self->fd_to_copy_from, 0, SEEK_SET) != 0) {
+        perror("Could not seek anonymous file");
         close(fd);
-        bail("Could not seek anonymous file");
+        return;
     }
 
     if (copy_fd(self->fd_to_copy_from, fd) != 0) {
+        perror("Could not paste");
         close(fd);
-        bail("Could not paste");
+        return;
     }
 
     close(fd);
