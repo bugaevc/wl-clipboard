@@ -183,7 +183,11 @@ static const char *mime_type_to_request(struct types types) {
 #undef try_any_text
 #undef try_any
 
-static int run_paste_command(int stdin_fd, const char *clipboard_state) {
+static int run_paste_command(
+    int stdin_fd,
+    const char *clipboard_state,
+    const char *mime_type
+) {
     /* Spawn a cat to perform the copy.
      * If watch mode is active, we spawn
      * a custom command instead.
@@ -200,6 +204,9 @@ static int run_paste_command(int stdin_fd, const char *clipboard_state) {
         if (options.watch) {
             if (clipboard_state != NULL) {
                 setenv("CLIPBOARD_STATE", clipboard_state, 1);
+            }
+            if (mime_type != NULL) {
+                setenv("CLIPBOARD_TYPE", mime_type, 1);
             }
             execvp(options.watch_command[0], options.watch_command);
             fprintf(
@@ -271,7 +278,7 @@ static void selection_callback(struct offer *offer, int primary) {
             perror("open /dev/null");
             return;
         }
-        run_paste_command(devnull, "nil");
+        run_paste_command(devnull, "nil", NULL);
         return;
     }
 
@@ -332,7 +339,7 @@ static void selection_callback(struct offer *offer, int primary) {
     if (types.has_sensitive_hint) {
         clipboard_state = "sensitive";
     }
-    rc = run_paste_command(pipefd[0], clipboard_state);
+    rc = run_paste_command(pipefd[0], clipboard_state, mime_type);
     if (!rc) {
         if (options.watch) {
             /* Try to cope without exiting completely */

@@ -91,8 +91,8 @@ in.
 Instead of pasting once and exiting, continuously watch the clipboard for
 changes, and run the specified \fIcommand\fR each time a new selection appears.
 The spawned process can read the clipboard contents from its standard input.
-\fBwl-paste\fR also sets the \fBCLIPBOARD_STATE\fR variable in the environment
-of the spawned processes (see below).
+\fBwl-paste\fR also sets the \fBCLIPBOARD_STATE\fR and \fBCLIPBOARD_TYPE\fR
+variables in the environment of the spawned processes (see below).
 .IP
 This mode requires a compositor that supports the wlroots data-control protocol.
 .TP
@@ -164,6 +164,11 @@ to either wl-clipboard or Wayland; in fact, other clipboard tools are encouraged
 to implement the same protocol. Currently, the SerenityOS
 .BR paste (1)
 utility is known to implement the same \fBCLIPBOARD_STATE\fR protocol.
+.TP
+.B CLIPBOARD_TYPE
+Set by \fBwl-paste\fR for the spawned command in \fB\-\-watch\fR mode to the
+MIME type of the data on its standard input, such as \fBimage/png\fR. Left
+unset when there is no data to read, such as when the clipboard is empty.
 .SH FILES
 .TP
 .I /etc/mime.types
