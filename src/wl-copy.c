@@ -85,6 +85,9 @@ static void did_set_selection_callback(struct copy_action *copy_action) {
             /* Proceed without forking */
         }
         if (pid > 0) {
+            if (setpgid(pid, pid) < 0) {
+                perror("setpgid");
+            }
             exit(0);
         }
     }
