@@ -24,17 +24,13 @@ void complain_about_closed_stdio(struct wl_display *wl_display);
 
 int create_anonymous_file(void);
 
-void trim_trailing_newline(const char *file_path);
+int copy_fd(int src, int dest);
 
-/* These functions return owned strings, so make sure
- * to free() their return values when done with them.
- */
+void trim_trailing_newline(int fd);
 
+/* These functions return malloc'd strings */
 char *path_for_fd(int fd);
-char *infer_mime_type_from_contents(const char *file_path);
+char *infer_mime_type_from_contents(int fd);
 char *infer_mime_type_from_name(const char *file_path);
-
-/* Returns the name of a new file */
-char *dump_stdin_into_a_temp_file(void);
 
 #endif /* UTIL_FILES_H */

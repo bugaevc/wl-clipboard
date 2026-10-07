@@ -255,46 +255,41 @@ int main(int argc, argv_t argv) {
     copy_action->sensitive = options.sensitive;
 
     if (!options.clear) {
+        copy_action->fd_to_copy_from = create_anonymous_file();
+        if (copy_action->fd_to_copy_from < 0) {
+            perror("Failed to open anonymous file");
+            return 1;
+        }
+
         if (optind < argc) {
-            /* Copy our command-line arguments */
-            copy_action->argv_to_copy = &argv[optind];
+            /* Write command line arguments to our anonymous file */
+            ssize_t wlen, written;
+            int is_first = 1;
+
+            for (argv_t word = argv + optind; *word != NULL; word++) {
+                if (!is_first) {
+                    write(copy_action->fd_to_copy_from, " ", 1);
+                }
+                is_first = 0;
+                for (written = 0; written < strlen(*word); written += wlen) {
+                    if ((wlen = write(copy_action->fd_to_copy_from, *word + written, strlen(*word) - written)) < 0) {
+                        perror("Could not write to anonymous file");
+                        return 1;
+                    }
+                }
+            }
         } else {
-            /* Copy data from our stdin.
-             * It's important that we only do this
-             * after going through the initial stages
-             * that are likely to result in errors,
-             * so that we don't forget to clean up
-             * the temp file.
-             */
-            char *temp_file = dump_stdin_into_a_temp_file();
-            if (options.trim_newline) {
-                trim_trailing_newline(temp_file);
-            }
-            if (options.mime_type == NULL) {
-                options.mime_type = infer_mime_type_from_contents(temp_file);
-            }
-            copy_action->fd_to_copy_from = open(
-                temp_file,
-                O_RDONLY | O_CLOEXEC
-            );
-            if (copy_action->fd_to_copy_from < 0) {
-                perror("Failed to open temp file");
+            /* Write stdin into our anonymous file. */
+            if (copy_fd(STDIN_FILENO, copy_action->fd_to_copy_from) != 0) {
+                perror("Could not write to anonymous file");
                 return 1;
             }
-            /* Now, remove the temp file and its
-             * containing directory. We still keep
-             * access to the file through our open
-             * file descriptor.
-             */
-            int rc = unlink(temp_file);
-            if (rc < 0) {
-                perror("Failed to unlink temp file");
-            }
-            rc = rmdir(dirname(temp_file));
-            if (rc < 0) {
-                perror("Failed to remove temp file directory");
-            }
-            free(temp_file);
+        }
+        if (options.trim_newline) {
+            trim_trailing_newline(copy_action->fd_to_copy_from);
+        }
+        if (options.mime_type == NULL) {
+            options.mime_type = infer_mime_type_from_contents(copy_action->fd_to_copy_from);
         }
 
         /* Create the source */
