@@ -136,11 +136,6 @@ void popup_surface_init(struct popup_surface *self) {
     wl_surface_damage(self->wl_surface, 0, 0, width, height);
 
     /* Ask the compositor nicely to give us focus */
-#ifdef HAVE_GTK_SHELL
-    if (self->gtk_surface != NULL) {
-        gtk_surface1_present(self->gtk_surface, 0);
-    }
-#endif
 #ifdef HAVE_XDG_ACTIVATION
     if (self->registry->xdg_activation_v1 != NULL) {
         /* See if someone was kind enough to leave
@@ -161,6 +156,13 @@ void popup_surface_init(struct popup_surface *self) {
 #endif
 
     wl_surface_commit(self->wl_surface);
+
+#ifdef HAVE_GTK_SHELL
+    /* GTK only presents windows that are already shown */
+    if (self->gtk_surface != NULL) {
+        gtk_surface1_present(self->gtk_surface, 0);
+    }
+#endif
 }
 
 void popup_surface_destroy(struct popup_surface *self) {
