@@ -121,6 +121,8 @@ void shell_surface_init_xdg_surface(struct shell_surface *self) {
     xdg_toplevel_add_listener(toplevel, &xdg_toplevel_listener, self);
     xdg_toplevel_set_title(toplevel, "wl-clipboard");
     xdg_toplevel_set_app_id(toplevel, "io.github.bugaevc.wl-clipboard");
+    xdg_toplevel_set_min_size(toplevel, 1, 1);
+    xdg_toplevel_set_max_size(toplevel, 1, 1);
     self->do_destroy = destroy_xdg_surface;
 }
 
